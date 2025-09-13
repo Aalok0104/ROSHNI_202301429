@@ -1,6 +1,6 @@
 # Contributing to ROSHNI
 
-This project is a part of our course, IT314, Software Engineering. We will not be taking in contributions from outside of our groups, until the course runs. We will update contributing guidelines once the course is evaluated. 
+This project is a part of our course, IT314, Software Engineering. We will not be taking in contributions from outside of our group, until the course runs. We will update contributing guidelines once the course is evaluated. 
 
 This document provides a detailed guide for making a contribution, from getting assigned an issue to getting your code merged into the main project.
 
@@ -29,12 +29,12 @@ Our project uses a standard **Fork-and-Pull** workflow. Here's a high-level over
 1.  **Fork the Repository:** Go to the main project repository and click the "Fork" button in the top-right corner. This creates a personal copy.
 2.  **Clone Your Fork:** In your terminal, clone your personal fork.
     ```bash
-    git clone [https://github.com/YOUR_USERNAME/ROSHNI.git](https://github.com/YOUR_USERNAME/ROSHNI.git)
+    git clone https://github.com/YOUR_USERNAME/ROSHNI.git
     cd ROSHNI
     ```
 3.  **Add the `upstream` Remote:** Add a remote that points to the original project repository. This allows you to sync changes from the main project.
     ```bash
-    git remote add upstream [https://github.com/202301039/ROSHNI.git](https://github.com/202301039/ROSHNI.git)
+    git remote add upstream https://github.com/202301039/ROSHNI.git
     ```
     You can check that it worked by running `git remote -v`.
 
