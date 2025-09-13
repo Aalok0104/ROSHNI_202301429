@@ -11,10 +11,8 @@ ROSHNI is a next-generation, data-centric platform designed to empower disaster 
 ## Table of Contents
 
 - [Key Features](#key-features)
-- [Getting Started](#getting-started)
 - [Project Documentation](#project-documentation)
 - [Development Workflow](#development-workflow)
-- [Technology Stack](#technology-stack)
 - [License](#license)
 
 ---
@@ -28,7 +26,7 @@ ROSHNI is a next-generation, data-centric platform designed to empower disaster 
 
 ---
 
-## 📖 Project Documentation
+## Project Documentation
 
 All project planning, requirements, design decisions, and architectural diagrams are stored within the `/docs` directory. This serves as the single source of truth for the "what" and "why" behind our work.
 
@@ -46,7 +44,7 @@ The documentation is organized into the following key areas:
 
 ---
 
-## 🚀 Development Workflow
+## Development Workflow
 
 This project follows a **Forking Workflow**. All development must be done on a feature branch within your personal fork. When work is complete, a Pull Request must be opened to merge the changes into the `main` branch of this repository.
 
