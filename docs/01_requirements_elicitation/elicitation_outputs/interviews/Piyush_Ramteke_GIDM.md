@@ -26,3 +26,7 @@
 - To prevent increase in crime after a disaster, policemen are deployed in the area to prevent crimes. These crimes include – theft, loot, and in some cases child and women trafficking.
 - Indian Meteorological Department publishes bulletins to create awareness against heatwaves, heavy rainfalls, etc. 
 - Mamlatdars are responsible for making a ‘One-Pager Report’ after a disaster.
+
+---
+
+Meet Recording - https://drive.google.com/drive/u/1/folders/1H0Y8MQxbR_ykFB-rwqMSrq3urTfBb0kS
