@@ -1,0 +1,15 @@
+# Use of Artificial Intelligence in Triage in Hospital Emergency Departments
+
+Source: [PubMed – Article Abstract](https://pubmed.ncbi.nlm.nih.gov/38854295)
+
+| Pointer | Extracted Content / Key Points |
+|---------|--------------------------------|
+| **1. Purpose & Goals** | The review looks at research published between 2013 and 2023 on how AI and machine learning are being used for emergency department (ED) triage. It aims to spot existing gaps, and to see how these technologies compare with traditional triage systems in terms of accuracy, predicting hospital admissions, resource planning, and patient outcomes. |
+| **2. Stakeholders & Roles** | Key stakeholders include AI researchers and developers, emergency doctors and nurses who actually perform triage, hospitals deciding whether to adopt AI tools, and patients who are affected by the accuracy and reliability of triage decisions. |
+| **3. Processes & Workflows** | The authors carried out a structured scoping review across multiple medical databases. They included studies that used AI/ML for ED triage and reported patient outcomes. In the reviewed studies, AI/ML models were tested against existing triage systems to see how well they predicted things like admissions, risks, and length of stay. |
+| **4. Data Requirements** | These models need access to rich hospital data—such as patient demographics, vital signs, and clinical indicators. They also need outcome data (like who was admitted or discharged) so their predictions can be compared with what actually happened. |
+| **5. Constraints & Rules** | Only peer-reviewed, English-language studies from 2013–2023 were included, and they had to report patient outcomes. The review highlights that AI systems can sometimes be overconfident, and results may not always generalize well beyond the datasets they were trained on. |
+| **6. Non-Functional Needs** | Beyond just being accurate, AI triage models need to be reliable, fast enough for emergency settings, and genuinely useful for decision-making. Interpretability also matters—clinicians need to trust the system, especially since overconfidence was identified as a risk. |
+| **7. Pain Points / Gaps** | Many of the studies were retrospective rather than tested in real ED settings. Few looked at broader outcomes like cost, workflow impact, or patient safety. There’s also limited external validation, and not much evidence on how well these tools integrate into the day-to-day work of ED staff. |
+| **8. Outputs & Deliverables** | The review synthesized findings from 29 studies. Overall, AI models generally outperformed conventional triage in predicting admissions, risk levels, and resource use. At the same time, it identified where evidence is lacking and what future studies should focus on. |
+| **9. Compliance & Accountability** | The review emphasizes the importance of rigorous study design, transparent reporting, and accountability in how AI is evaluated. Before deployment, models need to be safe, validated, and trustworthy—because patient safety and trust are ultimately at stake. |
