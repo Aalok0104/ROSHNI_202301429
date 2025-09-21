@@ -1,0 +1,19 @@
+{
+    "extends": [
+      "eslint:recommended",
+      "plugin:react/recommended",
+      "plugin:react-hooks/recommended",
+      "plugin:@typescript-eslint/recommended",
+      "prettier"
+    ],
+    "parser": "@typescript-eslint/parser",
+    "plugins": ["react", "@typescript-eslint", "prettier"],
+    "rules": {
+      "prettier/prettier": "error"
+    },
+    "settings": {
+      "react": {
+        "version": "detect"
+      }
+    }
+  }
