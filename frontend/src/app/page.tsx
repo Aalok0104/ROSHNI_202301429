@@ -1,32 +1,26 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Box, Typography, Button } from "@mui/material";
 import Image from "next/image";
 
-interface User {
-  email: string;
-  name: string;
-  role: string;
-}
+// interface User {
+//   email: string;
+//   name: string;
+//   role: string;
+// }
 
 export default function LoginPage() {
-  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
-  useEffect(() => {
-    checkSession();
-  }, []);
-
-  const checkSession = async () => {
+  const checkSession = useCallback(async () => {
     try {
       const response = await fetch('/api/auth/session');
       const data = await response.json();
       
       if (data.user) {
-        setUser(data.user);
         if (data.user.role === "commander") {
           router.push("/admin-dashboard");
         } else {
@@ -38,7 +32,11 @@ export default function LoginPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [router]);
+
+  useEffect(() => {
+    checkSession();
+  }, [checkSession]);
 
   const handleGoogleSignIn = () => {
     window.location.href = '/api/auth/google';

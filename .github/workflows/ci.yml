@@ -59,7 +59,7 @@ jobs:
       env:
         DATABASE_URL: postgresql://postgres:postgres@localhost:5432/roshni_test
       run: |
-        python -m pytest -v --cov=app --cov-report=xml
+        python -m pytest -v --cov=app --cov-report=xml --cov-report=term
 
     - name: Upload backend coverage to Codecov
       uses: codecov/codecov-action@v3

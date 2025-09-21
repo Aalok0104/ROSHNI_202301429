@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { useRouter } from 'next/navigation';
 import Home from './page';
 
@@ -9,7 +9,7 @@ jest.mock('next/navigation', () => ({
 
 // Mock next/image
 jest.mock('next/image', () => {
-  return function MockImage({ src, alt, ...props }: any) {
+  return function MockImage({ src, alt, ...props }: { src: string; alt: string; [key: string]: unknown }) {
     return <img src={src} alt={alt} {...props} />;
   };
 });
