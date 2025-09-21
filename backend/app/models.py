@@ -1,9 +1,12 @@
-from sqlalchemy import Column, Integer, String
-from geoalchemy2 import Geometry
-from .database import Base  # Adjust import based on your structure
+from sqlalchemy import Column, String
+from sqlalchemy.ext.declarative import declarative_base
+import uuid
 
-class Location(Base):
-    __tablename__ = "locations"
-    id = Column(Integer, primary_key=True, index=True)
+Base = declarative_base()
+
+class User(Base):
+    __tablename__ = "users"
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    email = Column(String, unique=True, index=True)
     name = Column(String)
-    geom = Column(Geometry('POINT', srid=4326))  # Example PostGIS geometry
+    role = Column(String, default="user")

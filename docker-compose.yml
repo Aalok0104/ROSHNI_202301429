@@ -1,14 +1,23 @@
-version: '3.8'
 services:
   frontend:
     build: ./frontend
     ports:
-      - "5173:5173"
+      - "3000:3000"
     volumes:
       - ./frontend:/app
       - /app/node_modules  # Avoid reinstalling node_modules on host changes
     depends_on:
       - backend
+    env_file:
+      - .env
+    environment:
+      - NEXTAUTH_URL=http://localhost:3000
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - BACKEND_URL=http://backend:8000
+      - NEXT_PUBLIC_BACKEND_URL=http://localhost:8000
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/roshni_db
 
   backend:
     build: ./backend
@@ -18,18 +27,18 @@ services:
       - ./backend:/app
     depends_on:
       db:
-        condition: service_healthy  # Wait for DB to be ready
+        condition: service_healthy
     environment:
-      - DATABASE_URL=postgresql+psycopg2://postgres:postgres@db:5432/disaster_db
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/roshni_db
 
   db:
-    image: postgis/postgis:16-3.4
+    image: kartoza/postgis:16-3.4
     ports:
       - "5432:5432"
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
-      - POSTGRES_DB=disaster_db
+      - POSTGRES_DB=roshni_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
