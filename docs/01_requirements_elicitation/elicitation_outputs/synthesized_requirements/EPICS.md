@@ -19,8 +19,6 @@
 - **Story 2.1: One-Tap SOS Transmission**  
 - **Story 2.2: Post-SOS Contextual Information**  
 - **Story 2.3: Answering a Situational Questionnaire**  
-- **Story 2.4: Reporting a Missing Person**  
-- **Story 2.5: Connecting with Family Members**
 
 ---
 
@@ -29,7 +27,7 @@
 ### User Stories
 - **Story 3.1: Ingesting Real-Time Weather Data**  
 - **Story 3.2: ML Model for Flood Detection**  
-- **Story 3.3: Ingesting Geo-Tagged Tweets**  
+- **Story 3.3: Ingesting live news article**  
 - **Story 3.4: Centralized Incident Timeline Logging**
 
 ---
@@ -47,7 +45,6 @@
 ## Epic 5: Post-Incident LLM Triage Report
 
 ### User Stories
-- **Story 5.1: Compiling Incident Data for LLM**  
-- **Story 5.2: Prompting the LLM for a Narrative Summary**  
-- **Story 5.3: Displaying and Editing the Draft Report**  
-- **Story 5.4: Exporting the Final Report to PDF**
+- **Story 5.1: Compiling Incident Data for LLM**   
+- **Story 5.2: Displaying and Editing the Draft Report**  
+- **Story 5.3: Exporting the Final Report to PDF**
