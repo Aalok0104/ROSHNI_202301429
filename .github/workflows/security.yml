@@ -113,7 +113,7 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+      uses: docker/setup-buildx-action@v4
 
     - name: Build backend image
       uses: docker/build-push-action@v5
@@ -144,10 +144,12 @@ jobs:
         output: 'frontend-trivy-results.sarif'
 
     - name: Upload Trivy scan results
-      uses: github/codeql-action/upload-sarif@v2
+      uses: github/codeql-action/upload-sarif@v3
       if: always()
       with:
-        sarif_file: 'backend-trivy-results.sarif,frontend-trivy-results.sarif'
+        sarif_file: |
+          backend-trivy-results.sarif
+          frontend-trivy-results.sarif
 
   # License Compliance
   license-check:

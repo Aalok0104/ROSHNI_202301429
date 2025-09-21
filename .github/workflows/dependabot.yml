@@ -47,7 +47,7 @@ jobs:
         yarn test --watchAll=false
 
     - name: Auto-merge PR
-      uses: fastify/github-action-merge-dependabot@v3
+      uses: fastify/github-action-merge-dependabot@v4
       with:
         target: minor
         github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -94,7 +94,7 @@ jobs:
         yarn test --watchAll=false
 
     - name: Auto-merge security PR
-      uses: fastify/github-action-merge-dependabot@v3
+      uses: fastify/github-action-merge-dependabot@v4
       with:
         target: patch
         github-token: ${{ secrets.GITHUB_TOKEN }}
