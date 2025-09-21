@@ -1,0 +1,304 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  NODE_VERSION: '20'
+  PYTHON_VERSION: '3.12'
+  POSTGRES_VERSION: '15'
+
+jobs:
+  # Backend Tests
+  backend-tests:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: roshni_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Cache pip dependencies
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('backend/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: Install backend dependencies
+      working-directory: ./backend
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Run backend tests
+      working-directory: ./backend
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/roshni_test
+      run: |
+        python -m pytest -v --cov=app --cov-report=xml --cov-report=term
+
+    - name: Upload backend coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./backend/coverage.xml
+        flags: backend
+        name: backend-coverage
+
+  # Frontend Tests
+  frontend-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'yarn'
+        cache-dependency-path: frontend/yarn.lock
+
+    - name: Install frontend dependencies
+      working-directory: ./frontend
+      run: yarn install --frozen-lockfile
+
+    - name: Run frontend tests
+      working-directory: ./frontend
+      run: yarn test --coverage --watchAll=false
+
+    - name: Upload frontend coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./frontend/coverage/lcov.info
+        flags: frontend
+        name: frontend-coverage
+
+  # Integration Tests
+  integration-tests:
+    runs-on: ubuntu-latest
+    needs: [backend-tests, frontend-tests]
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: roshni_integration
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'yarn'
+        cache-dependency-path: frontend/yarn.lock
+
+    - name: Install backend dependencies
+      working-directory: ./backend
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Install frontend dependencies
+      working-directory: ./frontend
+      run: yarn install --frozen-lockfile
+
+    - name: Start backend server
+      working-directory: ./backend
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/roshni_integration
+      run: |
+        python -c "from app.database import engine; from app.models import Base; Base.metadata.create_all(bind=engine)"
+        uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+        sleep 10
+
+    - name: Start frontend server
+      working-directory: ./frontend
+      env:
+        BACKEND_URL: http://localhost:8000
+        NEXT_PUBLIC_BACKEND_URL: http://localhost:8000
+        GOOGLE_CLIENT_ID: test-client-id
+        GOOGLE_CLIENT_SECRET: test-client-secret
+        NEXTAUTH_SECRET: test-secret
+        NEXTAUTH_URL: http://localhost:3000
+      run: |
+        yarn build
+        yarn start &
+        sleep 15
+
+    - name: Run integration tests
+      run: |
+        # Test backend API
+        curl -f http://localhost:8000/api/users || exit 1
+        
+        # Test frontend
+        curl -f http://localhost:3000/ || exit 1
+        
+        # Test Google OAuth redirect
+        curl -f http://localhost:3000/api/auth/google || exit 1
+
+  # Docker Build Tests
+  docker-tests:
+    runs-on: ubuntu-latest
+    needs: [backend-tests, frontend-tests]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Test backend Docker build
+      run: |
+        echo "Building backend Docker image..."
+        docker build ./backend -t roshni-backend:test
+        echo "✅ Backend Docker build successful"
+
+    - name: Test frontend Docker build
+      run: |
+        echo "Building frontend Docker image..."
+        docker build ./frontend -t roshni-frontend:test
+        echo "✅ Frontend Docker build successful"
+
+    - name: Test Docker Compose configuration
+      run: |
+        echo "Validating docker-compose.yml..."
+        # Just check if the file exists and has basic structure
+        if [ -f "docker-compose.yml" ]; then
+          echo "✅ docker-compose.yml exists"
+          # Basic validation - check if it contains expected keywords
+          if grep -q "services:" docker-compose.yml; then
+            echo "✅ docker-compose.yml has basic structure"
+          else
+            echo "⚠️  docker-compose.yml may be malformed"
+          fi
+        else
+          echo "❌ docker-compose.yml not found"
+          exit 1
+        fi
+
+  # Security Scanning
+  security-scan:
+    runs-on: ubuntu-latest
+    needs: [backend-tests, frontend-tests]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+
+    - name: Upload Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+  # Code Quality
+  code-quality:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'yarn'
+        cache-dependency-path: frontend/yarn.lock
+
+    - name: Install backend dependencies
+      working-directory: ./backend
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Install frontend dependencies
+      working-directory: ./frontend
+      run: yarn install --frozen-lockfile
+
+    - name: Run backend linting
+      working-directory: ./backend
+      run: |
+        flake8 app/ --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 app/ --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+    - name: Run frontend linting
+      working-directory: ./frontend
+      run: yarn lint
+
+    - name: Run frontend type checking
+      working-directory: ./frontend
+      run: yarn type-check
+
+  # Deployment (only on main branch)
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [backend-tests, frontend-tests, integration-tests, docker-tests, security-scan, code-quality]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Deploy to production
+      run: |
+        echo "🚀 Deployment would happen here"
+        echo "This could include:"
+        echo "- Building production Docker images"
+        echo "- Pushing to container registry"
+        echo "- Deploying to cloud platform"
+        echo "- Running database migrations"
+        echo "- Health checks"
