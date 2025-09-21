@@ -187,44 +187,23 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-
-    - name: Build backend Docker image
-      uses: docker/build-push-action@v5
-      with:
-        context: ./backend
-        push: false
-        tags: roshni-backend:test
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-
-    - name: Build frontend Docker image
-      uses: docker/build-push-action@v5
-      with:
-        context: ./frontend
-        push: false
-        tags: roshni-frontend:test
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-
-    - name: Test Docker Compose
+    - name: Test backend Docker build
       run: |
-        # Create test environment file
-        cat > .env.test << EOF
-        GOOGLE_CLIENT_ID=test-client-id
-        GOOGLE_CLIENT_SECRET=test-client-secret
-        NEXTAUTH_SECRET=test-secret
-        NEXTAUTH_URL=http://localhost:3000
-        BACKEND_URL=http://backend:8000
-        DATABASE_URL=postgresql://postgres:postgres@db:5432/roshni_test
-        POSTGRES_USER=postgres
-        POSTGRES_PASSWORD=postgres
-        POSTGRES_DB=roshni_test
-        EOF
-        
-        # Test Docker Compose build
-        docker-compose -f docker-compose.yml --env-file .env.test config
+        echo "Building backend Docker image..."
+        docker build ./backend -t roshni-backend:test
+        echo "✅ Backend Docker build successful"
+
+    - name: Test frontend Docker build
+      run: |
+        echo "Building frontend Docker image..."
+        docker build ./frontend -t roshni-frontend:test
+        echo "✅ Frontend Docker build successful"
+
+    - name: Test Docker Compose configuration
+      run: |
+        echo "Validating docker-compose.yml syntax..."
+        docker-compose -f docker-compose.yml config > /dev/null
+        echo "✅ docker-compose.yml is valid"
 
   # Security Scanning
   security-scan:

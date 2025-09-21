@@ -143,9 +143,18 @@ jobs:
         format: 'sarif'
         output: 'frontend-trivy-results.sarif'
 
+    - name: Check for SARIF files
+      id: check-sarif
+      run: |
+        if [ -f "backend-trivy-results.sarif" ] || [ -f "frontend-trivy-results.sarif" ]; then
+          echo "sarif-files-exist=true" >> $GITHUB_OUTPUT
+        else
+          echo "sarif-files-exist=false" >> $GITHUB_OUTPUT
+        fi
+
     - name: Upload Trivy scan results
       uses: github/codeql-action/upload-sarif@v3
-      if: always()
+      if: always() && steps.check-sarif.outputs.sarif-files-exist == 'true'
       with:
         sarif_file: |
           backend-trivy-results.sarif

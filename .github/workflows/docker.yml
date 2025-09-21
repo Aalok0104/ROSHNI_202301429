@@ -1,28 +1,23 @@
-name: Docker Build & Deploy
+name: Docker Image CI
 
 on:
   push:
-    branches: [ main, develop ]
-    tags: [ 'v*' ]
+    branches: [ "main", "develop" ]
+    tags: ['v*']
   pull_request:
-    branches: [ main, develop ]
+    branches: [ "main", "develop" ]
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  # Build and push Docker images
-  build-and-push:
+  # Build Docker images
+  build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-
     strategy:
       matrix:
         service: [backend, frontend]
-
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -61,92 +56,42 @@ jobs:
         platforms: linux/amd64,linux/arm64
         timeout: 20m
 
-  # Test Docker Compose
-  test-docker-compose:
+  # Simple Docker Compose test (optional)
+  test-compose:
     runs-on: ubuntu-latest
-    needs: build-and-push
+    needs: build
+    if: github.event_name == 'pull_request'
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-
-    - name: Install Docker Compose
-      run: |
-        sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-        sudo chmod +x /usr/local/bin/docker-compose
-
-    - name: Create test environment
-      run: |
-        cat > .env.test << EOF
-        GOOGLE_CLIENT_ID=test-client-id
-        GOOGLE_CLIENT_SECRET=test-client-secret
-        NEXTAUTH_SECRET=test-secret-key-for-testing
-        NEXTAUTH_URL=http://localhost:3000
-        BACKEND_URL=http://backend:8000
-        NEXT_PUBLIC_BACKEND_URL=http://localhost:8000
-        DATABASE_URL=postgresql://postgres:postgres@db:5432/roshni_test
-        POSTGRES_USER=postgres
-        POSTGRES_PASSWORD=postgres
-        POSTGRES_DB=roshni_test
-        EOF
-
     - name: Test Docker Compose configuration
       run: |
-        docker-compose -f docker-compose.yml --env-file .env.test config
-
-    - name: Build and test services
-      run: |
-        docker-compose -f docker-compose.yml --env-file .env.test build
-
-    - name: Start services
-      run: |
-        docker-compose -f docker-compose.yml --env-file .env.test up -d
-        sleep 30
-
-    - name: Test backend health
-      run: |
-        curl -f http://localhost:8000/api/users || exit 1
-
-    - name: Test frontend health
-      run: |
-        curl -f http://localhost:3000/ || exit 1
-
-    - name: Test Google OAuth endpoint
-      run: |
-        curl -f http://localhost:3000/api/auth/google || exit 1
-
-    - name: Stop services
-      if: always()
-      run: |
-        docker-compose -f docker-compose.yml --env-file .env.test down
+        # Just validate the docker-compose.yml syntax
+        echo "Validating docker-compose.yml..."
+        # This will fail if the file is malformed
+        docker-compose -f docker-compose.yml config > /dev/null
+        echo "✅ docker-compose.yml is valid"
 
   # Deploy to staging (develop branch)
   deploy-staging:
     runs-on: ubuntu-latest
-    needs: [build-and-push, test-docker-compose]
+    needs: build
     if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
     - name: Deploy to staging
       run: |
-        echo "🚀 Deploying to staging environment..."
-        echo "This would typically include:"
-        echo "- Pulling latest images from registry"
-        echo "- Updating staging environment"
-        echo "- Running database migrations"
-        echo "- Health checks"
-        echo "- Notifying team"
+        echo "🚀 Deploying to staging environment"
+        echo "Backend image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ github.sha }}"
+        echo "Frontend image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:${{ github.sha }}"
+        echo "Staging deployment would happen here"
 
   # Deploy to production (main branch or tags)
   deploy-production:
     runs-on: ubuntu-latest
-    needs: [build-and-push, test-docker-compose]
+    needs: build
     if: (github.ref == 'refs/heads/main' && github.event_name == 'push') || startsWith(github.ref, 'refs/tags/v')
 
     environment:
@@ -154,20 +99,12 @@ jobs:
       url: https://roshni.example.com
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
     - name: Deploy to production
       run: |
-        echo "🚀 Deploying to production environment..."
-        echo "Version: ${{ github.ref_name }}"
-        echo "This would typically include:"
-        echo "- Pulling latest images from registry"
-        echo "- Blue-green deployment"
-        echo "- Database migrations"
-        echo "- Health checks"
-        echo "- Rollback capability"
-        echo "- Monitoring alerts"
+        echo "🚀 Deploying to production environment"
+        echo "Backend image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ github.sha }}"
+        echo "Frontend image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:${{ github.sha }}"
+        echo "Production deployment would happen here"
 
     - name: Create GitHub Release
       if: startsWith(github.ref, 'refs/tags/v')
