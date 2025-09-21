@@ -1,0 +1,57 @@
+#### **Purpose & Goals**
+
+- The platform's drone imagery ingestion module must be built to comply with the DGCA's regulatory framework, ensuring all drone operations are based on trust, self-certification, and non-intrusive monitoring. (Source: <https://www.dgca.gov.in/digigov-portal/?page=jsp/dgca/common/droneRules.jsp>)
+- To facilitate the use of drones in emergency response, the platform must integrate with the DigitalSky single-window system to programmatically verify permissions and log flight plans for all connected drones. (Source: <https://www.dgca.gov.in/digigov-portal/?page=jsp/dgca/common/droneRules.jsp>)
+- The platform's shared map UI must clearly display DGCA-defined airspace restrictions (Red, Yellow, and Green zones) to ensure the safety and security of all drone imagery collection operations. (Source: <https://www.dgca.gov.in/digigov-portal/?page=jsp/dgca/common/droneRules.jsp>)
+
+#### **Stakeholders & Roles**
+
+- **System Administrator:** This platform role will be responsible for configuring DGCA compliance settings, managing API integrations with the DigitalSky platform, and auditing drone flight logs. (Source: <https://www.dgca.gov.in/digigov-portal/?page=jsp/dgca/common/droneRules.jsp>)
+- **Drone Operator (Role):** This platform role is responsible for registering their drone's Unique Identification Number (UIN) with the system and ensuring its airworthiness before connecting to stream live imagery. (Source: <https://www.dgca.gov.in/digigov-portal/?page=jsp/dgca/common/droneRules.jsp>)
+- **Remote Pilot (Role):** This platform role requires a valid remote pilot certificate number for authentication and is responsible for the safe conduct of the flight while streaming data to the platform's shared map. (Source: <https://www.dgca.gov.in/digigov-portal/?page=jsp/dgca/common/droneRules.jsp>)
+- **Incident Commander (Role):** This user will view the incoming drone feeds on the shared map, using the visual data to make tactical decisions while being aware of the drone's compliance status as reported by the platform. (Source: <https://www.dgca.gov.in/digigov-portal/?page=jsp/dgca/common/droneRules.jsp>)
+
+#### **Processes & Workflows**
+
+- **Drone Feed Authentication:** Before ingesting any drone imagery, the platform must have a workflow to verify the drone's UIN and Type Certificate against the DigitalSky platform's records. (Source: <https://www.dgca.gov.in/digigov-portal/?page=jsp/dgca/common/droneRules.jsp>)
+- **Automated Flight Clearance Check:** The platform must implement a workflow that automatically checks a drone's location against the interactive airspace map, permitting data ingestion for Green Zones and flagging feeds from Yellow or Red Zones for manual verification of clearance. (Source: <https://www.dgca.gov.in/digigov-portal/?page=jsp/dgca/common/droneRules.jsp>)
+- **NPNT Compliance Workflow:** The platform must enforce 'No Permission, No Take-off' (NPNT) compliance by requiring a valid, digitally signed permission artifact from DigitalSky before a drone's video stream can be activated and displayed on the shared map. (Source: <https://www.dgca.gov.in/digigov-portal/?page=jsp/dgca/common/droneRules.jsp>)
+
+#### **Data Requirements**
+
+- **Automated Flight Logging:** The platform must automatically log all drone flight data streamed to it, including the date, time, duration, and purpose (linked to a specific incident ID), and store these logs securely for a minimum of seven years. (Source: <https://www.dgca.gov.in/digigov-portal/?page=jsp/dgca/common/droneRules.jsp>)
+- **Secure Log Chaining:** To ensure data integrity for post-incident audits, the platform will implement a secure "flight log chaining" mechanism for all drone operational data, making the logs tamper-proof. (Source: <https://www.dgca.gov.in/digigov-portal/?page=jsp/dgca/common/droneRules.jsp>)
+- **Encrypted Data Transmission:** All drone imagery and telemetry data must be transmitted to the platform in an encrypted format to ensure data security during ingestion. (Source: <https://www.dgca.gov.in/digigov-portal/?page=jsp/dgca/common/droneRules.jsp>)
+- **Registration Data Storage:** The platform must securely store the registration data for each drone linked to it, including its UIN and owner/operator details, as required for compliance checks. (Source: <https://www.dgca.gov.in/digigov-portal/?page=jsp/dgca/common/droneRules.jsp>)
+
+#### **Constraints & Rules**
+
+- **Airspace Zone Display:** The platform's shared map UI must dynamically display the boundaries of Red, Yellow, and Green airspace zones and issue real-time alerts to the Incident Commander if a drone feed originates from or enters a restricted area. (Source: <https://www.dgca.gov.in/digigov-portal/?page=jsp/dgca/common/droneRules.jsp>)
+- **Altitude Monitoring:** The platform must ingest and monitor the drone's altitude data, flagging any operations in a Green Zone that exceed the 400-foot (120 meters) limit. (Source: <https://www.dgca.gov.in/digigov-portal/?page=jsp/dgca/common/droneRules.jsp>)
+- **Payload Restrictions:** For any drone operation, the platform will require the operator to declare the payload. The system will prohibit the activation of feeds from drones carrying unauthorized or dangerous goods. (Source: <https://www.dgca.gov.in/digigov-portal/?page=jsp/dgca/common/droneRules.jsp>)
+
+#### **Non-Functional Needs**
+
+- **Scalability:** The platform must be highly scalable to handle the ingestion of thousands of simultaneous drone video feeds during a large-scale disaster, mirroring the scalability requirements of the national DigitalSky system. (Source: <https://www.dgca.gov.in/digigov-portal/?page=jsp/dgca/common/droneRules.jsp>)
+- **High Availability:** The platform's drone ingestion module must be available 24/7 to allow operators to connect and stream data at any time, especially during a crisis when immediate visual information is critical. (Source: <https://www.dgca.gov.in/digigov-portal/?page=jsp/dgca/common/droneRules.jsp>)
+- **Performance:** The platform must process and display incoming drone video streams on the shared map with near-real-time latency to provide actionable intelligence to the Incident Commander. (Source: <https://www.dgca.gov.in/digigov-portal/?page=jsp/dgca/common/droneRules.jsp>)
+
+#### **Pain Points / Gaps**
+
+- **Addressing Skill Gaps:** The platform will feature an intuitive user interface and guided workflows for drone operators to simplify the process of compliant data streaming, helping to mitigate the existing skill gap for certified pilots. (Source: <https://www.dgca.gov.in/digigov-portal/?page=jsp/dgca/common/droneRules.jsp>)
+- **Enhancing Cybersecurity:** The platform will address cybersecurity concerns by mandating end-to-end encryption for all drone data streams and implementing robust authentication to prevent unauthorized access or hijacking of feeds. (Source: <https://www.dgca.gov.in/digigov-portal/?page=jsp/dgca/common/droneRules.jsp>)
+- **Centralized Traffic Management:** By displaying all authorized drone locations on a single shared map, the platform will function as a localized Unmanned Aircraft System (UAS) Traffic Management (UTM) system for the incident area, addressing the gap of a centralized system. (Source: <https://www.dgca.gov.in/digigov-portal/?page=jsp/dgca/common/droneRules.jsp>)
+
+#### **Outputs & Deliverables**
+
+- **Live Drone Feeds on Map:** The primary output will be the real-time display of multiple, geo-located drone video feeds layered onto the common operational picture. (Source: <https://www.dgca.gov.in/digigov-portal/?page=jsp/dgca/common/droneRules.jsp>)
+- **Automated Compliance Reports:** The platform will generate automated reports for each drone operation, detailing its flight path, duration, and compliance with DGCA rules, which can be used for after-action reviews. (Source: <https://www.dgca.gov.in/digigov-portal/?page=jsp/dgca/common/droneRules.jsp>)
+- **Incident-Specific Airspace Map:** The platform will deliver a dynamic, incident-specific version of the DGCA airspace map, showing all active friendly drones and known restricted zones to all relevant stakeholders. (Source: <https://www.dgca.gov.in/digigov-portal/?page=jsp/dgca/common/droneRules.jsp>)
+
+#### **Compliance & Accountability**
+
+- **Mandatory Insurance Verification:** The platform will require drone operators to upload proof of valid third-party insurance during registration and will flag any operator whose insurance is expired. (Source: <https://www.dgca.gov.in/digigov-portal/?page=jsp/dgca/common/droneRules.jsp>)
+- **Digital Audit Trail:** The platform will maintain a complete digital record of all drone-related transactions, including flight permissions and logs, to ensure full accountability and support audits. (Source: <https://www.dgca.gov.in/digigov-portal/?page=jsp/dgca/common/droneRules.jsp>)
+- **Automated Incident Reporting:** In case of a drone-related accident (e.g., crash), the platform will automatically flag the last known location and flight data and generate a preliminary incident report for submission to the DGCA. (Source: <https://www.dgca.gov.in/digigov-portal/?page=jsp/dgca/common/droneRules.jsp>
+
+)
