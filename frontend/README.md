@@ -1,69 +1,71 @@
-# React + TypeScript + Vite
+# ROSHNI Frontend (React TypeScript with Vite + SWC)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+The frontend is a React TypeScript app using Vite for fast builds (with SWC compiler), Zustand for state management, Material UI for design, and React Leaflet for maps. It provides role-based UI for disaster management.
 
-Currently, two official plugins are available:
+## Setup
+1. Navigate to the frontend directory:
+   ```
+   cd frontend
+   ```
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+2. Install dependencies:
+   ```
+   yarn install
+   ```
 
-## Expanding the ESLint configuration
+   Core deps include: `zustand`, `@mui/material`, `react-leaflet`, etc.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+3. Set up environment variables (create `.env` in `frontend/`):
+   ```
+   VITE_API_BASE_URL=http://localhost:8000
+   # Add more for maps API keys, etc.
+   ```
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Running the App
+- Run the development server:
+  ```
+  yarn dev
+  ```
+  - Access at http://localhost:5173
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+- Build for production:
+  ```
+  yarn build
+  ```
+  - Outputs to `dist/`
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## Testing
+We use Vitest with React Testing Library for unit/integration tests, and Cypress for E2E.
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+1. Run unit/integration tests:
+   ```
+   yarn test
+   ```
+   - Watch mode: `yarn test --watch`
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+2. Run E2E tests (if Cypress set up):
+   ```
+   yarn cypress open  # Or yarn e2e for headless
+   ```
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+3. Linting and formatting:
+   - Lint: `yarn lint`
+   - Format: `yarn format`
+
+For CI, tests run via GitHub Actions on push/PR.
+
+## Contributing
+Contributions are welcome! Follow the project's Forking Workflow:
+
+1. Fork the repository.
+2. Create a feature branch: `git checkout -b feature/your-feature`
+3. Commit changes: `git commit -m "Add your-feature"`
+4. Push: `git push origin feature/your-feature`
+5. Open a Pull Request to the main repo's `main` branch.
+
+- **Code Style**: Use ESLint + Prettier. Run `yarn lint` and `yarn format` before PR.
+- **Tests**: New components/features must include tests (RTL for UI, Vitest for logic).
+- **Issues**: Check GitHub Issues or create one.
+- **Reviews**: PRs require at least one approval.
+
+For full guidelines, see the root [CONTRIBUTING.md](../CONTRIBUTING.md).
