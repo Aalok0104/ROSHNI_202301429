@@ -1,0 +1,20 @@
+export const ROLES = {
+  CIVILIAN: 'civilian',
+  RESPONDER: 'responder',
+  COMMANDER: 'commander',
+  GUEST: 'guest',
+};
+
+export const PERMISSIONS = {
+  VIEW_HOME: 'view_home',
+  VIEW_CIVILIAN: 'view_civilian',
+  VIEW_RESPONDER: 'view_responder',
+  VIEW_COMMANDER: 'view_commander',
+};
+
+export const ROLES_PERMISSIONS: Record<string, string[]> = {
+  [ROLES.CIVILIAN]: [PERMISSIONS.VIEW_CIVILIAN, PERMISSIONS.VIEW_HOME],
+  [ROLES.RESPONDER]: [PERMISSIONS.VIEW_RESPONDER, PERMISSIONS.VIEW_HOME],
+  [ROLES.COMMANDER]: [PERMISSIONS.VIEW_COMMANDER, PERMISSIONS.VIEW_HOME],
+  [ROLES.GUEST]: [PERMISSIONS.VIEW_HOME],
+};
