@@ -3,6 +3,7 @@ import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import CommunicationPanel from '../components/CommunicationPanel';
 import MapPanel from '../components/MapPanel';
+import '../styles.css';
 
 export default function Responder() {
   const { user } = useAuth();

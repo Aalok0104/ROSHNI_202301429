@@ -1,3 +1,5 @@
+import '../styles.css';
+
 export default function Commander() {
   return (
     <div className="p-8">
