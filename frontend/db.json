@@ -1,0 +1,94 @@
+{
+  "users": [
+    {
+      "id": "1",
+      "username": "admin",
+      "password": "password",
+      "role": "admin",
+      "permissions": [
+        "view_dashboard",
+        "view_products",
+        "edit_product",
+        "delete_product"
+      ]
+    },
+    {
+      "id": "2",
+      "username": "manager",
+      "password": "password",
+      "role": "manager",
+      "permissions": [
+        "view_dashboard",
+        "view_products",
+        "edit_product"
+      ]
+    },
+    {
+      "id": "3",
+      "username": "user",
+      "password": "password",
+      "role": "user",
+      "permissions": [
+        "view_dashboard",
+        "view_products"
+      ]
+    },
+    {
+      "id": "78ad",
+      "username": "first",
+      "password": "password",
+      "role": "civilian",
+      "permissions": [
+        "view_civilian",
+        "view_home"
+      ]
+    },
+    {
+      "id": "1ea4",
+      "username": "hello",
+      "password": "password",
+      "role": "commander",
+      "permissions": [
+        "view_commander",
+        "view_home"
+      ]
+    },
+    {
+      "id": "c057",
+      "username": "sheel",
+      "password": "123456",
+      "role": "civilian",
+      "permissions": [
+        "view_civilian",
+        "view_home"
+      ]
+    },
+    {
+      "id": "b584",
+      "username": "bhaumik",
+      "password": "password",
+      "role": "responder",
+      "permissions": [
+        "view_responder",
+        "view_home"
+      ]
+    }
+  ],
+  "products": [
+    {
+      "id": "p1",
+      "name": "iPhone 16",
+      "price": 999
+    },
+    {
+      "id": "p2",
+      "name": "Samsung Galaxy S25",
+      "price": 899
+    },
+    {
+      "id": "p3",
+      "name": "Google Pixel 9",
+      "price": 799
+    }
+  ]
+}
