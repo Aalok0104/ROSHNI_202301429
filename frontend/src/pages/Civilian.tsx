@@ -1,3 +1,5 @@
+import '../styles.css';
+
 export default function Civilian() {
   return (
     <div className="p-8">

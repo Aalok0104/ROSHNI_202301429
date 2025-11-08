@@ -2,7 +2,7 @@ import axios from 'axios';
 import type { User } from '../context/AuthContext'; // We will create this next
 
 // JSON Server base URL
-const API_BASE_URL = 'http://localhost:3000';
+const API_BASE_URL = 'http://localhost:3001';
 
 export interface Product {
   id: string;

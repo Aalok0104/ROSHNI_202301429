@@ -1,38 +1,6 @@
 {
   "users": [
-    {
-      "id": "1",
-      "username": "admin",
-      "password": "password",
-      "role": "admin",
-      "permissions": [
-        "view_dashboard",
-        "view_products",
-        "edit_product",
-        "delete_product"
-      ]
-    },
-    {
-      "id": "2",
-      "username": "manager",
-      "password": "password",
-      "role": "manager",
-      "permissions": [
-        "view_dashboard",
-        "view_products",
-        "edit_product"
-      ]
-    },
-    {
-      "id": "3",
-      "username": "user",
-      "password": "password",
-      "role": "user",
-      "permissions": [
-        "view_dashboard",
-        "view_products"
-      ]
-    },
+
     {
       "id": "78ad",
       "username": "first",
@@ -50,6 +18,16 @@
       "role": "commander",
       "permissions": [
         "view_commander",
+        "view_home"
+      ]
+    },
+    {
+      "id": "rs69",
+      "username": "rushil",
+      "password": "roso",
+      "role": "responder",
+      "permissions": [
+        "view_responder",
         "view_home"
       ]
     },

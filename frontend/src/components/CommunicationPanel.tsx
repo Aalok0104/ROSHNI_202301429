@@ -1,6 +1,7 @@
 // src/components/CommunicationPanel.tsx
 import React, { useState } from 'react';
 import * as responderApi from '../api/responder';
+import '../styles.css';
 
 type Channel = 'radio' | 'chat' | 'call';
 
