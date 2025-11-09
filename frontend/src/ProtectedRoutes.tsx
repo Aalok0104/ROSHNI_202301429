@@ -8,17 +8,25 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const location = useLocation();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-200">
+        Checking credentials...
+      </div>
+    );
+  }
 
   // Not logged in -> redirect to login and keep intended path
   if (!user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <Navigate to="/" state={{ from: location }} replace />;
   }
 
   // If allowedRoles provided, ensure user's role is included
-  if (allowedRoles && allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
-    return <Navigate to="/unauthorized" replace />;
+  if (allowedRoles && allowedRoles.length > 0 && !allowedRoles.includes(user.role ?? '')) {
+    return <Navigate to="/" state={{ from: location, unauthorized: true }} replace />;
   }
 
   return <>{children}</>;

@@ -39,8 +39,12 @@ Create a `.env` file in the backend directory:
 # Database Configuration
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/roshni_db
 
-# For local development with SQLite
-# DATABASE_URL=sqlite:///./disaster_app.db
+# Google OAuth
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+FRONTEND_REDIRECT_URL=http://localhost:5173
+ALLOWED_ORIGINS=http://localhost:5173
+SESSION_SECRET=change-me
 ```
 
 ### 4. Database Setup
@@ -218,7 +222,7 @@ Tests use:
 
 ### Test Database
 
-Tests automatically create a temporary SQLite database and clean up after completion.
+Unit tests default to an in-memory SQLite database that exercises the ORM relationships without needing PostgreSQL or PostGIS. Set `DATABASE_URL` when you need to run the suite against a different database engine.
 
 ## 🐳 Docker Development
 
@@ -247,15 +251,16 @@ docker-compose up backend
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `DATABASE_URL` | Database connection string | `sqlite:///./disaster_app.db` |
+| `DATABASE_URL` | Database connection string | `postgresql://postgres:postgres@localhost:5432/roshni_db` |
+| `GOOGLE_CLIENT_ID` | OAuth client ID from Google Cloud | _(required)_ |
+| `GOOGLE_CLIENT_SECRET` | OAuth client secret from Google Cloud | _(required)_ |
+| `FRONTEND_REDIRECT_URL` | Where to send users after login/logout | `http://localhost:5173` |
+| `ALLOWED_ORIGINS` | Comma-separated list of origins for CORS | `http://localhost:5173` |
+| `SESSION_SECRET` | Key for signing session cookies | `!secret` |
 
 ### Database Configuration
 
-The application supports both PostgreSQL and SQLite:
-
-- **Production**: PostgreSQL with connection pooling
-- **Development**: SQLite for local development
-- **Testing**: In-memory SQLite
+PostgreSQL is the single source of truth for every environment. Use distinct databases (or schemas) for production, staging, and development as needed so infrastructure and features match what is defined in `backend/schemas`.
 
 ### CORS Configuration
 
@@ -308,8 +313,10 @@ psql -h localhost -U postgres -d roshni_db
 # View users table
 SELECT * FROM users;
 
-# Update user role
-UPDATE users SET role = 'commander' WHERE email = 'user@example.com';
+# Link a user to a role (assumes the role already exists)
+INSERT INTO user_roles (user_id, role_id)
+VALUES ('<user-uuid>', (SELECT id FROM roles WHERE name = 'commander'))
+ON CONFLICT (user_id, role_id) DO UPDATE SET role_id = EXCLUDED.role_id;
 ```
 
 ### Database Migrations
@@ -410,4 +417,3 @@ curl -X PUT http://localhost:8000/api/user/role \
 ```bash
 curl http://localhost:8000/api/users
 ```
-
