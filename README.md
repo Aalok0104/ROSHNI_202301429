@@ -21,22 +21,23 @@ cd ROSHNI
 Create a `.env` file in the root directory:
 
 ```bash
-# Google OAuth Configuration
+# PostgreSQL
+POSTGRES_USER=roshni
+POSTGRES_PASSWORD=roshni
+POSTGRES_DB=roshni
+DATABASE_URL=postgresql://roshni:roshni@db:5432/roshni
+
+# Google OAuth
 GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
 
-# NextAuth Configuration
-NEXTAUTH_SECRET=your-nextauth-secret-key
-NEXTAUTH_URL=http://localhost:3000
+# Frontend ↔ Backend coordination
+FRONTEND_REDIRECT_URL=http://localhost:3000
+ALLOWED_ORIGINS=http://localhost:3000
+VITE_BACKEND_URL=http://localhost:8000
 
-# Backend Configuration
-BACKEND_URL=http://backend:8000
-
-# Database Configuration
-DATABASE_URL=postgresql://postgres:postgres@db:5432/roshni_db
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=postgres
-POSTGRES_DB=roshni_db
+# Session cookie signing (generate with `openssl rand -hex 32`)
+SESSION_SECRET=replace-with-random-hex
 ```
 
 ### 3. Google OAuth Setup
@@ -69,12 +70,32 @@ docker-compose down
 - **Backend API**: http://localhost:8000
 - **Database**: localhost:5432
 
+## 🧑‍💻 Running Locally Without Docker
+
+1. **Database**
+   - Install PostgreSQL (e.g., `brew install postgresql` on macOS).
+   - Create the role/database:
+     ```bash
+     createuser --superuser roshni
+     createdb roshni
+     psql -c "ALTER USER roshni WITH PASSWORD 'roshni';"
+     psql -d roshni -c "CREATE EXTENSION IF NOT EXISTS postgis;"
+     ```
+2. **Backend**
+   - From `backend/`: `python -m venv venv && source venv/bin/activate`
+   - `pip install -r requirements.txt`
+   - Create `.env` with `DATABASE_URL=postgresql://roshni:roshni@localhost:5432/roshni`, Google credentials, `FRONTEND_REDIRECT_URL=http://localhost:5173`, `ALLOWED_ORIGINS=http://localhost:5173`, and a random `SESSION_SECRET`.
+   - Run `uvicorn app.main:app --reload --port 8000`.
+3. **Frontend**
+   - From `frontend/`: `npm install`
+   - Run `VITE_API_BASE_URL=http://localhost:8000 npm run dev` and open the printed Vite URL (default `http://localhost:5173`).
+
 ## 🏗️ Architecture
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   Frontend      │    │   Backend       │    │   Database      │
-│   (Next.js)     │◄──►│   (FastAPI)     │◄──►│   (PostgreSQL)  │
+│   (Vite + React)│◄──►│   (FastAPI)     │◄──►│   (PostgreSQL)  │
 │   Port: 3000    │    │   Port: 8000    │    │   Port: 5432    │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
@@ -83,18 +104,16 @@ docker-compose down
 
 ### User Roles
 
-- **User**: Default role for new registrations
+- **Civilian**: Default role for new registrations
 - **Responder**: Emergency response personnel
-- **Commander**: Administrative access to all features
+- **Controller**: Administrative access to all features
 
 ### OAuth Flow
 
 1. User clicks "Sign in with Google"
 2. Redirected to Google OAuth
 3. After authentication, user is created/retrieved from database
-4. Session established with role-based redirect:
-   - `commander` → Admin Dashboard
-   - `user`/`responder` → User Dashboard
+4. Backend establishes a signed session cookie and redirects back to the frontend, which renders the Civilian, Responder, or Controller dashboard shell accordingly.
 
 ## 📊 API Endpoints
 
@@ -115,7 +134,7 @@ POST /api/user/role
 PUT /api/user/role
 {
   "email": "user@example.com",
-  "role": "commander"
+  "role": "controller"
 }
 ```
 

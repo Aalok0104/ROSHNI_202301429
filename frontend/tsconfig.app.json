@@ -25,10 +25,5 @@
     "noUncheckedSideEffectImports": true
   },
   "include": ["src"],
-  "exclude": [
-    "src/api/database-setup-guide.ts",
-    "src/api/database-integration-guide.ts",
-    "src/context/auth-integration-guide.tsx",
-    "src/__tests__"
-  ]
+  "exclude": ["src/tests"]
 }

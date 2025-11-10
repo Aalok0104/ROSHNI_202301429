@@ -66,6 +66,9 @@ class User(Base):
     emergency_contacts = relationship(
         "EmergencyContact", back_populates="user", cascade="all, delete-orphan"
     )
+    disaster_reports = relationship(
+        "DisasterReport", back_populates="user", cascade="all, delete-orphan"
+    )
     family_requests_made = relationship(
         "UserFamilyLink",
         foreign_keys="[UserFamilyLink.requestor_user_id]",
@@ -477,6 +480,32 @@ class ComplianceAuditLog(Base):
     user_agent = Column(Text)
     timestamp = Column(DateTime(timezone=True), server_default=func.now())
     changes_made = Column(JSONBCompat())
+
+
+class DisasterReport(Base):
+    __tablename__ = "disaster_reports"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    type = Column(String(255), nullable=False)
+    location = Column(String(255), nullable=False)
+    description = Column(Text)
+    status = Column(String(50), default="reported")
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("User", back_populates="disaster_reports")
+
+
+class DisasterAssignment(Base):
+    __tablename__ = "disaster_assignments"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    disaster_id = Column(Integer, ForeignKey("disaster_reports.id"), nullable=False)
+    responder_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    assigned_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    disaster = relationship("DisasterReport")
+    responder = relationship("User")
 
 
 class GeneratedReport(Base):

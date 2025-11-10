@@ -19,7 +19,11 @@ for env_path in ENV_LOCATIONS:
     if env_path.exists():
         load_dotenv(env_path, override=False)
 
-SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://parshv@localhost:5432/roshni")
+for env_path in [BASE_DIR / ".env.local", BASE_DIR.parent / ".env.local"]:
+    if env_path.exists():
+        load_dotenv(env_path, override=True)
+
+SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://roshni:roshni@localhost:5432/roshni")
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL, pool_pre_ping=True, future=True)
 

@@ -47,6 +47,9 @@ ALLOWED_ORIGINS=http://localhost:5173
 SESSION_SECRET=change-me
 ```
 
+> `SESSION_SECRET` is a long, random string used by FastAPI's session middleware to sign cookies.
+> Generate one with `openssl rand -hex 32` (or any secure random generator) and keep it private.
+
 ### 4. Database Setup
 
 #### Option A: Local PostgreSQL
@@ -139,14 +142,14 @@ Content-Type: application/json
 
 {
   "email": "user@example.com",
-  "role": "commander"
+  "role": "controller"
 }
 ```
 
 **Response:**
 ```json
 {
-  "role": "commander",
+  "role": "controller",
   "name": "User Name",
   "email": "user@example.com"
 }
@@ -164,7 +167,7 @@ GET /api/users
     "id": "uuid-string",
     "email": "user@example.com",
     "name": "User Name",
-    "role": "commander"
+    "role": "controller"
   }
 ]
 ```
@@ -192,7 +195,7 @@ class User(Base):
 
 - **user**: Default role for new registrations
 - **responder**: Emergency response personnel
-- **commander**: Administrative access
+- **controller**: Administrative access
 
 ## 🧪 Testing
 
@@ -315,7 +318,7 @@ SELECT * FROM users;
 
 # Link a user to a role (assumes the role already exists)
 INSERT INTO user_roles (user_id, role_id)
-VALUES ('<user-uuid>', (SELECT id FROM roles WHERE name = 'commander'))
+VALUES ('<user-uuid>', (SELECT id FROM roles WHERE name = 'controller'))
 ON CONFLICT (user_id, role_id) DO UPDATE SET role_id = EXCLUDED.role_id;
 ```
 
@@ -409,7 +412,7 @@ curl -X POST http://localhost:8000/api/user/role \
 ```bash
 curl -X PUT http://localhost:8000/api/user/role \
   -H "Content-Type: application/json" \
-  -d '{"email": "test@example.com", "role": "commander"}'
+  -d '{"email": "test@example.com", "role": "controller"}'
 ```
 
 ### Get All Users

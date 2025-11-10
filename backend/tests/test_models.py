@@ -4,7 +4,7 @@ from app import models
 
 
 def test_user_profile_created_and_deleted_with_user(db_session):
-    role = models.Role(name="user", description="Default user role")
+    role = models.Role(name="civilian", description="Default user role")
     user = models.User(email="test@example.com", hashed_password="secret")
     profile = models.UserProfile(user=user, full_name="Test User")
     mapping = models.UserRole(user=user, role=role)
@@ -14,7 +14,7 @@ def test_user_profile_created_and_deleted_with_user(db_session):
 
     stored_user = db_session.query(models.User).filter_by(email="test@example.com").one()
     assert stored_user.profile.full_name == "Test User"
-    assert stored_user.roles[0].role.name == "user"
+    assert stored_user.roles[0].role.name == "civilian"
 
     db_session.delete(stored_user)
     db_session.commit()
@@ -24,11 +24,11 @@ def test_user_profile_created_and_deleted_with_user(db_session):
 
 
 def test_user_role_reassignment_overwrites_existing_mapping(db_session):
-    base_role = models.Role(name="user")
-    commander_role = models.Role(name="commander")
+    base_role = models.Role(name="civilian")
+    controller_role = models.Role(name="controller")
     user = models.User(email="cmdr@example.com", hashed_password="secret")
 
-    db_session.add_all([base_role, commander_role, user])
+    db_session.add_all([base_role, controller_role, user])
     db_session.flush()
 
     db_session.add(models.UserRole(user_id=user.id, role_id=base_role.id))
@@ -37,11 +37,11 @@ def test_user_role_reassignment_overwrites_existing_mapping(db_session):
     mapping = db_session.query(models.UserRole).filter_by(user_id=user.id).one()
     assert mapping.role_id == base_role.id
 
-    mapping.role_id = commander_role.id
+    mapping.role_id = controller_role.id
     db_session.commit()
 
     updated_mapping = db_session.query(models.UserRole).filter_by(user_id=user.id).one()
-    assert updated_mapping.role_id == commander_role.id
+    assert updated_mapping.role_id == controller_role.id
 
 
 def test_family_link_constraint_blocks_self_reference(db_session):
