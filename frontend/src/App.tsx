@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import type { ComponentType } from 'react';
 import './App.css';
 import { API_ENDPOINTS } from './config';
 import { redirectTo } from './navigation';
@@ -11,7 +12,7 @@ type AppProps = {
   onBeginLogin?: (url: string) => void;
 };
 
-type DashboardComponent = (props: { user: SessionUser }) => JSX.Element;
+type DashboardComponent = ComponentType<{ user: SessionUser }>;
 
 const DASHBOARD_COMPONENTS: Record<UserRole, DashboardComponent> = {
   civilian: CivilianDashboard,
