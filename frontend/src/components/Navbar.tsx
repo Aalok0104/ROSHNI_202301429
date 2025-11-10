@@ -33,6 +33,7 @@ export function Navbar() {
             <Link to="/" className="nav-link">Home</Link>
             {/* hide the Dashboard link for civilians to avoid navigation loops */}
             {user && user.role !== 'civilian' && <Link to="/dashboard" className="nav-link">Dashboard</Link>}
+            {user && (user.role === 'commander' || user.role === 'responder') && <Link to="/resources" className="nav-link">Resources</Link>}
             {user?.role === 'commander' && <Link to="/commander" className="nav-link">Commander</Link>}
             {user?.role === 'responder' && <Link to="/responder" className="nav-link">Responder</Link>}
             {user?.role === 'civilian' && <Link to="/civilian" className="nav-link nav-link-active">Civilian</Link>}

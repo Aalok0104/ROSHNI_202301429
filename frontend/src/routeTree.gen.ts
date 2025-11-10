@@ -9,128 +9,50 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as ProtectedIndexRouteImport } from './routes/_protected/index'
-import { Route as ProtectedProductsRouteImport } from './routes/_protected/products'
-import { Route as ProtectedDashboardRouteImport } from './routes/_protected/dashboard'
-import { Route as AuthUnauthorizedRouteImport } from './routes/_auth/unauthorized'
-import { Route as AuthLoginRouteImport } from './routes/_auth/login'
+import { Route as ProtectedResourcesRouteImport } from './routes/_protected/resources'
 
-const ProtectedIndexRoute = ProtectedIndexRouteImport.update({
-  id: '/_protected/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProtectedProductsRoute = ProtectedProductsRouteImport.update({
-  id: '/_protected/products',
-  path: '/products',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProtectedDashboardRoute = ProtectedDashboardRouteImport.update({
-  id: '/_protected/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthUnauthorizedRoute = AuthUnauthorizedRouteImport.update({
-  id: '/_auth/unauthorized',
-  path: '/unauthorized',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthLoginRoute = AuthLoginRouteImport.update({
-  id: '/_auth/login',
-  path: '/login',
+const ProtectedResourcesRoute = ProtectedResourcesRouteImport.update({
+  id: '/_protected/resources',
+  path: '/resources',
   getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/login': typeof AuthLoginRoute
-  '/unauthorized': typeof AuthUnauthorizedRoute
-  '/dashboard': typeof ProtectedDashboardRoute
-  '/products': typeof ProtectedProductsRoute
-  '/': typeof ProtectedIndexRoute
+  '/resources': typeof ProtectedResourcesRoute
 }
 export interface FileRoutesByTo {
-  '/login': typeof AuthLoginRoute
-  '/unauthorized': typeof AuthUnauthorizedRoute
-  '/dashboard': typeof ProtectedDashboardRoute
-  '/products': typeof ProtectedProductsRoute
-  '/': typeof ProtectedIndexRoute
+  '/resources': typeof ProtectedResourcesRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/_auth/login': typeof AuthLoginRoute
-  '/_auth/unauthorized': typeof AuthUnauthorizedRoute
-  '/_protected/dashboard': typeof ProtectedDashboardRoute
-  '/_protected/products': typeof ProtectedProductsRoute
-  '/_protected/': typeof ProtectedIndexRoute
+  '/_protected/resources': typeof ProtectedResourcesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/login' | '/unauthorized' | '/dashboard' | '/products' | '/'
+  fullPaths: '/resources'
   fileRoutesByTo: FileRoutesByTo
-  to: '/login' | '/unauthorized' | '/dashboard' | '/products' | '/'
-  id:
-    | '__root__'
-    | '/_auth/login'
-    | '/_auth/unauthorized'
-    | '/_protected/dashboard'
-    | '/_protected/products'
-    | '/_protected/'
+  to: '/resources'
+  id: '__root__' | '/_protected/resources'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  AuthLoginRoute: typeof AuthLoginRoute
-  AuthUnauthorizedRoute: typeof AuthUnauthorizedRoute
-  ProtectedDashboardRoute: typeof ProtectedDashboardRoute
-  ProtectedProductsRoute: typeof ProtectedProductsRoute
-  ProtectedIndexRoute: typeof ProtectedIndexRoute
+  ProtectedResourcesRoute: typeof ProtectedResourcesRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/_protected/': {
-      id: '/_protected/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof ProtectedIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_protected/products': {
-      id: '/_protected/products'
-      path: '/products'
-      fullPath: '/products'
-      preLoaderRoute: typeof ProtectedProductsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_protected/dashboard': {
-      id: '/_protected/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof ProtectedDashboardRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_auth/unauthorized': {
-      id: '/_auth/unauthorized'
-      path: '/unauthorized'
-      fullPath: '/unauthorized'
-      preLoaderRoute: typeof AuthUnauthorizedRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_auth/login': {
-      id: '/_auth/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof AuthLoginRouteImport
+    '/_protected/resources': {
+      id: '/_protected/resources'
+      path: '/resources'
+      fullPath: '/resources'
+      preLoaderRoute: typeof ProtectedResourcesRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
-  AuthLoginRoute: AuthLoginRoute,
-  AuthUnauthorizedRoute: AuthUnauthorizedRoute,
-  ProtectedDashboardRoute: ProtectedDashboardRoute,
-  ProtectedProductsRoute: ProtectedProductsRoute,
-  ProtectedIndexRoute: ProtectedIndexRoute,
+  ProtectedResourcesRoute: ProtectedResourcesRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
