@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard';
 import Civilian from './pages/Civilian';
 import Responder from './pages/Responder';
 import Commander from './pages/Commander';
+import Profile from './pages/Profile';
 import Unauthorized from './pages/Unauthorized';
 import NotFound from './pages/NotFound';
 import { Navbar } from './components/Navbar';
@@ -23,6 +24,7 @@ function App() {
           <Route path="/signup" element={<Signup />} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/civilian" element={<ProtectedRoute allowedRoles={["civilian"]}><Civilian /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/responder" element={<ProtectedRoute allowedRoles={["responder"]}><Responder /></ProtectedRoute>} />
           <Route path="/commander" element={<ProtectedRoute allowedRoles={["commander"]}><Commander /></ProtectedRoute>} />
           <Route path="/unauthorized" element={<Unauthorized />} />

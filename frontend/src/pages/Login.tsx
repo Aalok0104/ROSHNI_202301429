@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import '../styles.css';
 
@@ -29,17 +29,55 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white">
-      <div className="w-full max-w-md p-6 border rounded shadow">
-        <h2 className="text-2xl mb-4">Login</h2>
-        <form onSubmit={handleSubmit}>
-          <label className="block mb-2">Username</label>
-          <input className="w-full p-2 border rounded mb-3" value={username} onChange={(e) => setUsername(e.target.value)} />
-          <label className="block mb-2">Password</label>
-          <input type="password" className="w-full p-2 border rounded mb-3" value={password} onChange={(e) => setPassword(e.target.value)} />
-          {error && <div className="text-red-600 mb-3">{error}</div>}
-          <button className="w-full bg-blue-600 text-white py-2 rounded" type="submit">Login</button>
-        </form>
+    <div className="auth-page">
+      <div className="auth-container">
+        <div className="auth-card">
+          <div className="auth-header">
+            <h2 className="auth-form-title">Welcome Back</h2>
+          </div>
+          
+          <div className="auth-body">
+            <p className="auth-form-subtitle">Sign in to access your account</p>
+            
+            <form onSubmit={handleSubmit} className="auth-form">
+              <div className="form-group">
+                <label className="auth-label" htmlFor="login-username">Username</label>
+                <input 
+                  id="login-username"
+                  className="auth-input" 
+                  value={username} 
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Enter your username"
+                />
+              </div>
+              
+              <div className="form-group">
+                <label className="auth-label" htmlFor="login-password">Password</label>
+                <input 
+                  id="login-password"
+                  type="password" 
+                  className="auth-input" 
+                  value={password} 
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                />
+              </div>
+              
+              {error && <div className="auth-error">{error}</div>}
+              
+              <button className="auth-button auth-button-primary" type="submit">
+                Sign In
+              </button>
+            </form>
+            
+            <div className="auth-footer">
+              <p className="auth-footer-text">
+                Don't have an account?{' '}
+                <Link to="/signup" className="auth-link">Create one now</Link>
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

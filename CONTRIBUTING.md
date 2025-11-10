@@ -121,7 +121,7 @@ Your contribution is not complete unless it includes testing.
 
 **What Happens If a CI Check Fails?**
 
-On your Pull Request page, you will see a red '❌' next to a check if it fails.
+On your Pull Request page, you will see a red cross next to a check if it fails.
 
 1. Click "Details" next to the failed check.
 
@@ -131,4 +131,4 @@ On your Pull Request page, you will see a red '❌' next to a check if it fails.
 
 4. Commit and push the fix to your feature branch. The Pull Request will automatically update and the CI checks will run again.
 
-Repeat this cycle until all checks pass with a green '✅'. At that point, your PR is ready for a final human review!
+Repeat this cycle until all checks pass with a green check. At that point, your PR is ready for a final human review!
