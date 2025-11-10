@@ -2,7 +2,7 @@
 
 A comprehensive disaster response coordination platform built with Next.js, FastAPI, and PostgreSQL, featuring Google OAuth authentication and role-based access control.
 
-##  Quick Start with Docker
+## 🚀 Quick Start with Docker
 
 ### Prerequisites
 
@@ -21,22 +21,23 @@ cd ROSHNI
 Create a `.env` file in the root directory:
 
 ```bash
-# Google OAuth Configuration
+# PostgreSQL
+POSTGRES_USER=roshni
+POSTGRES_PASSWORD=roshni
+POSTGRES_DB=roshni
+DATABASE_URL=postgresql://roshni:roshni@db:5432/roshni
+
+# Google OAuth
 GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
 
-# NextAuth Configuration
-NEXTAUTH_SECRET=your-nextauth-secret-key
-NEXTAUTH_URL=http://localhost:3000
+# Frontend ↔ Backend coordination
+FRONTEND_REDIRECT_URL=http://localhost:3000
+ALLOWED_ORIGINS=http://localhost:3000
+VITE_BACKEND_URL=http://localhost:8000
 
-# Backend Configuration
-BACKEND_URL=http://backend:8000
-
-# Database Configuration
-DATABASE_URL=postgresql://postgres:postgres@db:5432/roshni_db
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=postgres
-POSTGRES_DB=roshni_db
+# Session cookie signing (generate with `openssl rand -hex 32`)
+SESSION_SECRET=replace-with-random-hex
 ```
 
 ### 3. Google OAuth Setup
@@ -69,34 +70,52 @@ docker-compose down
 - **Backend API**: http://localhost:8000
 - **Database**: localhost:5432
 
-##  Architecture
+## 🧑‍💻 Running Locally Without Docker
+
+1. **Database**
+   - Install PostgreSQL (e.g., `brew install postgresql` on macOS).
+   - Create the role/database:
+     ```bash
+     createuser --superuser roshni
+     createdb roshni
+     psql -c "ALTER USER roshni WITH PASSWORD 'roshni';"
+     psql -d roshni -c "CREATE EXTENSION IF NOT EXISTS postgis;"
+     ```
+2. **Backend**
+   - From `backend/`: `python -m venv venv && source venv/bin/activate`
+   - `pip install -r requirements.txt`
+   - Create `.env` with `DATABASE_URL=postgresql://roshni:roshni@localhost:5432/roshni`, Google credentials, `FRONTEND_REDIRECT_URL=http://localhost:5173`, `ALLOWED_ORIGINS=http://localhost:5173`, and a random `SESSION_SECRET`.
+   - Run `uvicorn app.main:app --reload --port 8000`.
+3. **Frontend**
+   - From `frontend/`: `npm install`
+   - Run `VITE_API_BASE_URL=http://localhost:8000 npm run dev` and open the printed Vite URL (default `http://localhost:5173`).
+
+## 🏗️ Architecture
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   Frontend      │    │   Backend       │    │   Database      │
-│   (Next.js)     │◄──►│   (FastAPI)     │◄──►│   (PostgreSQL)  │
+│   (Vite + React)│◄──►│   (FastAPI)     │◄──►│   (PostgreSQL)  │
 │   Port: 3000    │    │   Port: 8000    │    │   Port: 5432    │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
-##  Authentication & Authorization
+## 🔐 Authentication & Authorization
 
 ### User Roles
 
-- **User**: Default role for new registrations
+- **Civilian**: Default role for new registrations
 - **Responder**: Emergency response personnel
-- **Commander**: Administrative access to all features
+- **Controller**: Administrative access to all features
 
 ### OAuth Flow
 
 1. User clicks "Sign in with Google"
 2. Redirected to Google OAuth
 3. After authentication, user is created/retrieved from database
-4. Session established with role-based redirect:
-   - `commander` → Admin Dashboard
-   - `user`/`responder` → User Dashboard
+4. Backend establishes a signed session cookie and redirects back to the frontend, which renders the Civilian, Responder, or Controller dashboard shell accordingly.
 
-##  API Endpoints
+## 📊 API Endpoints
 
 ### User Management
 
@@ -115,11 +134,11 @@ POST /api/user/role
 PUT /api/user/role
 {
   "email": "user@example.com",
-  "role": "commander"
+  "role": "controller"
 }
 ```
 
-##  Testing
+## 🧪 Testing
 
 ### Run All Tests
 
@@ -141,7 +160,7 @@ curl http://localhost:8000/api/users
 curl http://localhost:3000/
 ```
 
-##  Development
+## 🛠️ Development
 
 ### Individual Component Development
 
@@ -161,7 +180,7 @@ docker exec -it roshni-db-1 psql -U postgres -d roshni_db
 SELECT * FROM users;
 ```
 
-##  Project Structure
+## 📁 Project Structure
 
 ```
 ROSHNI/
@@ -184,7 +203,7 @@ ROSHNI/
 └── README.md               # This file
 ```
 
-##  Configuration
+## 🔧 Configuration
 
 ### Environment Variables
 
@@ -203,7 +222,7 @@ ROSHNI/
 - **backend**: FastAPI application with auto-reload
 - **db**: PostgreSQL database with PostGIS extension
 
-##  Deployment
+## 🚀 Deployment
 
 ### Production Deployment
 
@@ -220,7 +239,7 @@ ROSHNI/
 docker-compose -f docker-compose.prod.yml up -d
 ```
 
-##  Contributing
+## 📝 Contributing
 
 1. Fork the repository
 2. Create a feature branch
@@ -228,11 +247,11 @@ docker-compose -f docker-compose.prod.yml up -d
 4. Add tests
 5. Submit a pull request
 
-##  License
+## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-##  Troubleshooting
+## 🆘 Troubleshooting
 
 ### Common Issues
 
@@ -253,6 +272,6 @@ docker-compose logs backend
 docker-compose logs db
 ```
 
-##  Support
+## 📞 Support
 
 For support and questions, please open an issue in the repository.

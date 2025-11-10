@@ -1,96 +1,31 @@
-## Notes about this project (RBAC + routing changes)
+# ROSHNI Frontend
 
-- This workspace was updated to use React Router (react-router-dom) instead of TanStack Router for a simpler routing setup.
-- Basic role-based access control (civilian, responder, commander) was added. Authentication uses a mock token stored in sessionStorage and user info in sessionStorage as well.
-- Tailwind CSS directives were added to `src/index.css` and a minimal `tailwind.config.cjs` was created. You should run `npm install` to ensure dependencies are present.
+This frontend now provides a single, purpose-built login experience that defers all authentication logic to the FastAPI backend. The page renders the ROSHNI mark on the left, a vertical divider, and the Google sign-in action on the right to match the requested layout.
 
-Quick setup (PowerShell):
+## How it works
 
-```powershell
-npm install
-# start the json-server (if you use the included db.json)
-npx json-server --watch db.json --port 3001
-# start the dev server
-npm run dev
+- On load the app calls `GET /api/auth/session` (with `credentials: include`) to determine whether a session cookie issued by the backend already exists.
+- Selecting **Continue with Google** redirects the browser to the backend at `/api/auth/google/login`, allowing the backend to own the OAuth flow end-to-end.
+- When Google redirects back to the backend a signed session cookie is set; the frontend only consumes the resulting session payload and never stores tokens.
+- New accounts are automatically provisioned with the **Civilian** role as enforced by the backend.
+- When a session exists the UI shows the ROSHNI navbar (logo left, logout right) and three placeholder dashboards (Civilian, Responder, Controller) rendered as blank black canvases until real data is wired up.
+
+## Local development
+
+1. Start the backend (see `../backend/README.md`) so that the `/api/auth/*` routes are available.
+2. From this directory install dependencies and start Vite:
+   ```bash
+   npm install
+   npm run dev
+   ```
+3. (Optional) Point the UI at a different backend by exporting `VITE_API_BASE_URL` before running Vite.
+
+## Testing
+
+Run the Vitest suite to exercise the login view, Google redirect trigger, and session state handling:
+
+```bash
+npm run test
 ```
 
-If you prefer not to install additional packages, the project will still work with plain CSS; Tailwind directives will be ignored unless Tailwind is installed and configured.
-# React + TypeScript + Vite
-
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
-
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
-
-## React Compiler
-
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
-
-Note: This will impact Vite dev & build performances.
-
-The React Compiler is enabled on this template. See [this documentation](https://react.dev/learn/react-compiler) for more information.
-
-Note: This will impact Vite dev & build performances.
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+All obsolete JSON-server files, router stubs, and unused components were removed to keep the project focused on this flow.
