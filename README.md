@@ -2,7 +2,7 @@
 
 A comprehensive disaster response coordination platform built with Next.js, FastAPI, and PostgreSQL, featuring Google OAuth authentication and role-based access control.
 
-## 🚀 Quick Start with Docker
+##  Quick Start with Docker
 
 ### Prerequisites
 
@@ -69,7 +69,7 @@ docker-compose down
 - **Backend API**: http://localhost:8000
 - **Database**: localhost:5432
 
-## 🏗️ Architecture
+##  Architecture
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
@@ -79,7 +79,7 @@ docker-compose down
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
-## 🔐 Authentication & Authorization
+##  Authentication & Authorization
 
 ### User Roles
 
@@ -96,7 +96,7 @@ docker-compose down
    - `commander` → Admin Dashboard
    - `user`/`responder` → User Dashboard
 
-## 📊 API Endpoints
+##  API Endpoints
 
 ### User Management
 
@@ -119,7 +119,7 @@ PUT /api/user/role
 }
 ```
 
-## 🧪 Testing
+##  Testing
 
 ### Run All Tests
 
@@ -141,7 +141,7 @@ curl http://localhost:8000/api/users
 curl http://localhost:3000/
 ```
 
-## 🛠️ Development
+##  Development
 
 ### Individual Component Development
 
@@ -161,7 +161,7 @@ docker exec -it roshni-db-1 psql -U postgres -d roshni_db
 SELECT * FROM users;
 ```
 
-## 📁 Project Structure
+##  Project Structure
 
 ```
 ROSHNI/
@@ -184,7 +184,7 @@ ROSHNI/
 └── README.md               # This file
 ```
 
-## 🔧 Configuration
+##  Configuration
 
 ### Environment Variables
 
@@ -203,7 +203,7 @@ ROSHNI/
 - **backend**: FastAPI application with auto-reload
 - **db**: PostgreSQL database with PostGIS extension
 
-## 🚀 Deployment
+##  Deployment
 
 ### Production Deployment
 
@@ -220,7 +220,7 @@ ROSHNI/
 docker-compose -f docker-compose.prod.yml up -d
 ```
 
-## 📝 Contributing
+##  Contributing
 
 1. Fork the repository
 2. Create a feature branch
@@ -228,11 +228,11 @@ docker-compose -f docker-compose.prod.yml up -d
 4. Add tests
 5. Submit a pull request
 
-## 📄 License
+##  License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🆘 Troubleshooting
+##  Troubleshooting
 
 ### Common Issues
 
@@ -253,6 +253,6 @@ docker-compose logs backend
 docker-compose logs db
 ```
 
-## 📞 Support
+##  Support
 
 For support and questions, please open an issue in the repository.
