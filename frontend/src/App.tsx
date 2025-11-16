@@ -6,6 +6,8 @@ import { redirectTo } from './navigation';
 import CivilianDashboard from './dashboards/CivilianDashboard';
 import ResponderDashboard from './dashboards/ResponderDashboard';
 import CommanderDashboard from './dashboards/CommanderDashboard';
+import RegistrationForm from './components/RegistrationForm';
+import type { RegistrationData } from './components/RegistrationForm';
 import type { UserRole, SessionUser, SessionResponse } from './types';
 
 type AppProps = {
@@ -104,6 +106,7 @@ function App({ onBeginLogin = redirectTo }: AppProps = {}) {
   const [checkingSession, setCheckingSession] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [showRegistration, setShowRegistration] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -120,8 +123,13 @@ function App({ onBeginLogin = redirectTo }: AppProps = {}) {
 
         const payload = (await response.json()) as SessionResponse;
         if (isMounted) {
-          setUser(payload.user ?? null);
+          const currentUser = payload.user ?? null;
+          setUser(currentUser);
           setError(null);
+          // Check if user needs to complete registration
+          if (currentUser?.needsRegistration) {
+            setShowRegistration(true);
+          }
         }
       } catch (fetchError) {
         if (!isMounted) return;
@@ -158,12 +166,65 @@ function App({ onBeginLogin = redirectTo }: AppProps = {}) {
       if (!response.ok) throw new Error('Unable to log out');
       setUser(null);
       setError(null);
+      setShowRegistration(false);
     } catch {
       setError('Unable to contact the authentication service. Please retry.');
     } finally {
       setLoggingOut(false);
     }
   };
+
+  const handleRegistrationComplete = async (data: RegistrationData) => {
+    try {
+      const response = await fetch(API_ENDPOINTS.completeRegistration, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          email: user?.email,
+          fullName: data.fullName,
+          phoneNumber: data.phoneNumber,
+          address: data.address,
+          dateOfBirth: data.dateOfBirth,
+          role: data.role,
+          emergencyContactName: data.emergencyContactName,
+          emergencyContactPhone: data.emergencyContactPhone,
+          medicalInfo: data.medicalInfo,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to complete registration');
+      }
+
+      const updatedUser = await response.json();
+      setUser(updatedUser.user);
+      setShowRegistration(false);
+      setError(null);
+    } catch (err) {
+      throw err; // Let the form handle the error display
+    }
+  };
+
+  const handleRegistrationCancel = async () => {
+    // Log out the user if they cancel registration
+    await handleLogout();
+  };
+
+  // Show registration form if user needs to complete registration
+  if (showRegistration && user) {
+    return (
+      <RegistrationForm
+        email={user.email}
+        googleName={user.name || undefined}
+        onSubmit={handleRegistrationComplete}
+        onCancel={handleRegistrationCancel}
+      />
+    );
+  }
 
   if (user) {
     return <DashboardView user={user} onLogout={handleLogout} loggingOut={loggingOut} />;

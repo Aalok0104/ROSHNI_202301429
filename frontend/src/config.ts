@@ -7,4 +7,7 @@ export const API_ENDPOINTS = {
   session: `${API_BASE_URL}/api/auth/session`,
   googleLogin: `${API_BASE_URL}/api/auth/google/login`,
   logout: `${API_BASE_URL}/api/auth/logout`,
+  completeRegistration: `${API_BASE_URL}/api/auth/complete-registration`,
+  responders: `${API_BASE_URL}/api/responders`,
+  chatGroups: `${API_BASE_URL}/api/chat/groups`,
 } as const;
