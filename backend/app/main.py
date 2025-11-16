@@ -1,6 +1,7 @@
 import logging
 from typing import Dict, Optional
 import os
+import uuid
 
 from authlib.integrations.starlette_client import OAuth
 from fastapi import Depends, FastAPI, HTTPException
@@ -95,18 +96,24 @@ def ensure_role(db: Session, role_name: str) -> models.Role:
     return role
 
 
-def serialize_user(user: models.User) -> Dict[str, Optional[str]]:
+def serialize_user(user: models.User, needs_registration: bool = False) -> Dict[str, Optional[str]]:
     profile_name = user.profile.full_name if user.profile else None
     role_name = None
     if user.roles:
         linked_role = user.roles[0].role
         role_name = linked_role.name if linked_role else None
 
-    return {
+    result = {
+        "id": str(user.id),
         "email": user.email,
         "name": profile_name,
         "role": role_name,
     }
+    
+    if needs_registration:
+        result["needsRegistration"] = True
+    
+    return result
 
 
 def upsert_user_profile(db: Session, user: models.User, display_name: Optional[str]) -> None:
@@ -159,22 +166,33 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Email not found in user info")
 
     user = db.query(models.User).filter(models.User.email == email).first()
+    is_new_user = False
+    
     if not user:
+        # New user - create minimal user record and mark for registration
         user = models.User(email=email, hashed_password="oauth")
         db.add(user)
         db.flush()
-        upsert_user_profile(db, user, name)
-        upsert_user_role(db, user, DEFAULT_ROLE_NAME)
+        is_new_user = True
         db.commit()
         db.refresh(user)
     else:
+        # Existing user - update profile if needed
         upsert_user_profile(db, user, name)
         if not user.roles:
             upsert_user_role(db, user, DEFAULT_ROLE_NAME)
         db.commit()
         db.refresh(user)
 
-    request.session["user"] = serialize_user(user)
+    # Store user in session with registration flag if new
+    request.session["user"] = serialize_user(user, needs_registration=is_new_user)
+    
+    if is_new_user:
+        # Store temporary data for registration completion
+        request.session["registration_pending"] = {
+            "email": email,
+            "google_name": name,
+        }
 
     response = RedirectResponse(url=frontend_redirect_url)
     logger.warning("Callback redirect Location header = %r", response.headers.get("location"))
@@ -193,6 +211,92 @@ async def get_session(request: Request):
 async def logout(request: Request):
     request.session.clear()
     return JSONResponse({"success": True})
+
+
+@app.post("/api/auth/complete-registration")
+async def complete_registration(request: Request, db: Session = Depends(get_db)):
+    """Complete user registration with additional details"""
+    user_session = request.session.get("user")
+    if not user_session:
+        raise HTTPException(401, "Not authenticated")
+    
+    if not user_session.get("needsRegistration"):
+        raise HTTPException(400, "User has already completed registration")
+    
+    try:
+        data = await request.json()
+    except Exception:
+        raise HTTPException(400, "Invalid JSON data")
+    
+    email = user_session.get("email")
+    if not email or email != data.get("email"):
+        raise HTTPException(400, "Email mismatch")
+    
+    # Required fields
+    full_name = data.get("fullName")
+    phone_number = data.get("phoneNumber")
+    date_of_birth = data.get("dateOfBirth")
+    role = data.get("role", DEFAULT_ROLE_NAME)
+    
+    if not full_name or not phone_number or not date_of_birth:
+        raise HTTPException(400, "Missing required fields: fullName, phoneNumber, dateOfBirth")
+    
+    if role not in ALLOWED_ROLES:
+        raise HTTPException(400, f"Invalid role. Must be one of: {', '.join(ALLOWED_ROLES)}")
+    
+    # Get user
+    user = db.query(models.User).filter(models.User.email == email).first()
+    if not user:
+        raise HTTPException(404, "User not found")
+    
+    # Update phone number
+    user.phone_number = phone_number
+    
+    # Create/Update profile
+    if user.profile:
+        user.profile.full_name = full_name
+        user.profile.address = data.get("address")
+        user.profile.date_of_birth = date_of_birth
+        
+        # Update medical info if provided
+        medical_info = data.get("medicalInfo")
+        if medical_info:
+            user.profile.medical_info = {"notes": medical_info}
+    else:
+        profile = models.UserProfile(
+            user_id=user.id,
+            full_name=full_name,
+            address=data.get("address"),
+            date_of_birth=date_of_birth,
+            medical_info={"notes": data.get("medicalInfo", "")} if data.get("medicalInfo") else {},
+            privacy_settings={}
+        )
+        db.add(profile)
+    
+    # Assign role
+    upsert_user_role(db, user, role)
+    
+    # Add emergency contact if provided
+    emergency_contact_name = data.get("emergencyContactName")
+    emergency_contact_phone = data.get("emergencyContactPhone")
+    
+    if emergency_contact_name and emergency_contact_phone:
+        emergency_contact = models.EmergencyContact(
+            user_id=user.id,
+            full_name=emergency_contact_name,
+            phone_number=emergency_contact_phone,
+            relationship_label="Emergency Contact"
+        )
+        db.add(emergency_contact)
+    
+    db.commit()
+    db.refresh(user)
+    
+    # Update session - remove registration flag
+    request.session["user"] = serialize_user(user, needs_registration=False)
+    request.session.pop("registration_pending", None)
+    
+    return {"user": serialize_user(user), "message": "Registration completed successfully"}
 
 @app.post("/api/user/role")
 def create_or_update_user_role(data: dict, db: Session = Depends(get_db)):
@@ -306,3 +410,263 @@ def update_disaster_status(disaster_id: int, data: dict, db: Session = Depends(g
     db.commit()
     db.refresh(disaster)
     return disaster
+
+
+# Chat Group Management Endpoints
+@app.get("/api/responders")
+def get_all_responders(request: Request, db: Session = Depends(get_db)):
+    """Get all users with responder role - only accessible by commanders"""
+    user_info = request.session.get("user")
+    if not user_info:
+        raise HTTPException(401, "Not authenticated")
+    
+    # Check if user is commander
+    if user_info.get("role") != "commander":
+        raise HTTPException(403, "Only commanders can view responders list")
+    
+    # Get responder role
+    responder_role = db.query(models.Role).filter(models.Role.name == "responder").first()
+    if not responder_role:
+        return []
+    
+    # Get all users with responder role
+    responders = (
+        db.query(models.User)
+        .join(models.UserRole)
+        .filter(models.UserRole.role_id == responder_role.id)
+        .all()
+    )
+    
+    return [
+        {
+            "id": str(user.id),
+            "email": user.email,
+            "name": user.profile.full_name if user.profile else user.email,
+            "phone": user.phone_number,
+        }
+        for user in responders
+    ]
+
+
+@app.post("/api/chat/groups")
+def create_chat_group(request: Request, data: dict, db: Session = Depends(get_db)):
+    """Create a new chat group - only commanders can create groups"""
+    user_info = request.session.get("user")
+    if not user_info:
+        raise HTTPException(401, "Not authenticated")
+    
+    # Check if user is commander
+    if user_info.get("role") != "commander":
+        raise HTTPException(403, "Only commanders can create groups")
+    
+    # Get commander user
+    commander = db.query(models.User).filter(models.User.email == user_info["email"]).first()
+    if not commander:
+        raise HTTPException(404, "User not found")
+    
+    group_name = data.get("name")
+    member_ids = data.get("memberIds", [])
+    
+    if not group_name:
+        raise HTTPException(400, "Group name is required")
+    
+    if not member_ids:
+        raise HTTPException(400, "At least one member is required")
+    
+    # Create group
+    group = models.ChatGroup(
+        name=group_name,
+        created_by_user_id=commander.id,
+    )
+    db.add(group)
+    db.flush()
+    
+    # Add commander as member
+    commander_member = models.ChatGroupMember(
+        group_id=group.id,
+        user_id=commander.id,
+    )
+    db.add(commander_member)
+    
+    # Add selected responders as members
+    for member_id in member_ids:
+        try:
+            user_uuid = uuid.UUID(member_id)
+            member = models.ChatGroupMember(
+                group_id=group.id,
+                user_id=user_uuid,
+            )
+            db.add(member)
+        except (ValueError, AttributeError):
+            continue
+    
+    db.commit()
+    db.refresh(group)
+    
+    # Return group with members
+    members = db.query(models.ChatGroupMember).filter(
+        models.ChatGroupMember.group_id == group.id
+    ).all()
+    
+    return {
+        "id": str(group.id),
+        "name": group.name,
+        "createdBy": str(group.created_by_user_id),
+        "createdAt": group.created_at.isoformat(),
+        "members": [
+            {
+                "id": str(m.user_id),
+                "name": m.user.profile.full_name if m.user.profile else m.user.email,
+            }
+            for m in members
+        ],
+    }
+
+
+@app.get("/api/chat/groups")
+def get_user_chat_groups(request: Request, db: Session = Depends(get_db)):
+    """Get all chat groups for the current user"""
+    user_info = request.session.get("user")
+    if not user_info:
+        raise HTTPException(401, "Not authenticated")
+    
+    user = db.query(models.User).filter(models.User.email == user_info["email"]).first()
+    if not user:
+        raise HTTPException(404, "User not found")
+    
+    # Get all groups where user is a member
+    memberships = db.query(models.ChatGroupMember).filter(
+        models.ChatGroupMember.user_id == user.id
+    ).all()
+    
+    groups = []
+    for membership in memberships:
+        group = membership.group
+        members = db.query(models.ChatGroupMember).filter(
+            models.ChatGroupMember.group_id == group.id
+        ).all()
+        
+        # Get last message
+        last_message = (
+            db.query(models.ChatMessage)
+            .filter(models.ChatMessage.group_id == group.id)
+            .order_by(models.ChatMessage.created_at.desc())
+            .first()
+        )
+        
+        groups.append({
+            "id": str(group.id),
+            "name": group.name,
+            "createdBy": str(group.created_by_user_id),
+            "createdAt": group.created_at.isoformat(),
+            "members": [
+                {
+                    "id": str(m.user_id),
+                    "name": m.user.profile.full_name if m.user.profile else m.user.email,
+                    "email": m.user.email,
+                }
+                for m in members
+            ],
+            "lastMessage": {
+                "text": last_message.message_text,
+                "senderName": last_message.sender.profile.full_name if last_message.sender.profile else last_message.sender.email,
+                "createdAt": last_message.created_at.isoformat(),
+            } if last_message else None,
+        })
+    
+    return groups
+
+
+@app.get("/api/chat/groups/{group_id}/messages")
+def get_group_messages(group_id: str, request: Request, db: Session = Depends(get_db)):
+    """Get all messages in a chat group"""
+    user_info = request.session.get("user")
+    if not user_info:
+        raise HTTPException(401, "Not authenticated")
+    
+    user = db.query(models.User).filter(models.User.email == user_info["email"]).first()
+    if not user:
+        raise HTTPException(404, "User not found")
+    
+    try:
+        group_uuid = uuid.UUID(group_id)
+    except ValueError:
+        raise HTTPException(400, "Invalid group ID")
+    
+    # Check if user is member of group
+    membership = db.query(models.ChatGroupMember).filter(
+        models.ChatGroupMember.group_id == group_uuid,
+        models.ChatGroupMember.user_id == user.id,
+    ).first()
+    
+    if not membership:
+        raise HTTPException(403, "You are not a member of this group")
+    
+    # Get messages
+    messages = (
+        db.query(models.ChatMessage)
+        .filter(models.ChatMessage.group_id == group_uuid)
+        .order_by(models.ChatMessage.created_at.asc())
+        .all()
+    )
+    
+    return [
+        {
+            "id": str(msg.id),
+            "groupId": str(msg.group_id),
+            "senderId": str(msg.sender_id),
+            "senderName": msg.sender.profile.full_name if msg.sender.profile else msg.sender.email,
+            "text": msg.message_text,
+            "createdAt": msg.created_at.isoformat(),
+        }
+        for msg in messages
+    ]
+
+
+@app.post("/api/chat/groups/{group_id}/messages")
+def send_group_message(group_id: str, data: dict, request: Request, db: Session = Depends(get_db)):
+    """Send a message to a chat group"""
+    user_info = request.session.get("user")
+    if not user_info:
+        raise HTTPException(401, "Not authenticated")
+    
+    user = db.query(models.User).filter(models.User.email == user_info["email"]).first()
+    if not user:
+        raise HTTPException(404, "User not found")
+    
+    try:
+        group_uuid = uuid.UUID(group_id)
+    except ValueError:
+        raise HTTPException(400, "Invalid group ID")
+    
+    # Check if user is member of group
+    membership = db.query(models.ChatGroupMember).filter(
+        models.ChatGroupMember.group_id == group_uuid,
+        models.ChatGroupMember.user_id == user.id,
+    ).first()
+    
+    if not membership:
+        raise HTTPException(403, "You are not a member of this group")
+    
+    message_text = data.get("text")
+    if not message_text:
+        raise HTTPException(400, "Message text is required")
+    
+    # Create message
+    message = models.ChatMessage(
+        group_id=group_uuid,
+        sender_id=user.id,
+        message_text=message_text,
+    )
+    db.add(message)
+    db.commit()
+    db.refresh(message)
+    
+    return {
+        "id": str(message.id),
+        "groupId": str(message.group_id),
+        "senderId": str(message.sender_id),
+        "senderName": user.profile.full_name if user.profile else user.email,
+        "text": message.message_text,
+        "createdAt": message.created_at.isoformat(),
+    }

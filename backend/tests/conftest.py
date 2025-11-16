@@ -23,20 +23,11 @@ def engine():
         poolclass=StaticPool,
     )
 
-    metadata = MetaData()
-    for table in (
-        models.Role.__table__,
-        models.User.__table__,
-        models.UserProfile.__table__,
-        models.UserRole.__table__,
-        models.EmergencyContact.__table__,
-        models.UserFamilyLink.__table__,
-    ):
-        table.to_metadata(metadata)
-
-    metadata.create_all(test_engine)
+    # Create all tables from the application's declarative base so tests
+    # have the full schema available (avoids missing-table errors).
+    models.Base.metadata.create_all(test_engine)
     yield test_engine
-    metadata.drop_all(test_engine)
+    models.Base.metadata.drop_all(test_engine)
     test_engine.dispose()
 
 

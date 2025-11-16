@@ -156,7 +156,7 @@ class UserFamilyLink(Base):
         back_populates="family_requests_received",
     )
 
-    __table_args__ = (
+    _table_args_ = (
         CheckConstraint(
             "requestor_user_id <> requested_user_id", name="requestor_not_requested"
         ),
@@ -458,7 +458,7 @@ class UserLocationLog(Base):
     location = Column(Geometry("POINT", srid=4326), nullable=False)
     timestamp = Column(DateTime(timezone=True), server_default=func.now(), primary_key=True)
 
-    __table_args__ = (
+    _table_args_ = (
         {
             "postgresql_partition_by": "RANGE (timestamp)",
         },
@@ -521,3 +521,61 @@ class GeneratedReport(Base):
     storage_path = Column(String(1024))
     data_summary = Column(JSONBCompat())
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class ChatGroup(Base):
+    __tablename__ = "chat_groups"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = Column(String(255), nullable=False)
+    created_by_user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    created_by = relationship("User", foreign_keys=[created_by_user_id])
+    members = relationship("ChatGroupMember", back_populates="group", cascade="all, delete-orphan")
+    messages = relationship("ChatMessage", back_populates="group", cascade="all, delete-orphan")
+
+
+class ChatGroupMember(Base):
+    __tablename__ = "chat_group_members"
+
+    group_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("chat_groups.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    joined_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    group = relationship("ChatGroup", back_populates="members")
+    user = relationship("User")
+
+
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    group_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("chat_groups.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    sender_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    message_text = Column(Text, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    group = relationship("ChatGroup", back_populates="messages")
+    sender = relationship("User")
+
