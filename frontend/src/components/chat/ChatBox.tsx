@@ -90,8 +90,8 @@ const ChatBox: React.FC<ChatBoxProps> = ({ groupId, sender }) => {
   }, []);
 
   return (
-    <div className="border rounded p-3 w-full">
-      <div className="h-64 overflow-y-auto bg-gray-50 mb-2 p-2">
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '0.5rem', backgroundColor: 'var(--surface, #0b1323)', borderRadius: '0.85rem', padding: '0.9rem', border: '1px solid rgba(255, 255, 255, 0.12)' }}>
+      <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem', padding: '0.45rem', minHeight: 0 }}>
         {groupMessages.map((msg, i) => {
           const isMine = msg.sender === sender;
           const isCommander = (msg.sender || "").toLowerCase().includes("commander");
@@ -99,31 +99,44 @@ const ChatBox: React.FC<ChatBoxProps> = ({ groupId, sender }) => {
           return (
             <div
               key={i}
-              className={`my-2 flex ${isMine ? "justify-start" : "justify-end"}`}
+              style={{ display: 'flex', justifyContent: isMine ? 'flex-end' : 'flex-start', marginBottom: '0.25rem' }}
             >
               <div
-                className={`max-w-[75%] p-2 rounded-lg shadow-sm ${isCommander
-                    ? "bg-yellow-100 border-l-4 border-yellow-400"
-                    : isMine
-                      ? "bg-blue-200 text-gray-900"
-                      : "bg-gray-200 text-gray-900"
-                  }`}
+                style={{
+                  maxWidth: '85%',
+                  padding: '0.5rem 0.6rem',
+                  borderRadius: '0.6rem',
+                  wordBreak: 'break-word',
+                  backgroundColor: isCommander ? 'rgba(0, 187, 255, 0.15)' : isMine ? 'rgba(0, 187, 255, 0.25)' : 'rgba(255, 255, 255, 0.1)',
+                  borderLeft: isCommander ? '2px solid #00bbff' : 'none',
+                  color: '#e2e8f0',
+                  boxShadow: '0 1px 4px rgba(0, 0, 0, 0.3)',
+                }}
               >
-                <div className="text-sm font-semibold">{msg.sender}</div>
-                <div className="text-sm break-words">{msg.text}</div>
+                <div style={{ fontSize: '0.95rem', fontWeight: '700', color: isCommander ? '#00bbff' : '#94a3b8', marginBottom: '0.2rem', opacity: 0.95 }}>{msg.sender}</div>
+                <div style={{ fontSize: '1rem', color: '#e2e8f0', lineHeight: '1.3' }}>{msg.text}</div>
               </div>
             </div>
           );
         })}
       </div>
 
-
-      <div className="flex gap-2 items-center">
+      <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'flex-end', flexShrink: 0 }}>
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          className="border flex-1 rounded p-2"
-          placeholder="Type a message..."
+          onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+          style={{
+            flex: 1,
+            minWidth: 0,
+            padding: '0.6rem 0.8rem',
+            borderRadius: '0.5rem',
+            border: '1px solid rgba(255, 255, 255, 0.15)',
+            backgroundColor: 'rgba(11, 19, 35, 0.9)',
+            color: '#e2e8f0',
+            fontSize: '1rem',
+          }}
+          placeholder="Message..."
         />
 
         <button
@@ -131,15 +144,39 @@ const ChatBox: React.FC<ChatBoxProps> = ({ groupId, sender }) => {
           aria-pressed={recognizing}
           onClick={toggleListening}
           title={recognizing ? "Stop listening" : "Start speech input"}
-          className={`px-3 py-2 rounded ${recognizing ? "bg-red-500 text-white" : "bg-gray-200"
-            }`}
+          style={{
+            padding: '0.45rem 0.6rem',
+            borderRadius: '0.45rem',
+            border: '1px solid rgba(255, 255, 255, 0.15)',
+            backgroundColor: recognizing ? '#ff0000' : 'rgba(0, 187, 255, 0.2)',
+            color: recognizing ? '#fff' : '#00bbff',
+            cursor: 'pointer',
+            fontWeight: '600',
+            transition: 'all 120ms ease',
+            fontSize: '0.85rem',
+            flexShrink: 0,
+          }}
         >
           {recognizing ? "🔴" : "🎤"}
         </button>
 
         <button
           onClick={handleSend}
-          className="bg-blue-500 text-white px-4 py-2 rounded"
+          style={{
+            padding: '0.45rem 0.9rem',
+            borderRadius: '0.45rem',
+            border: 'none',
+            backgroundColor: '#00bbff',
+            color: '#01060f',
+            fontWeight: '700',
+            cursor: 'pointer',
+            transition: 'all 120ms ease',
+            fontSize: '0.9rem',
+            flexShrink: 0,
+            whiteSpace: 'nowrap',
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.boxShadow = '0 6px 18px rgba(0, 187, 255, 0.45)')}
+          onMouseLeave={(e) => (e.currentTarget.style.boxShadow = 'none')}
         >
           Send
         </button>
