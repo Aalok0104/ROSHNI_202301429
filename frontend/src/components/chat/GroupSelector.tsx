@@ -1,4 +1,5 @@
-import React from "react";
+import type { FC } from "react";
+import { useState } from "react";
 import { sendMessage } from "../../services/websocket";
 
 interface GroupSelectorProps {
@@ -6,8 +7,8 @@ interface GroupSelectorProps {
   onCreateGroup: (groupId: string, members: string[]) => void;
 }
 
-const GroupSelector: React.FC<GroupSelectorProps> = ({ responders, onCreateGroup }) => {
-  const [selected, setSelected] = React.useState<string[]>([]);
+const GroupSelector: FC<GroupSelectorProps> = ({ responders, onCreateGroup }) => {
+  const [selected, setSelected] = useState<string[]>([]);
 
   const handleToggle = (responder: string) => {
     setSelected((prev) =>
@@ -19,28 +20,27 @@ const GroupSelector: React.FC<GroupSelectorProps> = ({ responders, onCreateGroup
     const groupId = "grp-" + Date.now();
     onCreateGroup(groupId, selected);
     sendMessage({
-    type: "joinGroup",
-    groupId,
-    members: ["Commander1", ...selected], 
-  });
+      type: "joinGroup",
+      groupId,
+      members: ["Commander1", ...selected],
+    });
+    setSelected([]);
   };
 
   return (
-    <div className="border p-3 rounded">
-      <h3 className="font-bold mb-2">Select Responders</h3>
+    <div className="commander-selector">
+      <h3>Select Responders</h3>
       {responders.map((r) => (
-        <label key={r} className="block">
+        <label key={r}>
           <input
             type="checkbox"
             checked={selected.includes(r)}
             onChange={() => handleToggle(r)}
-          />{" "}
-          {r}
+          />
+          <span>{r}</span>
         </label>
       ))}
-      <button onClick={handleCreate} className="bg-green-500 text-white px-3 py-1 mt-2 rounded">
-        Create Group
-      </button>
+      <button onClick={handleCreate}>Create Group</button>
     </div>
   );
 };

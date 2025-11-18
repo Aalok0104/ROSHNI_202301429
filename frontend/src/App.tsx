@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import type { ComponentType } from 'react';
 import './App.css';
+import './components/commander/commanderStyles.css';
 import { API_ENDPOINTS } from './config';
 import { redirectTo } from './navigation';
 import CivilianDashboard from './dashboards/CivilianDashboard';
 import ResponderDashboard from './dashboards/ResponderDashboard';
 import CommanderDashboard from './dashboards/CommanderDashboard';
+import CommanderHome from './dashboards/CommanderHome';
 import RegistrationForm from './components/RegistrationForm';
 import type { RegistrationData } from './components/RegistrationForm';
 import type { UserRole, SessionUser, SessionResponse } from './types';
@@ -70,6 +72,44 @@ const DashboardView = ({ user, onLogout, loggingOut }: DashboardViewProps) => {
   const activeRole = normalizeRole(user.role);
   const displayName = user.name?.trim() || user.email;
   const ActiveDashboard = DASHBOARD_COMPONENTS[activeRole] ?? CivilianDashboard;
+  const [commanderView, setCommanderView] = useState<'dashboard' | 'home'>(() => {
+    try {
+      if (typeof window === 'undefined') return 'dashboard';
+      const params = new URLSearchParams(window.location.search);
+      return params.get('commanderView') === 'home' ? 'home' : 'dashboard';
+    } catch {
+      return 'dashboard';
+    }
+  });
+
+  // keep URL in sync so views are bookmarkable and respond to back/forward
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    params.set('commanderView', commanderView);
+    const newUrl = `${window.location.pathname}?${params.toString()}${window.location.hash}`;
+    window.history.replaceState(null, '', newUrl);
+  }, [commanderView]);
+
+  // update state when user navigates with back/forward
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onPop = () => {
+      const params = new URLSearchParams(window.location.search);
+      setCommanderView(params.get('commanderView') === 'home' ? 'home' : 'dashboard');
+    };
+
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
+
+  const renderContent = () => {
+    if (activeRole === 'commander' && commanderView === 'home') {
+      return <CommanderHome />;
+    }
+
+    return <ActiveDashboard user={user} />;
+  };
 
   return (
     <div className="dashboard-shell">
@@ -78,23 +118,44 @@ const DashboardView = ({ user, onLogout, loggingOut }: DashboardViewProps) => {
           <img src="/logo/logo.png" alt="Roshni logo" className="app-nav__logo" />
           <span className="app-nav__title">ROSHNI</span>
         </div>
-        <div className="app-nav__actions">
-          <span className="app-nav__user">
-            {displayName} <span className="app-nav__role">({activeRole})</span>
-          </span>
-          <button
-            type="button"
-            className="logout-button"
-            onClick={onLogout}
-            disabled={loggingOut}
-          >
-            {loggingOut ? 'Signing out…' : 'Logout'}
-          </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          {activeRole === 'commander' && (
+            <nav className="app-nav__links" aria-label="Commander links">
+              <button
+                type="button"
+                className={`app-nav__link ${commanderView === 'home' ? 'active' : ''}`}
+                onClick={() => setCommanderView('home')}
+              >
+                Home
+              </button>
+              <button
+                type="button"
+                className={`app-nav__link ${commanderView === 'dashboard' ? 'active' : ''}`}
+                onClick={() => setCommanderView('dashboard')}
+              >
+                Dashboard
+              </button>
+            </nav>
+          )}
+
+          <div className="app-nav__actions">
+            <span className="app-nav__user">
+              {displayName} <span className="app-nav__role">({activeRole})</span>
+            </span>
+            <button
+              type="button"
+              className="logout-button"
+              onClick={onLogout}
+              disabled={loggingOut}
+            >
+              {loggingOut ? 'Signing out…' : 'Logout'}
+            </button>
+          </div>
         </div>
       </header>
 
       <main className="dashboard-main" aria-label={`${activeRole} dashboard`}>
-        <ActiveDashboard user={user} />
+        {renderContent()}
       </main>
     </div>
   );
