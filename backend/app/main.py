@@ -119,8 +119,7 @@ def serialize_user(user: models.User, needs_registration: bool = False) -> Dict[
 def upsert_user_profile(db: Session, user: models.User, display_name: Optional[str]) -> None:
     fallback_name = display_name or user.email.split("@")[0]
     if user.profile:
-        if display_name and user.profile.full_name != display_name:
-            user.profile.full_name = display_name
+        # Don't overwrite manually entered names - user's registration takes precedence
         return
 
     profile = models.UserProfile(user_id=user.id, full_name=fallback_name)
@@ -258,17 +257,17 @@ async def complete_registration(request: Request, db: Session = Depends(get_db))
         user.profile.address = data.get("address")
         user.profile.date_of_birth = date_of_birth
         
-        # Update medical info if provided
+        # Update medical info if provided - store as plain text
         medical_info = data.get("medicalInfo")
         if medical_info:
-            user.profile.medical_info = {"notes": medical_info}
+            user.profile.medical_info = medical_info
     else:
         profile = models.UserProfile(
             user_id=user.id,
             full_name=full_name,
             address=data.get("address"),
             date_of_birth=date_of_birth,
-            medical_info={"notes": data.get("medicalInfo", "")} if data.get("medicalInfo") else {},
+            medical_info=data.get("medicalInfo", ""),
             privacy_settings={}
         )
         db.add(profile)
@@ -669,4 +668,127 @@ def send_group_message(group_id: str, data: dict, request: Request, db: Session 
         "senderName": user.profile.full_name if user.profile else user.email,
         "text": message.message_text,
         "createdAt": message.created_at.isoformat(),
+    }
+
+
+# Profile Management Endpoints
+@app.get("/api/users/profile")
+async def get_user_profile(request: Request, db: Session = Depends(get_db)):
+    """Get current user's profile information"""
+    session_user = request.session.get("user")
+    if not session_user or not session_user.get("id"):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    user_uuid = uuid.UUID(session_user["id"])
+    user = db.query(models.User).filter(models.User.id == user_uuid).first()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Get emergency contact if exists
+    emergency_contact = db.query(models.EmergencyContact).filter(
+        models.EmergencyContact.user_id == user.id
+    ).first()
+    
+    # Handle medical_info - extract as string if it's stored as JSON
+    medical_info_text = ""
+    if user.profile and user.profile.medical_info:
+        if isinstance(user.profile.medical_info, dict):
+            # If it's a dict, try to get a 'text' field or stringify it
+            medical_info_text = user.profile.medical_info.get('text', str(user.profile.medical_info))
+        else:
+            medical_info_text = str(user.profile.medical_info)
+    
+    return {
+        "id": str(user.id),
+        "email": user.email,
+        "name": user.profile.full_name if user.profile else None,
+        "phone": user.phone_number,
+        "address": user.profile.address if user.profile else None,
+        "emergency_contact": emergency_contact.phone_number if emergency_contact else None,
+        "emergency_contact_name": emergency_contact.full_name if emergency_contact else None,
+        "date_of_birth": user.profile.date_of_birth.isoformat() if user.profile and user.profile.date_of_birth else None,
+        "medical_info": medical_info_text,
+    }
+
+
+@app.put("/api/users/profile")
+async def update_user_profile(request: Request, db: Session = Depends(get_db)):
+    """Update current user's profile information"""
+    session_user = request.session.get("user")
+    if not session_user or not session_user.get("id"):
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    user_uuid = uuid.UUID(session_user["id"])
+    user = db.query(models.User).filter(models.User.id == user_uuid).first()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    data = await request.json()
+    
+    # Update phone number
+    if "phone" in data and data["phone"]:
+        user.phone_number = data["phone"]
+    
+    # Update or create profile
+    if user.profile:
+        if "address" in data:
+            user.profile.address = data["address"]
+        if "date_of_birth" in data and data["date_of_birth"]:
+            from datetime import datetime
+            user.profile.date_of_birth = datetime.fromisoformat(data["date_of_birth"]).date()
+        if "medical_info" in data:
+            # Store medical_info as plain text string
+            user.profile.medical_info = data["medical_info"] if data["medical_info"] else None
+    else:
+        # Create new profile - use existing full_name, don't update it
+        from datetime import datetime
+        dob = None
+        if "date_of_birth" in data and data["date_of_birth"]:
+            dob = datetime.fromisoformat(data["date_of_birth"]).date()
+        
+        profile = models.UserProfile(
+            user_id=user.id,
+            full_name=user.profile.full_name if user.profile else user.email.split("@")[0],
+            address=data.get("address"),
+            date_of_birth=dob,
+            medical_info=data.get("medical_info"),
+        )
+        db.add(profile)
+    
+    # Update or create emergency contact
+    if "emergency_contact" in data and data["emergency_contact"]:
+        emergency_contact = db.query(models.EmergencyContact).filter(
+            models.EmergencyContact.user_id == user.id
+        ).first()
+        
+        if emergency_contact:
+            emergency_contact.phone_number = data["emergency_contact"]
+            if "emergency_contact_name" in data and data["emergency_contact_name"]:
+                emergency_contact.full_name = data["emergency_contact_name"]
+        else:
+            emergency_contact = models.EmergencyContact(
+                user_id=user.id,
+                full_name=data.get("emergency_contact_name", "Emergency Contact"),
+                phone_number=data["emergency_contact"],
+                relationship_label="Emergency",
+            )
+            db.add(emergency_contact)
+    
+    db.commit()
+    db.refresh(user)
+    
+    # Update session with new name
+    if user.profile:
+        session_user["name"] = user.profile.full_name
+        request.session["user"] = session_user
+    
+    return {
+        "id": str(user.id),
+        "email": user.email,
+        "name": user.profile.full_name if user.profile else None,
+        "phone": user.phone_number,
+        "address": user.profile.address if user.profile else None,
+        "message": "Profile updated successfully"
     }

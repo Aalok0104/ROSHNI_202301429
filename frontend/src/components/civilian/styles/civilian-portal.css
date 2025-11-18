@@ -1,0 +1,238 @@
+/* ROSHNI Citizen Emergency Portal - Styles */
+
+/* Material Icons Configuration */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+/* Modal Backdrop */
+.backdrop {
+  background: rgba(0, 0, 0, 0.6);
+}
+
+/* Base Layout */
+.civilian-portal {
+  font-family: 'Inter', sans-serif;
+  background-color: #0b0b0c;
+  color: #E6E6E6;
+}
+
+/* Custom Scrollbar for Dark Theme */
+.civilian-portal ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.civilian-portal ::-webkit-scrollbar-track {
+  background: #0f0f10;
+}
+
+.civilian-portal ::-webkit-scrollbar-thumb {
+  background: #1f1f1f;
+  border-radius: 4px;
+}
+
+.civilian-portal ::-webkit-scrollbar-thumb:hover {
+  background: #2a2a2a;
+}
+
+/* Animation for Alert */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Focus States for Accessibility */
+.civilian-portal button:focus-visible,
+.civilian-portal a:focus-visible,
+.civilian-portal input:focus-visible,
+.civilian-portal textarea:focus-visible {
+  outline: 2px solid #2563EB;
+  outline-offset: 2px;
+}
+
+/* Smooth Transitions */
+.civilian-portal button,
+.civilian-portal a {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Card Hover Effects */
+.hover-card {
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.hover-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Form Input Styles */
+.civilian-portal input[type="text"],
+.civilian-portal input[type="tel"],
+.civilian-portal input[type="email"],
+.civilian-portal textarea {
+  transition: border-color 0.2s ease-in-out;
+}
+
+.civilian-portal input[type="text"]:focus,
+.civilian-portal input[type="tel"]:focus,
+.civilian-portal input[type="email"]:focus,
+.civilian-portal textarea:focus {
+  border-color: #2563EB;
+}
+
+/* Modal Animation */
+#sosModal.flex {
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Notification Panel Animation */
+#notifPanel:not(.hidden) {
+  animation: slideInRight 0.2s ease-in-out;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Profile Menu Animation */
+#profileMenu:not(.hidden) {
+  animation: slideInDown 0.15s ease-in-out;
+}
+
+@keyframes slideInDown {
+  from {
+    transform: translateY(-10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Emergency Button Pulse Effect */
+#sosBtn {
+  position: relative;
+}
+
+#sosBtn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  background: rgba(220, 38, 38, 0.3);
+  border-radius: 0.375rem;
+  transform: translate(-50%, -50%);
+  animation: buttonPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes buttonPulse {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.1);
+    opacity: 0.3;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.7;
+  }
+}
+
+/* Report Card Styles */
+.report-card {
+  background: rgba(17, 17, 17, 0.4);
+  border: 1px solid #1f1f1f;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  transition: background 0.2s ease-in-out;
+}
+
+.report-card:hover {
+  background: rgba(31, 31, 31, 0.4);
+}
+
+/* Emergency Contact Card */
+.contact-card {
+  background: rgba(17, 17, 17, 0.4);
+  padding: 0.75rem;
+  border-radius: 0.375rem;
+  transition: background 0.2s ease-in-out;
+}
+
+.contact-card:hover {
+  background: rgba(31, 31, 31, 0.6);
+}
+
+/* Navigation Active State */
+.scroll-link.active {
+  background-color: rgba(31, 31, 31, 1);
+  color: #ffffff;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  #sosModal > div:last-child {
+    margin: 1rem;
+    max-width: calc(100vw - 2rem);
+  }
+  
+  #notifPanel {
+    width: calc(100vw - 2rem);
+    right: 1rem;
+  }
+}
+
+/* Loading State */
+.loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Success Message */
+.success-message {
+  color: #4ade80;
+  background: rgba(74, 222, 128, 0.15);
+  border: 1px solid rgba(74, 222, 128, 0.3);
+  padding: 0.75rem;
+  border-radius: 0.375rem;
+}
+
+/* Error Message */
+.error-message {
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.15);
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  padding: 0.75rem;
+  border-radius: 0.375rem;
+}
