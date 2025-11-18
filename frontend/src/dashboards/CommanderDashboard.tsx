@@ -1,4 +1,8 @@
-import type { FC } from "react";
+
+
+import type { FC } from 'react'; // Add 'type' here
+// import { useState } from "react";
+
 import type { SessionUser } from "../types";
 import LeftSidebar from "../components/commander/LeftSidebar";
 import MapView from "../components/commander/MapView";
