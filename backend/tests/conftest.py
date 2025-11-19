@@ -37,7 +37,10 @@ def _ensure_postgres_extensions(engine) -> None:
 
 
 @pytest.fixture(scope="function", autouse=True)
-def setup_database():
+def setup_database(request):
+    if request.node.get_closest_marker("no_db"):
+        yield
+        return
     """
     Create all tables once per test session on a clean test DB,
     then drop them after tests finish.

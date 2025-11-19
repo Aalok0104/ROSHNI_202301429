@@ -3,7 +3,7 @@ import pytest
 from sqlalchemy.exc import IntegrityError
 
 from app.models.user_family_models import Role, User
-from app.models.disaster_management import Disaster
+from app.models.disaster_management import Disaster, Incident
 from app.models.questionnaires_and_logs import (
     DisasterFollower,
     QuestionTemplate,
@@ -11,6 +11,7 @@ from app.models.questionnaires_and_logs import (
     DisasterLog,
     DisasterMedia,
     DisasterChatMessage,
+    IncidentMedia,
 )
 from geoalchemy2.shape import from_shape
 from shapely.geometry import Point
@@ -31,6 +32,23 @@ def _make_disaster(db_session, role_id=300):
     db_session.add(d)
     db_session.commit()
     return d, user
+
+
+def _make_incident(db_session, role_id=400):
+    role = Role(role_id=role_id, name=f"role_{role_id}")
+    db_session.add(role)
+    db_session.commit()
+    reporter = User(role_id=role.role_id)
+    db_session.add(reporter)
+    db_session.commit()
+    incident = Incident(
+        reported_by_user_id=reporter.user_id,
+        title="Incident Example",
+        location=from_shape(Point(2, 2), srid=4326),
+    )
+    db_session.add(incident)
+    db_session.commit()
+    return incident, reporter
 
 
 def test_disaster_follower_cascade(db_session):
@@ -200,3 +218,35 @@ def test_disaster_chat_message_basic(db_session):
     assert msg.message_id is not None
     assert msg.disaster_id == disaster.disaster_id
     assert "DisasterChatMessage" in repr(msg)
+
+
+def test_incident_media_relationship(db_session):
+    incident, reporter = _make_incident(db_session, role_id=401)
+
+    media = IncidentMedia(
+        incident_id=incident.incident_id,
+        uploaded_by_user_id=reporter.user_id,
+        file_type="video",
+        storage_path="/media/incident.mp4",
+    )
+    db_session.add(media)
+    db_session.commit()
+
+    db_session.refresh(incident)
+    assert len(incident.media_items) == 1
+    assert incident.media_items[0] is media
+    assert "IncidentMedia" in repr(media)
+
+
+def test_incident_media_file_type_validation(db_session):
+    incident, _ = _make_incident(db_session, role_id=402)
+
+    bad_media = IncidentMedia(
+        incident_id=incident.incident_id,
+        file_type="invalid",
+        storage_path="/bad",
+    )
+    db_session.add(bad_media)
+    with pytest.raises(IntegrityError):
+        db_session.commit()
+    db_session.rollback()

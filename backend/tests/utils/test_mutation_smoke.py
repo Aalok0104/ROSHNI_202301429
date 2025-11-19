@@ -1,4 +1,5 @@
-from contextlib import contextmanager
+import asyncio
+from contextlib import asynccontextmanager
 from types import SimpleNamespace
 from uuid import uuid4
 
@@ -22,19 +23,19 @@ def test_database_extension_guard(monkeypatch):
     captured = []
 
     class RecordingConnection:
-        def execute(self, statement, *_args, **_kwargs):
+        async def execute(self, statement, *_args, **_kwargs):
             captured.append(statement)
             return None
 
-    @contextmanager
-    def begin_context():
+    @asynccontextmanager
+    async def begin_context():
         yield RecordingConnection()
 
     dummy_engine = SimpleNamespace(dialect=SimpleNamespace(name="postgresql"))
     dummy_engine.begin = begin_context  # type: ignore[attr-defined]
 
     monkeypatch.setattr(database, "engine", dummy_engine)
-    database._ensure_postgres_extensions()
+    asyncio.run(database.ensure_postgres_extensions())
 
     commands = [stmt.text for stmt in captured]
     assert commands == [
@@ -47,11 +48,11 @@ def test_database_extension_logs_on_failure(monkeypatch, caplog):
     """Verify failures are logged consistently."""
 
     class ExplodingConnection:
-        def execute(self, *_args, **_kwargs):
+        async def execute(self, *_args, **_kwargs):
             raise SQLAlchemyError("boom")
 
-    @contextmanager
-    def begin_context():
+    @asynccontextmanager
+    async def begin_context():
         yield ExplodingConnection()
 
     dummy_engine = SimpleNamespace(dialect=SimpleNamespace(name="postgresql"))
@@ -60,6 +61,6 @@ def test_database_extension_logs_on_failure(monkeypatch, caplog):
     monkeypatch.setattr(database, "engine", dummy_engine)
 
     with caplog.at_level("WARNING"):
-        database._ensure_postgres_extensions()
+        asyncio.run(database.ensure_postgres_extensions())
 
     assert "Unable to ensure PostgreSQL extensions: boom" in caplog.text
