@@ -37,12 +37,14 @@ class UserRepository:
         new_user = User(email=email, provider_id=provider_id, role_id=1, is_active=True)
         self.db.add(new_user)
         await self.db.flush()
+        await self.db.refresh(new_user)  # Refresh to get user_id in async context
         
         new_profile = UserProfile(user_id=new_user.user_id, full_name=full_name)
         self.db.add(new_profile)
         await self.db.commit()
-        await self.db.refresh(new_user)
-        return new_user
+        
+        # Reload user with role relationship
+        return await self.get_by_id(new_user.user_id)
 
     async def update_provider_id(self, user_id: UUID, provider_id: str):
         stmt = update(User).where(User.user_id == user_id).values(provider_id=provider_id)

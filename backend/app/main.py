@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from contextlib import asynccontextmanager
 
@@ -38,6 +39,20 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="ROSHNI API Backend", lifespan=lifespan)
 
 # --- Middleware ---
+# CORS - Allow frontend to call backend from different origin
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",  # Vite dev server
+        "http://localhost:3000",  # Docker frontend
+        settings.FRONTEND_REDIRECT_URL.replace("http://", "").replace("https://", "").split("/")[0],  # Dynamic from env
+    ],
+    allow_credentials=True,  # Required for cookies/session
+    allow_methods=["*"],  # Allow all HTTP methods
+    allow_headers=["*"],  # Allow all headers
+)
+
+# Session Management
 app.add_middleware(
     SessionMiddleware,
     secret_key=settings.SECRET_KEY,

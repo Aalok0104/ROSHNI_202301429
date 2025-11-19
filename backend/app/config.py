@@ -10,7 +10,8 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     GOOGLE_CLIENT_ID: str
     GOOGLE_CLIENT_SECRET: str
-    GOOGLE_REDIRECT_URI: str  # e.g. http://localhost:8000/auth/callback
+    GOOGLE_REDIRECT_URI: str
+    FRONTEND_REDIRECT_URL: str
 
 
 settings = Settings()

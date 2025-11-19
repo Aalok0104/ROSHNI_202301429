@@ -12,7 +12,7 @@ interface ProfileModalProps {
 
 const ProfileModal: FC<ProfileModalProps> = ({ isOpen, onClose, user, onUpdate }) => {
   const [formData, setFormData] = useState({
-    name: user.name || '',
+    name: '',
     email: user.email,
     phone: '',
     address: '',
@@ -82,7 +82,7 @@ const ProfileModal: FC<ProfileModalProps> = ({ isOpen, onClose, user, onUpdate }
       );
 
       setMessage('Profile updated successfully!');
-      onUpdate({ ...user, name: formData.name });
+      onUpdate(user);
       
       setTimeout(() => {
         onClose();

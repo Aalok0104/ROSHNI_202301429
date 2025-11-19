@@ -3,11 +3,11 @@
 export type UserRole = 'civilian' | 'responder' | 'commander';
 
 export type SessionUser = {
-  id?: string;
+  user_id: string;
   email: string;
-  name?: string | null;
-  role?: string | null;
-  needsRegistration?: boolean;
+  role: string;
+  is_profile_complete: boolean;
+  profile_picture?: string | null;
 };
 
 export type SessionResponse = {

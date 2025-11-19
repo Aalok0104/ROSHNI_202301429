@@ -10,7 +10,7 @@ import CommanderDashboard from './dashboards/CommanderDashboard';
 import CommanderHome from './dashboards/CommanderHome';
 import RegistrationForm from './components/RegistrationForm';
 import type { RegistrationData } from './components/RegistrationForm';
-import type { UserRole, SessionUser, SessionResponse } from './types';
+import type { UserRole, SessionUser } from './types';
 
 type AppProps = {
   onBeginLogin?: (url: string) => void;
@@ -70,7 +70,7 @@ type DashboardViewProps = {
 
 const DashboardView = ({ user, onLogout, loggingOut }: DashboardViewProps) => {
   const activeRole = normalizeRole(user.role);
-  const displayName = user.name?.trim() || user.email;
+  const displayName = user.email;
   const ActiveDashboard = DASHBOARD_COMPONENTS[activeRole] ?? CivilianDashboard;
   const [commanderView, setCommanderView] = useState<'dashboard' | 'home'>(() => {
     try {
@@ -180,15 +180,26 @@ function App({ onBeginLogin = redirectTo }: AppProps = {}) {
           signal: controller.signal,
         });
 
-        if (!response.ok) throw new Error('Unable to fetch session');
+        // 401 is expected when not authenticated - not an error
+        if (response.status === 401) {
+          if (isMounted) {
+            setUser(null);
+            setError(null);
+            setCheckingSession(false);
+          }
+          return;
+        }
 
-        const payload = (await response.json()) as SessionResponse;
+        if (!response.ok) {
+          throw new Error('Unable to fetch session');
+        }
+
+        const currentUser = (await response.json()) as SessionUser;
         if (isMounted) {
-          const currentUser = payload.user ?? null;
           setUser(currentUser);
           setError(null);
           // Check if user needs to complete registration
-          if (currentUser?.needsRegistration) {
+          if (!currentUser.is_profile_complete) {
             setShowRegistration(true);
           }
         }
@@ -237,32 +248,74 @@ function App({ onBeginLogin = redirectTo }: AppProps = {}) {
 
   const handleRegistrationComplete = async (data: RegistrationData) => {
     try {
-      const response = await fetch(API_ENDPOINTS.completeRegistration, {
-        method: 'POST',
+      // Step 1: Complete onboarding with phone and DOB (required for is_profile_complete)
+      const onboardingResponse = await fetch(API_ENDPOINTS.completeRegistration, {
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
         body: JSON.stringify({
-          email: user?.email,
-          fullName: data.fullName,
-          phoneNumber: data.phoneNumber,
-          address: data.address,
-          dateOfBirth: data.dateOfBirth,
-          role: data.role,
-          emergencyContactName: data.emergencyContactName,
-          emergencyContactPhone: data.emergencyContactPhone,
-          medicalInfo: data.medicalInfo,
+          phone_number: data.phoneNumber,
+          date_of_birth: data.dateOfBirth,
         }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to complete registration');
+      if (!onboardingResponse.ok) {
+        const errorData = await onboardingResponse.json();
+        throw new Error(errorData.detail || 'Failed to complete onboarding');
       }
 
-      const updatedUser = await response.json();
-      setUser(updatedUser.user);
+      // Step 2: Update general profile (name, address, emergency contacts)
+      const profileResponse = await fetch(API_ENDPOINTS.updateProfile, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          full_name: data.fullName,
+          address: data.address || null,
+          emergency_contact_name: data.emergencyContactName || null,
+          emergency_contact_phone: data.emergencyContactPhone || null,
+        }),
+      });
+
+      if (!profileResponse.ok) {
+        const errorData = await profileResponse.json();
+        throw new Error(errorData.detail || 'Failed to update profile');
+      }
+
+      // Step 3: Update medical info if provided
+      if (data.medicalInfo) {
+        const medicalResponse = await fetch(API_ENDPOINTS.updateMedical, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            other_medical_notes: data.medicalInfo,
+          }),
+        });
+
+        if (!medicalResponse.ok) {
+          const errorData = await medicalResponse.json();
+          throw new Error(errorData.detail || 'Failed to update medical info');
+        }
+      }
+
+      // Step 4: Reload session to get updated user data with is_profile_complete = true
+      const sessionResponse = await fetch(API_ENDPOINTS.session, {
+        credentials: 'include',
+      });
+
+      if (!sessionResponse.ok) {
+        throw new Error('Failed to reload session');
+      }
+
+      const updatedUser = (await sessionResponse.json()) as SessionUser;
+      setUser(updatedUser);
       setShowRegistration(false);
       setError(null);
     } catch (err) {
@@ -280,7 +333,6 @@ function App({ onBeginLogin = redirectTo }: AppProps = {}) {
     return (
       <RegistrationForm
         email={user.email}
-        googleName={user.name || undefined}
         onSubmit={handleRegistrationComplete}
         onCancel={handleRegistrationCancel}
       />

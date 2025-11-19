@@ -253,8 +253,9 @@
 .dashboard-main {
   flex: 1;
   display: flex;
-  align-items: stretch;
-  justify-content: stretch;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
 }
 
 /* Commander-specific small nav links placed beside user actions */
@@ -282,6 +283,7 @@
 .dashboard {
   width: 100%;
   max-width: 960px;
+  margin: 0 auto;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 1.5rem;
   padding: 2.5rem;

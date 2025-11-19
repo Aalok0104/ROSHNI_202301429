@@ -15,7 +15,7 @@ type Props = {
 };
 
 const CommanderDashboard: FC<Props> = ({ user }) => {
-  const userId = user.id || user.email || "commander-user";
+  const userId = user.user_id || user.email || "commander-user";
   const responders = [
     "Responder-07",
     "Responder-12",
