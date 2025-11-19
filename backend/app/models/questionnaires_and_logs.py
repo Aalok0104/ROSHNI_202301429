@@ -133,6 +133,41 @@ class DisasterLog(Base):
         return f"<DisasterLog log_id={self.log_id} disaster_id={self.disaster_id}>"
 
 
+class IncidentMedia(Base):
+    __tablename__ = "incident_media"
+
+    media_id = Column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        server_default=func.uuid_generate_v4(),
+    )
+    incident_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("incidents.incident_id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    uploaded_by_user_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.user_id", ondelete="SET NULL"),
+    )
+    file_type = Column(String(20), nullable=False)
+    mime_type = Column(String(100))
+    storage_path = Column(String(1024), nullable=False)
+    created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
+
+    __table_args__ = (
+        CheckConstraint(
+            "file_type IN ('image', 'video', 'audio', 'document')",
+            name="ck_incident_media_file_type",
+        ),
+    )
+
+    incident = None  # relationship set below
+
+    def __repr__(self) -> str:
+        return f"<IncidentMedia media_id={self.media_id} incident_id={self.incident_id}>"
+
+
 class DisasterMedia(Base):
     __tablename__ = "disaster_media"
 
@@ -194,9 +229,16 @@ class DisasterChatMessage(Base):
 
 
 from sqlalchemy.orm import relationship
+from app.models.disaster_management import Incident
 
 DisasterLog.media_items = relationship(
     "DisasterMedia",
     backref="log",
+    cascade="all, delete-orphan",
+)
+
+Incident.media_items = relationship(
+    "IncidentMedia",
+    backref="incident",
     cascade="all, delete-orphan",
 )

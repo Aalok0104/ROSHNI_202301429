@@ -104,7 +104,20 @@ CREATE TABLE incidents (
         CHECK (status IN ('open', 'converted', 'discarded'))
 );
 
--- 3.2 Disaster
+-- 3.2 IncidentMedia
+CREATE TABLE incident_media (
+    media_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    incident_id UUID NOT NULL REFERENCES incidents(incident_id) ON DELETE CASCADE,
+    uploaded_by_user_id UUID REFERENCES users(user_id) ON DELETE SET NULL,
+    file_type VARCHAR(20) NOT NULL,      -- 'image' | 'video' | 'audio' | 'document'
+    mime_type VARCHAR(100),
+    storage_path VARCHAR(1024) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT ck_incident_media_file_type
+        CHECK (file_type IN ('image', 'video', 'audio', 'document'))
+);
+
+-- 3.3 Disaster
 CREATE TABLE disasters (
     disaster_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     reported_by_user_id UUID REFERENCES users(user_id) ON DELETE SET NULL,
@@ -130,7 +143,7 @@ CREATE TABLE disasters (
                OR severity_level IS NULL)
 );
 
--- 3.3 DisasterTask
+-- 3.4 DisasterTask
 CREATE TABLE disaster_tasks (
     task_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     disaster_id UUID NOT NULL REFERENCES disasters(disaster_id) ON DELETE CASCADE,
@@ -139,6 +152,7 @@ CREATE TABLE disaster_tasks (
     description TEXT,
     status VARCHAR(20) NOT NULL DEFAULT 'pending', -- 'pending' | 'in_progress' | 'completed' | 'cancelled'
     priority VARCHAR(20) DEFAULT 'medium',         -- 'low' | 'medium' | 'high'
+    location GEOMETRY(Point, 4326),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT ck_disaster_task_status
@@ -147,7 +161,7 @@ CREATE TABLE disaster_tasks (
         CHECK (priority IN ('low', 'medium', 'high'))
 );
 
--- 3.4 DisasterTaskAssignment
+-- 3.5 DisasterTaskAssignment
 CREATE TABLE disaster_task_assignments (
     task_id UUID NOT NULL REFERENCES disaster_tasks(task_id) ON DELETE CASCADE,
     team_id UUID NOT NULL REFERENCES teams(team_id) ON DELETE CASCADE,

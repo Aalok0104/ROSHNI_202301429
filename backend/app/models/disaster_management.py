@@ -131,6 +131,7 @@ class DisasterTask(Base):
     description = Column(Text)
     status = Column(String(20), nullable=False, server_default="pending")
     priority = Column(String(20), server_default="medium")
+    location = Column(Geometry(geometry_type="POINT", srid=4326))
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
     updated_at = Column(
         DateTime(timezone=True),

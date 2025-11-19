@@ -117,7 +117,21 @@
 > When a commander converts an incident, its status becomes `'converted'` or `'discarded'`.
 
 
-### 3.2 `Disaster`
+### 3.2 `IncidentMedia`
+
+**Purpose:** Store media attached to incidents before they are converted to disasters.
+
+* **PK:** `media_id`
+* **FKs:**
+  * `incident_id` -> `Incident`
+  * `uploaded_by_user_id` -> `User`
+* **Attributes:**
+  * `file_type` (`'image' | 'video' | 'audio' | 'document'`)
+  * `mime_type`
+  * `storage_path`
+  * `created_at`
+
+### 3.3 `Disaster`
 
 **Purpose:** Top-level event created by converting an incident.
 
@@ -145,7 +159,7 @@
   * `resolved_at` (nullable)
 
 
-### 3.3 `DisasterTask`
+### 3.4 `DisasterTask`
 
 **Purpose:** Specific tasks within a disaster (e.g., send medics, send firefighters, logistics, etc.).
 
@@ -159,11 +173,12 @@
   * `description` (details of the task)
   * `status` (`'pending' | 'in_progress' | 'completed' | 'cancelled'`)
   * `priority` (e.g., integer or enum: `'low' | 'medium' | 'high'`)
+  * `location` (Point – optional; staging coordinates)
   * `created_at`
   * `updated_at`
 
 
-### 3.4 `DisasterTaskAssignment`
+### 3.5 `DisasterTaskAssignment`
 
 **Purpose:** Assign one or more teams to tasks within a disaster.
 
