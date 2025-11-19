@@ -15,6 +15,7 @@ ENV_LOCATIONS = [
     BASE_DIR.parent / ".env",
 ]
 
+# Load .env files (first base, then .env.local overrides)
 for env_path in ENV_LOCATIONS:
     if env_path.exists():
         load_dotenv(env_path, override=False)
@@ -23,8 +24,12 @@ for env_path in [BASE_DIR / ".env.local", BASE_DIR.parent / ".env.local"]:
     if env_path.exists():
         load_dotenv(env_path, override=True)
 
-SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+psycopg2://postgres:postgres@localhost:5432/roshni_db")
+SQLALCHEMY_DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "postgresql://roshni:roshni@localhost:5432/roshni",
+)
 
+# future=True enables SQLAlchemy 2.0 style behaviour
 engine = create_engine(SQLALCHEMY_DATABASE_URL, pool_pre_ping=True, future=True)
 
 
@@ -43,6 +48,6 @@ def _ensure_postgres_extensions() -> None:
 
 _ensure_postgres_extensions()
 
-SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
+SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False, future=True)
 
 Base = declarative_base()

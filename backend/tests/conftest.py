@@ -1,72 +1,66 @@
-from __future__ import annotations
-
+# tests/conftest.py
 import os
-from typing import Generator, Tuple
-
-os.environ.setdefault("DATABASE_URL", "sqlite+pysqlite:///:memory:")
+import sys
+from pathlib import Path
 
 import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy import MetaData, create_engine
-from sqlalchemy.orm import Session, sessionmaker
-from sqlalchemy.pool import StaticPool
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import sessionmaker
 
-from app import models
+# Ensure `backend/` is on sys.path so `app` package is importable when running tests
+BACKEND_DIR = Path(__file__).resolve().parent.parent
+if str(BACKEND_DIR) not in sys.path:
+    sys.path.insert(0, str(BACKEND_DIR))
 
-
-@pytest.fixture(scope="session")
-def engine():
-    test_engine = create_engine(
-        "sqlite+pysqlite:///:memory:",
-        future=True,
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
-
-    # Create all tables from the application's declarative base so tests
-    # have the full schema available (avoids missing-table errors).
-    models.Base.metadata.create_all(test_engine)
-    yield test_engine
-    models.Base.metadata.drop_all(test_engine)
-    test_engine.dispose()
+from app.database import Base  # noqa: E402
+from app.models import *  # noqa: F401,F403,E402  # ensure all models are imported
 
 
-@pytest.fixture
-def db_session(engine):
-    connection = engine.connect()
-    transaction = connection.begin()
+TEST_DATABASE_URL = os.getenv(
+    "TEST_DATABASE_URL",
+    # point this to a dedicated TEST DB
+    "postgresql://parshv:parshv@localhost:5432/roshni_test",
+)
 
-    TestingSession = sessionmaker(bind=connection, autoflush=False, autocommit=False)
-    session = TestingSession()
+engine = create_engine(TEST_DATABASE_URL, pool_pre_ping=True, future=True)
+TestingSessionLocal = sessionmaker(
+    bind=engine, autocommit=False, autoflush=False, future=True
+)
 
+
+def _ensure_postgres_extensions(engine) -> None:
+    if engine.dialect.name != "postgresql":
+        return
+    with engine.begin() as conn:
+        conn.execute(text('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"'))
+        conn.execute(text('CREATE EXTENSION IF NOT EXISTS "postgis"'))
+
+
+@pytest.fixture(scope="function", autouse=True)
+def setup_database():
+    """
+    Create all tables once per test session on a clean test DB,
+    then drop them after tests finish.
+    """
+    _ensure_postgres_extensions(engine)
+    Base.metadata.drop_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
+    yield
+    Base.metadata.drop_all(bind=engine)
+
+
+@pytest.fixture()
+def db_session(setup_database):
+    """
+    Provide a database session to each test.
+
+    Each test runs in its own transaction-ish scope; we rollback at the
+    end to keep the DB clean between tests.
+    """
+    session = TestingSessionLocal()
     try:
         yield session
+        session.rollback()
+        session.expunge_all()
     finally:
         session.close()
-        if transaction.is_active:
-            transaction.rollback()
-        connection.close()
-
-
-@pytest.fixture
-def test_client(db_session: Session, monkeypatch) -> Generator[Tuple[TestClient, Session], None, None]:
-    os.environ.setdefault("GOOGLE_CLIENT_ID", "test-client-id")
-    os.environ.setdefault("GOOGLE_CLIENT_SECRET", "test-client-secret")
-    os.environ.setdefault("FRONTEND_REDIRECT_URL", "http://frontend.test")
-
-    from app import main as main_module
-
-    def override_get_db():
-        yield db_session
-
-    monkeypatch.setattr(main_module, "google_client_id", os.environ["GOOGLE_CLIENT_ID"])
-    monkeypatch.setattr(main_module, "google_client_secret", os.environ["GOOGLE_CLIENT_SECRET"])
-    monkeypatch.setattr(main_module, "frontend_redirect_url", os.environ["FRONTEND_REDIRECT_URL"])
-
-    main_module.app.dependency_overrides[main_module.get_db] = override_get_db
-    client = TestClient(main_module.app)
-
-    try:
-        yield client, db_session
-    finally:
-        main_module.app.dependency_overrides.clear()

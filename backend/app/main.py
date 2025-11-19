@@ -7,20 +7,12 @@ from authlib.integrations.starlette_client import OAuth
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-
-try:  # pragma: no cover - executed only when dependency missing
-    import itsdangerous  # noqa: F401
-except ModuleNotFoundError:  # pragma: no cover
-    from .itsdangerous_stub import install_stub
-
-    install_stub()
-
 from starlette.config import Config
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.requests import Request
 from starlette.responses import RedirectResponse, JSONResponse
 
-from . import models
+from ...docs import models
 from .database import SessionLocal, engine
 
 if engine.dialect.name == "postgresql":  # Avoid GeoAlchemy setup on unsupported engines
