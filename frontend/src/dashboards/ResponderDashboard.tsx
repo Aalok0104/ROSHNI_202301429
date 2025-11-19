@@ -10,7 +10,7 @@ const ResponderDashboard: FC<Props> = ({ user }) => {
   return (
     <section className="dashboard dashboard--responder">
       <h2>Responder Dashboard</h2>
-      <p className="dashboard-greeting">Welcome, {user.name?.trim() || user.email}.</p>
+      <p className="dashboard-greeting">Welcome, {user.email}.</p>
 
       <div style={{ marginTop: '2rem' }}>
         <div style={{ marginBottom: '1.5rem' }}>
@@ -18,7 +18,7 @@ const ResponderDashboard: FC<Props> = ({ user }) => {
           <p style={{ color: '#718096', fontSize: '0.95rem', marginBottom: '1rem' }}>
             You can view and participate in groups you've been assigned to by your commander.
           </p>
-          <ChatGroups userId={user.id || ''} />
+          <ChatGroups userId={user.user_id} />
         </div>
 
         <div style={{ marginTop: '2rem', padding: '1.5rem', background: '#f7fafc', borderRadius: '8px' }}>

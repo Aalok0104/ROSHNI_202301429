@@ -3,11 +3,10 @@ import type { UserRole } from '../types';
 import './RegistrationForm.css';
 
 export interface RegistrationData {
-  fullName: string;
+  fullName?: string;
   phoneNumber: string;
-  address: string;
+  address?: string;
   dateOfBirth: string;
-  role: UserRole;
   emergencyContactName?: string;
   emergencyContactPhone?: string;
   medicalInfo?: string;
@@ -26,7 +25,6 @@ const RegistrationForm = ({ email, googleName, onSubmit, onCancel }: Registratio
     phoneNumber: '',
     address: '',
     dateOfBirth: '',
-    role: 'civilian',
     emergencyContactName: '',
     emergencyContactPhone: '',
     medicalInfo: '',
@@ -47,11 +45,6 @@ const RegistrationForm = ({ email, googleName, onSubmit, onCancel }: Registratio
     setError(null);
 
     // Basic validation
-    if (!formData.fullName.trim()) {
-      setError('Full name is required');
-      return;
-    }
-
     if (!formData.phoneNumber.trim()) {
       setError('Phone number is required');
       return;
@@ -88,7 +81,7 @@ const RegistrationForm = ({ email, googleName, onSubmit, onCancel }: Registratio
             
             <div className="form-group">
               <label htmlFor="fullName">
-                Full Name <span className="required">*</span>
+                Full Name
               </label>
               <input
                 type="text"
@@ -96,9 +89,9 @@ const RegistrationForm = ({ email, googleName, onSubmit, onCancel }: Registratio
                 name="fullName"
                 value={formData.fullName}
                 onChange={handleChange}
-                required
-                placeholder="Enter your full name"
+                placeholder="Enter your full name (or leave as is)"
               />
+              <small className="form-help">Your name was imported from Google. You can edit it if needed.</small>
             </div>
 
             <div className="form-group">
@@ -143,24 +136,6 @@ const RegistrationForm = ({ email, googleName, onSubmit, onCancel }: Registratio
                 placeholder="Enter your full address"
                 rows={3}
               />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="role">
-                Role <span className="required">*</span>
-              </label>
-              <select
-                id="role"
-                name="role"
-                value={formData.role}
-                onChange={handleChange}
-                required
-              >
-                <option value="civilian">Civilian</option>
-                <option value="responder">Responder</option>
-                <option value="commander">Commander</option>
-              </select>
-              <small className="form-help">Select your role in the emergency response system</small>
             </div>
           </div>
 

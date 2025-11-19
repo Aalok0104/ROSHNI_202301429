@@ -12,6 +12,7 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./backend/schemas/00-init-extensions.sql:/docker-entrypoint-initdb.d/00-init-extensions.sql
     healthcheck:
       test: ["CMD-SHELL", "PGPASSWORD=${POSTGRES_PASSWORD} pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB} -h 127.0.0.1"]
       interval: 10s
@@ -34,6 +35,8 @@ services:
       - FRONTEND_REDIRECT_URL=${FRONTEND_REDIRECT_URL}
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
       - SESSION_SECRET=${SESSION_SECRET}
+      - SECRET_KEY=${SECRET_KEY}
+      - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
     ports:
       - "8000:8000"
 
@@ -41,7 +44,7 @@ services:
     build:
       context: ./frontend
       args:
-        VITE_BACKEND_URL: ${VITE_BACKEND_URL}
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000}
     restart: unless-stopped
     depends_on:
       backend:

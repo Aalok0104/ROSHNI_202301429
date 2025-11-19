@@ -88,9 +88,8 @@ async def auth_callback(request: Request, db: AsyncSession = Depends(get_db)):
     request.session['picture'] = picture # Optional: store pic in session
 
     # Redirect to Frontend Dashboard
-    # Replace with your actual frontend URL
-    frontend_url = "http://localhost:3000/dashboard" 
-    return RedirectResponse(url=frontend_url)
+    from app.config import settings
+    return RedirectResponse(url=settings.FRONTEND_REDIRECT_URL)
 
 @router.post("/logout")
 async def logout(request: Request):
