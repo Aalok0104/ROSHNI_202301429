@@ -11,6 +11,8 @@ build/
 
 # Python / Backend
 backend/venv
+roshni/
+backend/roshni
 venv/
 __pycache__/
 *.pyc
