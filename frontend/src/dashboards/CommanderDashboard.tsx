@@ -1,5 +1,3 @@
-
-
 import type { FC } from 'react'; // Add 'type' here
 // import { useState } from "react";
 
@@ -7,6 +5,7 @@ import type { SessionUser } from "../types";
 import LeftSidebar from "../components/commander/LeftSidebar";
 import MapView from "../components/commander/MapView";
 import TaskList from "../components/commander/TaskList";
+import type { Task } from "../components/commander/TaskCard";
 import "../components/commander/commanderStyles.css";
 import { API_BASE_URL } from '../config';
 
@@ -31,17 +30,35 @@ const CommanderDashboard: FC<Props> = ({ user }) => {
 
   // handleAddTask was removed; use handleAddTaskSubmit for actual submission.
 
-  const handleAddTaskSubmit = async (task: any) => {
+  const handleAddTaskSubmit = async (task: Task) => {
     // Convenience integration point: attempt to POST the task to the API.
     // The backend may not expose this endpoint yet — this is where server wiring
     // should be added. We keep the UI optimistic regardless.
     try {
-      const url = `${API_BASE_URL}/api/tasks`;
+      const disasterId =
+        typeof window !== 'undefined'
+          ? new URLSearchParams(window.location.search).get('disasterId')
+          : null;
+
+      if (!disasterId) {
+        console.warn('No disasterId specified in URL; skipping backend task creation');
+        return;
+      }
+
+      const url = `${API_BASE_URL}/api/disasters/${encodeURIComponent(disasterId)}/tasks`;
+      const payload = {
+        task_type: task.taskType,
+        description: task.description,
+        priority: task.priority,
+        latitude: task.latitude,
+        longitude: task.longitude,
+      };
+
       await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify(task),
+        body: JSON.stringify(payload),
       });
     } catch (err) {
       // swallow errors for now; backend integration point

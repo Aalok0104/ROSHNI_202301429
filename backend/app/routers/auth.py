@@ -10,6 +10,10 @@ from app.config import settings
 from app.database import get_db
 from app.repositories.user_repository import UserRepository
 
+import logging
+from sqlalchemy.exc import SQLAlchemyError
+from fastapi.responses import PlainTextResponse
+
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 # --- Pydantic Schemas ---
@@ -41,54 +45,87 @@ async def login(request: Request):
     redirect_uri = settings.GOOGLE_REDIRECT_URI
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
+logger = logging.getLogger(__name__)
+
 @router.get("/callback")
 async def auth_callback(request: Request, db: AsyncSession = Depends(get_db)):
     """Handles Google Callback, checks DB, creates session."""
+    # 1) exchange code -> tokens
     try:
         token = await oauth.google.authorize_access_token(request)
     except Exception as e:
+        logger.exception("OAuth token exchange failed")
+        # Return a clear error for the client instead of a generic 500
         raise HTTPException(status_code=400, detail=f"OAuth Error: {str(e)}")
 
-    user_info = token.get('userinfo')
-    if not user_info:
-        # Fallback if userinfo not in token (rare with openid scope)
-        user_info = await oauth.google.userinfo(token=token)
+    # 2) get userinfo (try token first, fallback to userinfo endpoint)
+    user_info = token.get("userinfo")
+    try:
+        if not user_info:
+            user_info = await oauth.google.userinfo(token=token)
+    except Exception as e:
+        logger.exception("Failed to fetch userinfo")
+        raise HTTPException(status_code=400, detail=f"Failed to fetch userinfo: {e}")
 
-    email = user_info.get('email')
-    google_sub = user_info.get('sub') # Provider ID
-    full_name = user_info.get('name', 'Unknown')
-    picture = user_info.get('picture')
+    email = user_info.get("email")
+    google_sub = user_info.get("sub")  # Provider ID
+    full_name = user_info.get("name", "Unknown")
+    picture = user_info.get("picture")
+
+    # 3) Basic validation: email and provider id are required
+    if not email:
+        logger.error("OAuth provider did not return email: %s", user_info)
+        raise HTTPException(status_code=400, detail="OAuth provider did not return email.")
+    if not google_sub:
+        logger.error("OAuth provider did not return subject (sub): %s", user_info)
+        raise HTTPException(status_code=400, detail="OAuth provider did not return provider id (sub).")
 
     repo = UserRepository(db)
-    existing_user = await repo.get_by_email(email)
-
     user_obj = None
 
-    if existing_user:
-        # BRANCH A: User Exists (Responder or Returning Civilian)
-        if existing_user.provider_id is None:
-            # Link the accounts (Pre-registered Responder flow)
-            await repo.update_provider_id(existing_user.user_id, google_sub)
-        
-        user_obj = existing_user
-    else:
-        # BRANCH B: New User (Civilian)
-        user_obj = await repo.create_civilian(
-            email=email, 
-            provider_id=google_sub, 
-            full_name=full_name
-        )
+    # 4) DB operations wrapped to capture SQL errors
+    try:
+        existing_user = await repo.get_by_email(email)
+        if existing_user:
+            # Link provider id if missing (pre-registered responder flow)
+            if existing_user.provider_id is None:
+                await repo.update_provider_id(existing_user.user_id, google_sub)
+            user_obj = existing_user
+        else:
+            # New civilian user
+            user_obj = await repo.create_civilian(
+                email=email,
+                provider_id=google_sub,
+                full_name=full_name
+            )
+        # If the repo methods perform commits, fine. If not, you may need:
+        # await db.commit()
+    except SQLAlchemyError as db_err:
+        logger.exception("Database error during OAuth callback")
+        raise HTTPException(status_code=500, detail="Database error during authentication.")
+    except Exception as e:
+        logger.exception("Unexpected error during OAuth callback")
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {e}")
 
-    # Create Session
-    request.session['user_id'] = str(user_obj.user_id)
-    # We assume user_obj.role is loaded via repo (eager load)
-    # If role object is loaded:
-    role_name = user_obj.role.name if user_obj.role else "civilian"
-    request.session['role'] = role_name
-    request.session['picture'] = picture # Optional: store pic in session
+    # 5) ensure user_obj exists
+    if not user_obj:
+        logger.error("User object was not created or found after callback for email=%s", email)
+        raise HTTPException(status_code=500, detail="Failed to create/find user.")
 
-    # Redirect to Frontend Dashboard
-    from app.config import settings
+    # 6) Create Session (safe access of role)
+    request.session["user_id"] = str(user_obj.user_id)
+    role_name = "civilian"
+    try:
+        role_name = user_obj.role.name if getattr(user_obj, "role", None) else "civilian"
+    except Exception:
+        # role might be a relationship that wasn't loaded; default to civilian
+        logger.warning("Could not read role from user object; defaulting to 'civilian' for %s", email)
+        role_name = "civilian"
+
+    request.session["role"] = role_name
+    request.session["picture"] = picture
+
+    # 7) Redirect to frontend
     return RedirectResponse(url=settings.FRONTEND_REDIRECT_URL)
 
 @router.post("/logout")
