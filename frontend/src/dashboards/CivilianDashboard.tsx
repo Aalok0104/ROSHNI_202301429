@@ -63,7 +63,7 @@ const CivilianDashboard: FC<Props> = ({ user: initialUser }) => {
               onClick={() => setProfileOpen(true)}
               className="text-sm text-gray-400 hover:text-white transition-colors cursor-pointer"
             >
-              {user.name?.trim() || user.email}
+              {(user as any).name?.trim() || user.email}
             </button>
           </nav>
         </div>

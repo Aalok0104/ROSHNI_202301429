@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import type { UserRole } from '../types';
 import './RegistrationForm.css';
 
 export interface RegistrationData {
@@ -57,13 +56,36 @@ const RegistrationForm = ({ email, googleName, onSubmit, onCancel }: Registratio
 
     try {
       setLoading(true);
-      await onSubmit(formData);
+
+      // --- Normalize phone numbers to E.164 ---
+      const normalizePhone = (phone: string) => {
+        // Remove everything except digits and +
+        let cleaned = phone.replace(/[^0-9+]/g, '');
+
+        // Ensure it starts with +
+        if (!cleaned.startsWith('+')) {
+          cleaned = '+' + cleaned;
+        }
+
+        return cleaned;
+      };
+
+      const normalizedData: RegistrationData = {
+        ...formData,
+        phoneNumber: normalizePhone(formData.phoneNumber),
+        emergencyContactPhone: formData.emergencyContactPhone
+          ? normalizePhone(formData.emergencyContactPhone)
+          : undefined
+      };
+
+      await onSubmit(normalizedData);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to complete registration');
     } finally {
       setLoading(false);
     }
   };
+
 
   return (
     <div className="registration-container">

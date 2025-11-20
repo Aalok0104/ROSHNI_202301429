@@ -175,6 +175,17 @@ body {
   gap: 1rem;
 }
 
+/* Inputs/Selects/Textareas in the modal should show a light-blue border by default */
+.report-modal__content label input,
+.report-modal__content label select,
+.report-modal__content label textarea {
+  border: 1px solid rgba(71, 181, 255, 0.35);
+  border-radius: 0.6rem;
+  background: rgba(255, 255, 255, 0.02);
+  color: #e6eefc;
+}
+
+
 /* Prevent modal content from growing taller than the viewport. Allow scrolling */
 .report-modal__content {
   max-height: calc(100vh - 4rem);

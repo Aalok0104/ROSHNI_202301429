@@ -1,15 +1,7 @@
 import { useState } from 'react';
 import type { FC } from 'react';
 import TaskCard from './TaskCard';
-import type { TaskStatus, TaskPriority } from './TaskCard';
-
-export type Task = {
-  id: string;
-  title: string;
-  description: string;
-  status: TaskStatus;
-  priority: TaskPriority;
-};
+import type { Task, TaskPriority, TaskType } from './TaskCard';
 
 type TaskListProps = {
   tasks?: Task[];
@@ -20,28 +12,36 @@ const TaskList: FC<TaskListProps> = ({
   tasks: initialTasks,
   onAddTaskSubmit,
 }) => {
-  const [tasks, setTasks] = useState<Task[]>(
-    initialTasks ?? []
-  );
+  const [tasks, setTasks] = useState<Task[]>(initialTasks ?? []);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [status, setStatus] = useState<TaskStatus>('Assigned');
-  const [priority, setPriority] = useState<TaskPriority>('Medium');
+  const [taskType, setTaskType] = useState<TaskType>('logistics');
+  const [priority, setPriority] = useState<TaskPriority>('medium');
+  const [latitude, setLatitude] = useState('');
+  const [longitude, setLongitude] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   const openModal = () => setIsModalOpen(true);
   const closeModal = () => setIsModalOpen(false);
 
   const handleSubmit = async () => {
-    if (!title.trim()) return;
+    if (!description.trim()) return;
+    const lat = parseFloat(latitude);
+    const lng = parseFloat(longitude);
+    if (Number.isNaN(lat) || Number.isNaN(lng)) return;
+
     const newTask: Task = {
-      id: String(Date.now()),
-      title: title.trim(),
+      taskId: crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+      disasterId: 'disaster-placeholder',
+      taskType,
       description: description.trim(),
-      status,
       priority,
+      status: 'pending',
+      latitude: lat,
+      longitude: lng,
+      createdAt: new Date().toISOString(),
+      assignments: [],
     };
 
     try {
@@ -49,13 +49,12 @@ const TaskList: FC<TaskListProps> = ({
       if (onAddTaskSubmit) {
         await onAddTaskSubmit(newTask);
       }
-      // optimistic add locally so UI updates even without backend
       setTasks((prev) => [newTask, ...prev]);
-      // reset form
-      setTitle('');
       setDescription('');
-      setStatus('Assigned');
-      setPriority('Medium');
+      setTaskType('logistics');
+      setPriority('medium');
+      setLatitude('');
+      setLongitude('');
       closeModal();
     } finally {
       setSubmitting(false);
@@ -72,13 +71,7 @@ const TaskList: FC<TaskListProps> = ({
 
         <div className="task-list">
           {tasks.map((task) => (
-            <TaskCard
-              key={task.id}
-              title={task.title}
-              description={task.description}
-              status={task.status}
-              priority={task.priority}
-            />
+            <TaskCard key={task.taskId} task={task} />
           ))}
         </div>
 
@@ -104,17 +97,7 @@ const TaskList: FC<TaskListProps> = ({
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 <label>
-                  Title
-                  <input
-                    type="text"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    style={{ width: '100%', marginTop: '0.25rem', padding: '0.5rem' }}
-                  />
-                </label>
-
-                <label>
-                  Description
+                  Title / Description
                   <textarea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
@@ -125,37 +108,73 @@ const TaskList: FC<TaskListProps> = ({
 
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                   <label style={{ flex: 1 }}>
-                    Priority
-                    <select value={priority} onChange={(e) => setPriority(e.target.value as TaskPriority)} style={{ width: '100%', marginTop: '0.25rem', padding: '0.5rem' }}>
-                      <option value="High">High</option>
-                      <option value="Medium">Medium</option>
-                      <option value="Low">Low</option>
+                    Task Type
+                    <select
+                      value={taskType}
+                      onChange={(e) => setTaskType(e.target.value as TaskType)}
+                      style={{ width: '100%', marginTop: '0.25rem', padding: '0.5rem' }}
+                    >
+                      <option value="medic">Medic</option>
+                      <option value="fire">Fire</option>
+                      <option value="police">Police</option>
+                      <option value="logistics">Logistics</option>
+                      <option value="search_rescue">Search &amp; Rescue</option>
+                      <option value="evacuation">Evacuation</option>
                     </select>
                   </label>
 
                   <label style={{ flex: 1 }}>
-                    Status
-                    <select value={status} onChange={(e) => setStatus(e.target.value as TaskStatus)} style={{ width: '100%', marginTop: '0.25rem', padding: '0.5rem' }}>
-                      <option value="Assigned">Assigned</option>
-                      <option value="In Progress">In Progress</option>
-                      <option value="Completed">Completed</option>
+                    Priority
+                    <select
+                      value={priority}
+                      onChange={(e) => setPriority(e.target.value as TaskPriority)}
+                      style={{ width: '100%', marginTop: '0.25rem', padding: '0.5rem' }}
+                    >
+                      <option value="high">High</option>
+                      <option value="medium">Medium</option>
+                      <option value="low">Low</option>
                     </select>
+                  </label>
+                </div>
+
+                <div style={{ display: 'flex', gap: '0.5rem' , marginTop: '1rem'}}>
+                  <label style={{ flex: 1 }}>
+                    Latitude
+                    <input
+                      type="number"
+                      value={latitude}
+                      onChange={(e) => setLatitude(e.target.value)}
+                      style={{ width: '100%', marginTop: '0.25rem', padding: '0.5rem' }}
+                    />
+                  </label>
+
+                  <label style={{ flex: 1 }}>
+                    Longitude
+                    <input
+                      type="number"
+                      value={longitude}
+                      onChange={(e) => setLongitude(e.target.value)}
+                      style={{ width: '100%', marginTop: '0.25rem', padding: '0.5rem' }}
+                    />
                   </label>
                 </div>
               </div>
 
               <div className="report-modal__actions">
-                <button type="button" onClick={() => {
-                  // reset
-                  setTitle('');
-                  setDescription('');
-                  setStatus('Assigned');
-                  setPriority('Medium');
-                }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDescription('');
+                    setTaskType('logistics');
+                    setPriority('medium');
+                    setLatitude('');
+                    setLongitude('');
+                  }}
+                >
                   Reset
                 </button>
                 <button type="button" className="commander-button emergency" onClick={handleSubmit} disabled={submitting}>
-                  {submitting ? 'Adding…' : 'Add Task'}
+                  {submitting ? 'Adding…' : 'Add'}
                 </button>
               </div>
             </div>
