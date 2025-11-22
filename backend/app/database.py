@@ -16,6 +16,7 @@ SQLALCHEMY_DATABASE_URL = os.getenv(
     "DATABASE_URL",
     "postgresql://roshni:roshni@localhost:5432/roshni",
 )
+SQLALCHEMY_DATABASE_URL = os.getenv("TEST_DATABASE_URL", SQLALCHEMY_DATABASE_URL)
 
 def _coerce_async_url(url: str) -> str:
     if url.startswith("postgresql://"):

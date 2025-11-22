@@ -31,7 +31,7 @@ class Incident(Base):
     description = Column(Text)
     incident_type = Column(String(50))
     location = Column(Geometry(geometry_type="POINT", srid=4326), nullable=False)
-    status = Column(String(20), nullable=False, server_default="open")
+    status = Column(String(20), nullable=False, server_default="open", default="open")
     reported_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
     updated_at = Column(
         DateTime(timezone=True),

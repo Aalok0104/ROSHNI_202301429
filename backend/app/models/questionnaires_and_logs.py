@@ -242,3 +242,5 @@ Incident.media_items = relationship(
     backref="incident",
     cascade="all, delete-orphan",
 )
+
+DisasterChatMessage.sender = relationship("User")

@@ -7,7 +7,7 @@ from app.config import settings
 from app.database import engine, Base, AsyncSessionLocal
 from app.routers import auth
 from app.models.user_family_models import Role  # Import Role for seeding
-from app.routers import auth, users, responders, incidents, disasters
+from app.routers import auth, users, responders, incidents, disasters, chat, surveys, reports
 
 # --- Lifecycle: Seed Roles on Startup ---
 @asynccontextmanager
@@ -67,6 +67,9 @@ app.include_router(users.router)
 app.include_router(responders.router)
 app.include_router(incidents.router)
 app.include_router(disasters.router)
+app.include_router(chat.router)
+app.include_router(surveys.router)
+app.include_router(reports.router)
 
 @app.get("/")
 def root():
