@@ -9,7 +9,8 @@ from sqlalchemy.orm import selectinload
 from app.database import get_db, AsyncSessionLocal
 from app.models.user_family_models import User
 from app.models.questionnaires_and_logs import DisasterChatMessage
-from app.models.responder_management import ResponderProfile
+from app.models.responder_management import ResponderProfile, Team
+from app.models.disaster_management import DisasterTask, DisasterTaskAssignment
 from app.repositories.user_repository import UserRepository
 from app.services.websocket_manager import ConnectionManager
 from app.schemas.chat import ChatMessageResponse, ChatMessageCreate
@@ -17,25 +18,17 @@ from app.schemas.chat import ChatMessageResponse, ChatMessageCreate
 router = APIRouter(prefix="/chat", tags=["Real-Time Chat"])
 manager = ConnectionManager()
 
+
 # Helper to get user from session cookie or token
 async def get_user_from_token_or_cookie(
     websocket: WebSocket,
     token: Optional[str] = Query(None),
     db: AsyncSession = None
 ) -> Optional[User]:
-    # In a real app, we'd decode the JWT token or read the session cookie
-    # For this implementation, we'll assume the session middleware handles cookies
-    # but WebSockets are tricky with standard middleware.
-    # We'll try to read 'user_id' from the session if available, or a token.
-    
-    # SIMPLIFICATION: For now, we will trust a 'user_id' query param for the WebSocket 
-    # if the session isn't easily accessible in this context without complex auth logic.
-    # IN PRODUCTION: Use a proper JWT or signed cookie verification here.
-    
     user_id_str = websocket.query_params.get("user_id") or token
     if not user_id_str:
         return None
-    
+
     try:
         user_uuid = UUID(user_id_str)
         repo = UserRepository(db)
@@ -43,117 +36,240 @@ async def get_user_from_token_or_cookie(
     except Exception:
         return None
 
+
+async def _teams_for_disaster(db: AsyncSession, disaster_id: UUID) -> List[UUID]:
+    stmt = (
+        select(DisasterTaskAssignment.team_id)
+        .join(DisasterTask, DisasterTaskAssignment.task_id == DisasterTask.task_id)
+        .where(DisasterTask.disaster_id == disaster_id)
+    )
+    res = await db.execute(stmt)
+    team_ids = [row[0] for row in res.all() if row[0] is not None]
+    return team_ids
+
+
 @router.get("/{disaster_id}/history", response_model=List[ChatMessageResponse])
 async def get_chat_history(
     disaster_id: UUID,
+    scope: str = Query("team", regex="^(team|global)$"),
+    team_id: Optional[UUID] = None,
     limit: int = 50,
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
 ):
-    # Fetch messages with sender info
-    stmt = (
-        select(DisasterChatMessage)
-        .options(
-            selectinload(DisasterChatMessage.sender).selectinload(User.profile),
-            selectinload(DisasterChatMessage.sender).selectinload(User.role),
+    # Determine filter
+    if scope == "team":
+        if not team_id:
+            teams = await _teams_for_disaster(db, disaster_id)
+            if not teams:
+                raise HTTPException(status_code=404, detail="No team assigned to disaster")
+            team_id = teams[0]
+
+        stmt = (
+            select(DisasterChatMessage)
+            .options(
+                selectinload(DisasterChatMessage.sender)
+                    .selectinload(User.profile),
+                selectinload(DisasterChatMessage.sender)
+                    .selectinload(User.role)
+            )
+            .where(
+                DisasterChatMessage.disaster_id == disaster_id,
+                DisasterChatMessage.team_id == team_id,
+            )
+            .order_by(desc(DisasterChatMessage.created_at))
+            .limit(limit)
         )
-    ).where(
-        DisasterChatMessage.disaster_id == disaster_id
-    ).order_by(desc(DisasterChatMessage.created_at)).limit(limit)
-    
+    else:
+        # global
+        stmt = (
+            select(DisasterChatMessage)
+            .options(
+                selectinload(DisasterChatMessage.sender)
+                    .selectinload(User.profile),
+                selectinload(DisasterChatMessage.sender)
+                    .selectinload(User.role)
+            )
+            .where(
+                DisasterChatMessage.disaster_id == disaster_id,
+                DisasterChatMessage.is_global == True,
+            )
+            .order_by(desc(DisasterChatMessage.created_at))
+            .limit(limit)
+        )
+
     result = await db.execute(stmt)
     messages = result.scalars().all()
-    
-    # Format response
+
     response = []
     for msg in messages:
         sender_name = "Unknown"
         sender_role = "civilian"
         if msg.sender:
             profile = getattr(msg.sender, "profile", None)
-            sender_name = (
-                getattr(profile, "full_name", None) or msg.sender.email or sender_name
-            )
+            sender_name = getattr(profile, "full_name", None) or msg.sender.email or sender_name
             if msg.sender.role:
                 sender_role = msg.sender.role.name
-                
+
         response.append(ChatMessageResponse(
             message_id=msg.message_id,
             disaster_id=msg.disaster_id,
+            team_id=getattr(msg, "team_id", None),
             sender_user_id=msg.sender_user_id,
             sender_name=sender_name,
             sender_role=sender_role,
             message_text=msg.message_text,
-            created_at=msg.created_at
+            is_global=getattr(msg, "is_global", False),
+            created_at=msg.created_at,
         ))
-    
+
     return response
 
-@router.websocket("/ws/{disaster_id}")  # pragma: no cover
-async def websocket_endpoint(
-    websocket: WebSocket, 
-    disaster_id: UUID
+
+@router.websocket("/ws/team/{disaster_id}")  # pragma: no cover
+async def websocket_team(
+    websocket: WebSocket,
+    disaster_id: UUID,
+    team_id: Optional[UUID] = Query(None),
 ):
-    # 1. Connect & Auth
-    # We need a DB session for auth check
     async with AsyncSessionLocal() as db:
         user = await get_user_from_token_or_cookie(websocket, db=db)
-        
         if not user:
             await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
             return
 
-        await manager.connect(websocket, disaster_id)
-        
-        # Determine Write Permissions
-        # Commander: Write
-        # Responder (Logistician): Write
-        # Others: Read-Only
-        can_write = False
-        user_role = user.role.name if user.role else "civilian"
-        
-        if user_role == "commander":
-            can_write = True
-        elif user_role == "responder":
-            # Check responder type
-            stmt = select(ResponderProfile).where(ResponderProfile.user_id == user.user_id)
-            res = await db.execute(stmt)
-            profile = res.scalar_one_or_none()
-            if profile and profile.responder_type == "logistician":
-                can_write = True
+        teams = await _teams_for_disaster(db, disaster_id)
+        if not teams:
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+            return
+
+        # Require the client to specify which team chat to join.
+        # Validate that the provided `team_id` is assigned to this disaster.
+        if not team_id:
+            # No team specified — close with policy violation
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+            return
+
+        if team_id not in teams:
+            # The requested team is not assigned to this disaster
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+            return
+
+        # Check membership: only allow actual team members (commanders removed)
+        stmt = select(ResponderProfile).where(ResponderProfile.user_id == user.user_id)
+        rres = await db.execute(stmt)
+        profile = rres.scalar_one_or_none()
+
+        # Only a responder with a profile assigned to this team can join
+        if not profile or profile.team_id != team_id:
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+            return
+
+        room_key = f"team:{team_id}"
+        await manager.connect(websocket, room_key)
+
+        can_write = bool(profile)
 
     try:
         while True:
             data = await websocket.receive_text()
-            
             if not can_write:
-                # Ignore write attempts from read-only users
-                # Optionally send an error frame back
                 continue
 
-            # Persist Message
             async with AsyncSessionLocal() as db:
                 new_msg = DisasterChatMessage(
                     disaster_id=disaster_id,
+                    team_id=team_id,
                     sender_user_id=user.user_id,
-                    message_text=data
+                    message_text=data,
+                    is_global=False,
                 )
                 db.add(new_msg)
                 await db.commit()
                 await db.refresh(new_msg)
-                
-                # Prepare Broadcast Payload
+
                 payload = {
                     "message_id": new_msg.message_id,
                     "disaster_id": new_msg.disaster_id,
+                    "team_id": new_msg.team_id,
                     "sender_user_id": new_msg.sender_user_id,
                     "sender_name": user.full_name or user.email,
-                    "sender_role": user_role,
+                    "sender_role": user.role.name if user.role else "civilian",
                     "message_text": new_msg.message_text,
-                    "created_at": new_msg.created_at
+                    "is_global": False,
+                    "created_at": new_msg.created_at,
                 }
-            
-            # Broadcast
-            await manager.broadcast(payload, disaster_id)
+
+            await manager.broadcast(payload, room_key)
 
     except WebSocketDisconnect:
-        manager.disconnect(websocket, disaster_id)
+        manager.disconnect(websocket, room_key)
+
+
+@router.websocket("/ws/global/{disaster_id}")  # pragma: no cover
+async def websocket_global(
+    websocket: WebSocket,
+    disaster_id: UUID,
+):
+    async with AsyncSessionLocal() as db:
+        user = await get_user_from_token_or_cookie(websocket, db=db)
+        if not user:
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+            return
+
+        teams = await _teams_for_disaster(db, disaster_id)
+        # Build set of team ids
+        team_set = set(teams)
+
+        stmt = select(ResponderProfile).where(ResponderProfile.user_id == user.user_id)
+        rres = await db.execute(stmt)
+        profile = rres.scalar_one_or_none()
+
+        is_commander = (user.role and user.role.name == "commander")
+        is_logistician = bool(profile and profile.responder_type == "logistician" and profile.team_id in team_set)
+
+        if not (is_commander or is_logistician):
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+            return
+
+        room_key = f"global:{disaster_id}"
+        await manager.connect(websocket, room_key)
+
+        can_write = is_commander or is_logistician
+
+    try:
+        while True:
+            data = await websocket.receive_text()
+            if not can_write:
+                continue
+
+            async with AsyncSessionLocal() as db:
+                new_msg = DisasterChatMessage(
+                    disaster_id=disaster_id,
+                    sender_user_id=user.user_id,
+                    message_text=data,
+                    is_global=True,
+                )
+                # Optionally link team_id of sender when available
+                if profile:
+                    new_msg.team_id = profile.team_id
+
+                db.add(new_msg)
+                await db.commit()
+                await db.refresh(new_msg)
+
+                payload = {
+                    "message_id": new_msg.message_id,
+                    "disaster_id": new_msg.disaster_id,
+                    "team_id": getattr(new_msg, "team_id", None),
+                    "sender_user_id": new_msg.sender_user_id,
+                    "sender_name": user.full_name or user.email,
+                    "sender_role": user.role.name if user.role else "civilian",
+                    "message_text": new_msg.message_text,
+                    "is_global": True,
+                    "created_at": new_msg.created_at,
+                }
+
+            await manager.broadcast(payload, room_key)
+
+    except WebSocketDisconnect:
+        manager.disconnect(websocket, room_key)

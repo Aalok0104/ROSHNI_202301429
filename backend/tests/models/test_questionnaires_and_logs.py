@@ -204,20 +204,96 @@ def test_disaster_media_file_type_check(db_session):
 
 
 def test_disaster_chat_message_basic(db_session):
+    """
+    Integration-style test covering questionnaires and logs models plus
+    the updated chat message fields (team/global), media and followers.
+    """
+    # Create a disaster and user using helper
     disaster, user = _make_disaster(db_session, role_id=305)
 
-    msg = DisasterChatMessage(
+    # --- Question template and state ---
+    qt = QuestionTemplate(key="integration_q", question_text="Is area safe?", answer_type="boolean")
+    db_session.add(qt)
+    db_session.commit()
+    db_session.refresh(qt)
+    assert qt.question_id is not None
+
+    state = DisasterQuestionState(
+        disaster_id=disaster.disaster_id,
+        question_id=qt.question_id,
+        last_answer_value="true",
+        last_answered_by_user_id=user.user_id,
+    )
+    db_session.add(state)
+    db_session.commit()
+    db_session.refresh(state)
+    assert state.disaster_id == disaster.disaster_id
+
+    # --- Disaster log and media ---
+    log = DisasterLog(
+        disaster_id=disaster.disaster_id,
+        created_by_user_id=user.user_id,
+        source_type="user_input",
+        title="Initial report",
+        text_body="Some details",
+        num_deaths=0,
+    )
+    db_session.add(log)
+    db_session.commit()
+    db_session.refresh(log)
+
+    media = DisasterMedia(log_id=log.log_id, uploaded_by_user_id=user.user_id, file_type="image", storage_path="/tmp/img.jpg")
+    db_session.add(media)
+    db_session.commit()
+    db_session.refresh(log)
+    assert len(log.media_items) == 1
+
+    # --- Chat messages: team-scoped and global ---
+    from uuid import uuid4
+    from app.models.responder_management import Team
+
+    team = Team(team_id=uuid4(), name="Integration Team", team_type="disaster_response", commander_user_id=user.user_id)
+    db_session.add(team)
+    db_session.commit()
+
+    team_msg = DisasterChatMessage(
+        disaster_id=disaster.disaster_id,
+        team_id=team.team_id,
+        sender_user_id=user.user_id,
+        message_text="Team is en route",
+        is_global=False,
+    )
+
+    global_msg = DisasterChatMessage(
         disaster_id=disaster.disaster_id,
         sender_user_id=user.user_id,
-        message_text="We are on the way.",
+        message_text="All logisticians, report status",
+        is_global=True,
     )
-    db_session.add(msg)
-    db_session.commit()
-    db_session.refresh(msg)
 
-    assert msg.message_id is not None
-    assert msg.disaster_id == disaster.disaster_id
-    assert "DisasterChatMessage" in repr(msg)
+    db_session.add_all([team_msg, global_msg])
+    db_session.commit()
+
+    # verify messages persisted correctly
+    team_res = db_session.query(DisasterChatMessage).filter_by(disaster_id=disaster.disaster_id, team_id=team.team_id, is_global=False).one_or_none()
+    assert team_res is not None and team_res.message_text == "Team is en route"
+
+    global_res = db_session.query(DisasterChatMessage).filter_by(disaster_id=disaster.disaster_id, is_global=True).one_or_none()
+    assert global_res is not None and global_res.message_text == "All logisticians, report status"
+
+    # --- Disaster follower ---
+    follower = DisasterFollower(disaster_id=disaster.disaster_id, user_id=user.user_id)
+    db_session.add(follower)
+    db_session.commit()
+    assert db_session.get(DisasterFollower, {"disaster_id": disaster.disaster_id, "user_id": user.user_id}) is not None
+
+    # --- Incident media relationship sanity check ---
+    incident, reporter = _make_incident(db_session, role_id=401)
+    im = IncidentMedia(incident_id=incident.incident_id, uploaded_by_user_id=reporter.user_id, file_type="image", storage_path="/tmp/incident.jpg")
+    db_session.add(im)
+    db_session.commit()
+    db_session.refresh(incident)
+    assert len(incident.media_items) == 1
 
 
 def test_incident_media_relationship(db_session):

@@ -1,36 +1,35 @@
 from typing import Dict, List
 from fastapi import WebSocket
-from uuid import UUID
 import json
 
 class ConnectionManager:
     def __init__(self):
-        # Key: disaster_id (str), Value: List of WebSockets
+        # Key: arbitrary room key (str), Value: List of WebSockets
         self.active_connections: Dict[str, List[WebSocket]] = {}
 
-    async def connect(self, websocket: WebSocket, disaster_id: UUID):
+    async def connect(self, websocket: WebSocket, room_key: str):
         await websocket.accept()
-        d_id = str(disaster_id)
-        if d_id not in self.active_connections:
-            self.active_connections[d_id] = []
-        self.active_connections[d_id].append(websocket)
+        if room_key not in self.active_connections:
+            self.active_connections[room_key] = []
+        self.active_connections[room_key].append(websocket)
 
-    def disconnect(self, websocket: WebSocket, disaster_id: UUID):
-        d_id = str(disaster_id)
-        if d_id in self.active_connections:
-            if websocket in self.active_connections[d_id]:
-                self.active_connections[d_id].remove(websocket)
-            if not self.active_connections[d_id]:
-                del self.active_connections[d_id]
+    def disconnect(self, websocket: WebSocket, room_key: str):
+        if room_key in self.active_connections:
+            if websocket in self.active_connections[room_key]:
+                self.active_connections[room_key].remove(websocket)
+            if not self.active_connections[room_key]:
+                del self.active_connections[room_key]
 
-    async def broadcast(self, message: dict, disaster_id: UUID):
-        d_id = str(disaster_id)
-        if d_id in self.active_connections:
+    async def broadcast(self, message: dict, room_key: str):
+        if room_key in self.active_connections:
             # Serialize once
             text_data = json.dumps(message, default=str)
-            for connection in self.active_connections[d_id]:
+            for connection in list(self.active_connections[room_key]):
                 try:
                     await connection.send_text(text_data)
                 except Exception:
                     # Handle broken pipes or closed connections gracefully
-                    pass
+                    try:
+                        self.active_connections[room_key].remove(connection)
+                    except Exception:
+                        pass
