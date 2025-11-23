@@ -9,6 +9,7 @@ import ResponderDashboard from './dashboards/ResponderDashboard';
 import CommanderDashboard from './dashboards/CommanderDashboard';
 import CommanderHome from './dashboards/CommanderHome';
 import CommanderLogs from './dashboards/CommanderLogs';
+import TeamManagementContainer from './components/commander/TeamManagement/TeamManagementContainer';
 import RegistrationForm from './components/RegistrationForm';
 import type { RegistrationData } from './components/RegistrationForm';
 import type { UserRole, SessionUser } from './types';
@@ -73,13 +74,14 @@ const DashboardView = ({ user, onLogout, loggingOut }: DashboardViewProps) => {
   const activeRole = normalizeRole(user.role);
   const displayName = user.email;
   const ActiveDashboard = DASHBOARD_COMPONENTS[activeRole] ?? CivilianDashboard;
-  const [commanderView, setCommanderView] = useState<'dashboard' | 'home' | 'logs'>(() => {
+  const [commanderView, setCommanderView] = useState<'dashboard' | 'home' | 'logs' | 'teams'>(() => {
     try {
       if (typeof window === 'undefined') return 'dashboard';
       const params = new URLSearchParams(window.location.search);
       const v = params.get('commanderView');
       if (v === 'home') return 'home';
       if (v === 'logs') return 'logs';
+      if (v === 'teams') return 'teams';
       return 'dashboard';
     } catch {
       return 'dashboard';
@@ -103,6 +105,7 @@ const DashboardView = ({ user, onLogout, loggingOut }: DashboardViewProps) => {
       const v = params.get('commanderView');
       if (v === 'home') setCommanderView('home');
       else if (v === 'logs') setCommanderView('logs');
+      else if (v === 'teams') setCommanderView('teams');
       else setCommanderView('dashboard');
     };
 
@@ -114,6 +117,7 @@ const DashboardView = ({ user, onLogout, loggingOut }: DashboardViewProps) => {
     if (activeRole === 'commander') {
       if (commanderView === 'home') return <CommanderHome />;
       if (commanderView === 'logs') return <CommanderLogs />;
+      if (commanderView === 'teams') return <TeamManagementContainer />;
       return <ActiveDashboard user={user} />;
     }
 
@@ -143,6 +147,13 @@ const DashboardView = ({ user, onLogout, loggingOut }: DashboardViewProps) => {
                 onClick={() => setCommanderView('dashboard')}
               >
                 Dashboard
+              </button>
+              <button
+                type="button"
+                className={`app-nav__link ${commanderView === 'teams' ? 'active' : ''}`}
+                onClick={() => setCommanderView('teams')}
+              >
+                Teams
               </button>
               <button
                 type="button"
@@ -184,6 +195,17 @@ function App({ onBeginLogin = redirectTo }: AppProps = {}) {
   const [error, setError] = useState<string | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
   const [showRegistration, setShowRegistration] = useState(false);
+
+  // Check for OAuth callback
+  useEffect(() => {
+    // If URL has '?code=' or '?session=', it means we just came back from OAuth
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('code') || urlParams.has('session')) {
+      // Clean up the URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+      // Session will be loaded by the main useEffect below
+    }
+  }, []);
 
   useEffect(() => {
     let isMounted = true;

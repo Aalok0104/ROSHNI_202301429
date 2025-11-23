@@ -155,8 +155,8 @@ class ResponderRepository:
         """
         Updates ResponderProfile. Handles team joining logic.
         """
-        # Clean data
-        updates = {k: v for k, v in data.items() if v is not None}
+        # Clean data - allow team_id to be None (for removing from team)
+        updates = {k: v for k, v in data.items() if k == 'team_id' or v is not None}
         
         if not updates:
             return
@@ -164,8 +164,11 @@ class ResponderRepository:
         stmt = update(ResponderProfile).where(ResponderProfile.user_id == user_id)
         
         if 'team_id' in updates:
-            # Add timestamp logic for team join
-            stmt = stmt.values(team_joined_at=func.now())
+            # Add timestamp logic for team join, or clear it when removing
+            if updates['team_id'] is not None:
+                stmt = stmt.values(team_joined_at=func.now())
+            else:
+                stmt = stmt.values(team_joined_at=None)
         
         stmt = stmt.values(**updates)
         
