@@ -1,5 +1,6 @@
 import pytest
 from types import SimpleNamespace
+from uuid import uuid4
 
 from app.models.draft_reports import DisasterReportDraft
 from app.routers import reports as reports_router
@@ -95,3 +96,74 @@ async def test_export_pdf(async_db_session, async_create_user, async_create_disa
     assert response.status_code == 200
     await async_db_session.refresh(draft)
     assert draft.status == "final"
+
+
+@pytest.mark.asyncio
+async def test_get_report_returns_404_for_missing(async_db_session, async_create_user):
+    user = await async_create_user(role_name="commander")
+    with pytest.raises(Exception) as exc:
+        await reports_router.get_report(
+            report_id=uuid4(),
+            current_user=_commander_stub(user.user_id),
+            db=async_db_session,
+        )
+    assert "404" in str(exc.value)
+
+
+@pytest.mark.asyncio
+async def test_update_report_returns_404_for_missing(async_db_session, async_create_user):
+    user = await async_create_user(role_name="commander")
+    with pytest.raises(Exception) as exc:
+        await reports_router.update_report(
+            report_id=uuid4(),
+            payload=ReportUpdateRequest(status="draft"),
+            current_user=_commander_stub(user.user_id),
+            db=async_db_session,
+        )
+    assert "404" in str(exc.value)
+
+
+@pytest.mark.asyncio
+async def test_export_pdf_returns_404_for_missing(async_db_session, async_create_user):
+    user = await async_create_user(role_name="commander")
+    with pytest.raises(Exception) as exc:
+        await reports_router.export_pdf(
+            report_id=uuid4(),
+            current_user=_commander_stub(user.user_id),
+            db=async_db_session,
+        )
+    assert "404" in str(exc.value)
+
+
+@pytest.mark.asyncio
+async def test_delete_report_removes_record(async_db_session, async_create_user, async_create_disaster):
+    user = await async_create_user(role_name="commander")
+    disaster = await async_create_disaster()
+    draft = DisasterReportDraft(
+        disaster_id=disaster.disaster_id,
+        created_by_user_id=user.user_id,
+        version_number=1,
+        status="draft",
+    )
+    async_db_session.add(draft)
+    await async_db_session.commit()
+
+    response = await reports_router.delete_report(
+        draft.report_id,
+        current_user=_commander_stub(user.user_id),
+        db=async_db_session,
+    )
+    assert response["message"] == "Report deleted"
+    assert await async_db_session.get(DisasterReportDraft, draft.report_id) is None
+
+
+@pytest.mark.asyncio
+async def test_delete_report_returns_404_for_missing(async_db_session, async_create_user):
+    user = await async_create_user(role_name="commander")
+    with pytest.raises(Exception) as exc:
+        await reports_router.delete_report(
+            report_id=uuid4(),
+            current_user=_commander_stub(user.user_id),
+            db=async_db_session,
+        )
+    assert "404" in str(exc.value)

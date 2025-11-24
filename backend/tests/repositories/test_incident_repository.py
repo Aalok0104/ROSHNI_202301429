@@ -40,6 +40,9 @@ class AsyncSessionAdapter:
     async def refresh(self, instance):
         self._session.refresh(instance)
 
+    async def get(self, model, pk):
+        return self._session.get(model, pk)
+
 
 def _seed_role_and_user(db_session, role_id=900):
     role = Role(role_id=role_id, name=f"role_{role_id}")
@@ -347,3 +350,124 @@ async def test_convert_to_disaster_uses_incident_type_when_not_provided(db_sessi
     repo = IncidentRepository(AsyncSessionAdapter(db_session))
     disaster = await repo.convert_to_disaster(incident.incident_id, severity="high")
     assert disaster.disaster_type == "storm"
+
+
+@pytest.mark.asyncio
+async def test_get_incidents_for_user_returns_owned_records(db_session):
+    owner = _seed_role_and_user(db_session, 914)
+    other = _seed_role_and_user(db_session, 915)
+    incident = Incident(
+        reported_by_user_id=owner.user_id,
+        title="Owned",
+        incident_type="fire",
+        location=_make_point(),
+        status="open",
+    )
+    db_session.add(incident)
+    db_session.add(
+        Incident(
+            reported_by_user_id=other.user_id,
+            title="Foreign",
+            incident_type="fire",
+            location=_make_point(),
+            status="open",
+        )
+    )
+    db_session.commit()
+
+    repo = IncidentRepository(AsyncSessionAdapter(db_session))
+    incidents = await repo.get_incidents_for_user(owner.user_id)
+    assert len(incidents) == 1
+    assert incidents[0].title == "Owned"
+
+
+@pytest.mark.asyncio
+async def test_delete_incident_removes_record(db_session):
+    reporter = _seed_role_and_user(db_session, 916)
+    incident = Incident(
+        reported_by_user_id=reporter.user_id,
+        title="Remove",
+        incident_type="fire",
+        location=_make_point(),
+        status="open",
+    )
+    db_session.add(incident)
+    db_session.commit()
+
+    repo = IncidentRepository(AsyncSessionAdapter(db_session))
+    inc_id = incident.incident_id
+    deleted = await repo.delete_incident(inc_id)
+    assert deleted is True
+    db_session.expire_all()
+    assert db_session.get(Incident, inc_id) is None
+
+
+@pytest.mark.asyncio
+async def test_delete_incident_returns_none_when_missing(db_session):
+    repo = IncidentRepository(AsyncSessionAdapter(db_session))
+    assert await repo.delete_incident(uuid4()) is None
+
+
+@pytest.mark.asyncio
+async def test_get_incident_loads_media(db_session):
+    reporter = _seed_role_and_user(db_session, 917)
+    incident = Incident(
+        reported_by_user_id=reporter.user_id,
+        title="Has Media",
+        incident_type="fire",
+        location=_make_point(),
+        status="open",
+    )
+    db_session.add(incident)
+    db_session.commit()
+    db_session.add(
+        IncidentMedia(
+            incident_id=incident.incident_id,
+            file_type="image",
+            mime_type="image/png",
+            storage_path="/tmp/file",
+        )
+    )
+    db_session.commit()
+
+    repo = IncidentRepository(AsyncSessionAdapter(db_session))
+    fetched = await repo.get_incident(incident.incident_id)
+    assert fetched.media
+
+
+@pytest.mark.asyncio
+async def test_update_incident_updates_fields(db_session):
+    reporter = _seed_role_and_user(db_session, 918)
+    incident = Incident(
+        reported_by_user_id=reporter.user_id,
+        title="Updatable",
+        incident_type="fire",
+        location=_make_point(),
+        status="open",
+    )
+    db_session.add(incident)
+    db_session.commit()
+
+    repo = IncidentRepository(AsyncSessionAdapter(db_session))
+    updated = await repo.update_incident(incident.incident_id, {"title": "New Title"})
+    assert updated.title == "New Title"
+
+
+@pytest.mark.asyncio
+async def test_update_incident_handles_missing_and_no_changes(db_session):
+    repo = IncidentRepository(AsyncSessionAdapter(db_session))
+    assert await repo.update_incident(uuid4(), {"title": "Missing"}) is None
+
+    reporter = _seed_role_and_user(db_session, 919)
+    incident = Incident(
+        reported_by_user_id=reporter.user_id,
+        title="NoChange",
+        incident_type="fire",
+        location=_make_point(),
+        status="open",
+    )
+    db_session.add(incident)
+    db_session.commit()
+
+    unchanged = await repo.update_incident(incident.incident_id, {})
+    assert unchanged.title == "NoChange"

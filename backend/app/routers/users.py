@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from uuid import UUID
 
 from app.database import get_db
-from app.dependencies import get_current_user
+from app.dependencies import get_current_user, RoleChecker
 from app.models.user_family_models import User
 from app.repositories.user_repository import UserRepository
 from app.schemas.users import (
@@ -12,7 +13,10 @@ from app.schemas.users import (
     LocationUpdate,
     MedicalAccessRequest,
     FilteredMedicalResponse,
-    UserProfileResponse
+    UserProfileResponse,
+    CommanderCreateRequest,
+    CommanderUpdateRequest,
+    CommanderResponse,
 )
 
 router = APIRouter(prefix="/users", tags=["User Management"])
@@ -140,3 +144,94 @@ async def access_medical_data(
             response.sensitive_phone = target_user.phone_number
 
     return response
+
+
+@router.delete("/me")
+async def delete_my_account(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    repo = UserRepository(db)
+    deleted = await repo.delete_user(current_user.user_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {"message": "Account deleted"}
+
+
+# --- Commander Management ---
+@router.post("/commander/commanders", response_model=CommanderResponse, dependencies=[Depends(RoleChecker(["commander"]))])
+async def create_commander_account(
+    payload: CommanderCreateRequest,
+    db: AsyncSession = Depends(get_db)
+):
+    repo = UserRepository(db)
+    commander = await repo.create_commander(
+        email=payload.email,
+        full_name=payload.full_name,
+        phone_number=payload.phone_number,
+    )
+    return CommanderResponse(
+        user_id=commander.user_id,
+        email=commander.email,
+        phone_number=commander.phone_number,
+        full_name=commander.profile.full_name if commander.profile else None,
+    )
+
+
+@router.get("/commander/commanders", response_model=list[CommanderResponse], dependencies=[Depends(RoleChecker(["commander"]))])
+async def list_commanders(db: AsyncSession = Depends(get_db)):
+    repo = UserRepository(db)
+    commanders = await repo.list_commanders()
+    return [
+        CommanderResponse(
+            user_id=u.user_id,
+            email=u.email,
+            phone_number=u.phone_number,
+            full_name=u.profile.full_name if u.profile else None,
+        )
+        for u in commanders
+    ]
+
+
+@router.patch(
+    "/commander/commanders/{user_id}",
+    response_model=CommanderResponse,
+    dependencies=[Depends(RoleChecker(["commander"]))],
+)
+async def update_commander_account(
+    user_id: UUID,
+    payload: CommanderUpdateRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    repo = UserRepository(db)
+    commander = await repo.get_by_id(user_id)
+    if not commander or commander.role_id != 3:
+        raise HTTPException(status_code=404, detail="Commander not found")
+
+    if payload.phone_number:
+        await repo.update_phone_number(user_id, payload.phone_number)
+    if payload.profile:
+        await repo.update_user_profile(user_id, payload.profile.model_dump(exclude_none=True))
+    updated = await repo.get_by_id(user_id)
+    return CommanderResponse(
+        user_id=updated.user_id,
+        email=updated.email,
+        phone_number=updated.phone_number,
+        full_name=updated.profile.full_name if updated.profile else None,
+    )
+
+
+@router.delete(
+    "/commander/commanders/{user_id}",
+    dependencies=[Depends(RoleChecker(["commander"]))],
+)
+async def delete_commander_account(
+    user_id: UUID,
+    db: AsyncSession = Depends(get_db)
+):
+    repo = UserRepository(db)
+    commander = await repo.get_by_id(user_id)
+    if not commander or commander.role_id != 3:
+        raise HTTPException(status_code=404, detail="Commander not found")
+    await repo.delete_user(user_id)
+    return {"message": "Commander deleted"}

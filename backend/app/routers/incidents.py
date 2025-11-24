@@ -14,7 +14,8 @@ from app.schemas.incidents import (
     IncidentCreateRequest, 
     IncidentResponse, 
     IncidentStatusUpdate,
-    MediaResponse
+    MediaResponse,
+    IncidentCreateRequest as IncidentUpdateRequest
 )
 
 router = APIRouter(prefix="/incidents", tags=["Incidents & SOS"])
@@ -141,6 +142,16 @@ async def get_incidents(
     return [format_incident_response(i) for i in incidents]
 
 
+@router.get("/mine", response_model=List[IncidentResponse])
+async def get_my_incidents(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    repo = IncidentRepository(db)
+    incidents = await repo.get_incidents_for_user(current_user.user_id)
+    return [format_incident_response(i) for i in incidents]
+
+
 @router.patch("/{incident_id}/status")
 async def update_incident_status(
     incident_id: UUID,
@@ -174,3 +185,39 @@ async def update_incident_status(
     else:
         # Just a generic status update if needed (e.g. 'open')
         return {"message": "No action taken"}
+
+
+@router.patch("/{incident_id}", response_model=IncidentResponse)
+async def update_incident(
+    incident_id: UUID,
+    payload: IncidentUpdateRequest,
+    current_user: User = Depends(RoleChecker(["commander"])),
+    db: AsyncSession = Depends(get_db)
+):
+    repo = IncidentRepository(db)
+    updated = await repo.update_incident(
+        incident_id,
+        payload.model_dump(exclude_none=True),
+    )
+    if not updated:
+        raise HTTPException(status_code=404, detail="Incident not found")
+    return format_incident_response(updated)
+
+
+@router.delete("/{incident_id}")
+async def delete_incident(
+    incident_id: UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    repo = IncidentRepository(db)
+    incident = await repo.get_incident(incident_id)
+    if not incident:
+        raise HTTPException(status_code=404, detail="Incident not found")
+
+    is_commander = current_user.role.name == "commander" if current_user.role else False
+    if not is_commander and incident.reported_by_user_id != current_user.user_id:
+        raise HTTPException(status_code=403, detail="Not allowed to delete this incident")
+
+    await repo.delete_incident(incident_id)
+    return {"message": "Incident deleted"}

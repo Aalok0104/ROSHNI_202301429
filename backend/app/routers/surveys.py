@@ -43,7 +43,7 @@ async def get_pending_survey(
         DisasterQuestionState.disaster_id == disaster_id
     )
     result_states = await db.execute(stmt_states)
-    states = {s.question_template_id: s for s in result_states.scalars().all()}
+    states = {s.question_id: s for s in result_states.scalars().all()}
     
     candidate_questions = []
     cooldown_threshold = timedelta(hours=1)

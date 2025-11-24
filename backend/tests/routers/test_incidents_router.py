@@ -49,6 +49,9 @@ class DummyIncidentRepository:
     discard_called_with = None
     convert_result = None
     incidents_list = []
+    user_incidents = []
+    deleted_incident = None
+    updated_incident = None
 
     def __init__(self, *_args, **_kwargs):
         pass
@@ -61,6 +64,9 @@ class DummyIncidentRepository:
         cls.discard_called_with = None
         cls.convert_result = None
         cls.incidents_list = []
+        cls.user_incidents = []
+        cls.deleted_incident = None
+        cls.updated_incident = None
 
     async def find_duplicate_incident(self, *args, **kwargs):
         return self.__class__.duplicate_result
@@ -75,6 +81,8 @@ class DummyIncidentRepository:
 
     async def get_all_open_incidents(self):
         return self.__class__.incidents_list
+    async def get_incidents_for_user(self, *_args, **_kwargs):
+        return self.__class__.user_incidents
 
     async def discard_incident(self, incident_id):
         self.__class__.discard_called_with = incident_id
@@ -82,6 +90,25 @@ class DummyIncidentRepository:
 
     async def convert_to_disaster(self, *args, **kwargs):
         return self.__class__.convert_result
+
+    async def get_incident(self, incident_id):
+        if self.__class__.incidents_list:
+            return self.__class__.incidents_list[0]
+        if self.__class__.user_incidents:
+            return self.__class__.user_incidents[0]
+        return None
+
+    async def delete_incident(self, incident_id):
+        if self.__class__.deleted_incident == "missing":
+            return None
+        self.__class__.deleted_incident = incident_id
+        return True
+
+    async def update_incident(self, incident_id, data):
+        self.__class__.updated_incident = (incident_id, data)
+        if self.__class__.incidents_list:
+            return self.__class__.incidents_list[0]
+        return None
 
 
 @pytest.fixture(autouse=True)
@@ -113,9 +140,39 @@ def incidents_app(monkeypatch):
     app.dependency_overrides.clear()
 
 
+@pytest.fixture
+def civilian_app(monkeypatch):
+    app = FastAPI()
+    app.include_router(incidents.router)
+
+    async def _db():
+        yield object()
+
+    user = SimpleNamespace(
+        user_id=uuid4(),
+        role=SimpleNamespace(name="civilian"),
+    )
+    app.state.stub_user = user
+
+    async def _current_user():
+        return user
+
+    app.dependency_overrides[incidents.get_db] = _db
+    app.dependency_overrides[incidents.get_current_user] = _current_user
+    yield app
+    app.dependency_overrides.clear()
+
+
 @pytest_asyncio.fixture
 async def client(incidents_app):
     transport = ASGITransport(app=incidents_app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        yield client
+
+
+@pytest_asyncio.fixture
+async def civilian_client(civilian_app):
+    transport = ASGITransport(app=civilian_app)
     async with AsyncClient(transport=transport, base_url="http://testserver") as client:
         yield client
 
@@ -260,6 +317,73 @@ async def test_update_status_no_action_branch(client):
     )
     assert response.status_code == 200
     assert response.json()["message"] == "No action taken"
+
+
+@pytest.mark.asyncio
+async def test_get_my_incidents_returns_only_user_records(civilian_client, stub_repository):
+    mine = _make_incident("Mine")
+    stub_repository.user_incidents = [mine]
+    response = await civilian_client.get("/incidents/mine")
+    assert response.status_code == 200
+    assert response.json()[0]["title"] == "Mine"
+
+
+@pytest.mark.asyncio
+async def test_delete_incident_blocks_non_owner(civilian_client, stub_repository):
+    incident = _make_incident("Not Mine")
+    stub_repository.incidents_list = [incident]
+    response = await civilian_client.delete(f"/incidents/{incident.incident_id}")
+    assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_delete_incident_allows_owner(civilian_client, civilian_app, stub_repository):
+    owned = _make_incident("My Incident")
+    owned.reported_by_user_id = civilian_app.state.stub_user.user_id
+    stub_repository.user_incidents = [owned]
+    response = await civilian_client.delete(f"/incidents/{owned.incident_id}")
+    assert response.status_code == 200
+    assert stub_repository.deleted_incident == owned.incident_id
+
+
+@pytest.mark.asyncio
+async def test_delete_incident_allows_commander(client, stub_repository):
+    incident = _make_incident("Commander Delete")
+    stub_repository.incidents_list = [incident]
+    response = await client.delete(f"/incidents/{incident.incident_id}")
+    assert response.status_code == 200
+    assert stub_repository.deleted_incident == incident.incident_id
+
+
+@pytest.mark.asyncio
+async def test_update_incident_allows_commander(client, stub_repository):
+    incident = _make_incident("To Update")
+    stub_repository.incidents_list = [incident]
+    resp = await client.patch(
+        f"/incidents/{incident.incident_id}",
+        json={"title": "Updated", "latitude": 0.0, "longitude": 0.0},
+    )
+    assert resp.status_code == 200
+    assert stub_repository.updated_incident[0] == incident.incident_id
+
+
+@pytest.mark.asyncio
+async def test_update_incident_returns_404_when_missing(client, stub_repository, monkeypatch):
+    async def fake_update(self, *_args, **_kwargs):
+        return None
+    monkeypatch.setattr(stub_repository, "update_incident", fake_update)
+    resp = await client.patch(
+        f"/incidents/{uuid4()}",
+        json={"title": "Missing", "latitude": 0.0, "longitude": 0.0},
+    )
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_delete_incident_returns_404_when_missing(client, stub_repository):
+    stub_repository.incidents_list = []
+    resp = await client.delete(f"/incidents/{uuid4()}")
+    assert resp.status_code == 404
 @pytest.fixture(autouse=True)
 def setup_database():
     """Router tests don't need the global database fixture."""

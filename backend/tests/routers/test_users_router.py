@@ -56,6 +56,9 @@ class DummyUserRepository:
         cls.location_updates = []
         cls.last_medical_code = None
         cls.medical_lookup_user = None
+        cls.deleted = False
+        cls.created_commander = None
+        cls.commanders = []
 
     async def complete_onboarding(self, user_id, phone, dob):
         self.__class__.complete_onboarding_calls.append((user_id, phone, dob))
@@ -73,6 +76,42 @@ class DummyUserRepository:
     async def get_user_by_medical_code(self, code):
         self.__class__.last_medical_code = code
         return self.__class__.medical_lookup_user
+
+    async def create_commander(self, email, full_name, phone_number=None):
+        commander = SimpleNamespace(
+            user_id=uuid4(),
+            email=email,
+            phone_number=phone_number,
+            profile=SimpleNamespace(full_name=full_name),
+        )
+        self.__class__.created_commander = commander
+        return commander
+
+    async def list_commanders(self):
+        return self.__class__.commanders
+
+    async def get_by_id(self, user_id):
+        for c in self.__class__.commanders:
+            if c.user_id == user_id:
+                return c
+        return None
+
+    async def update_phone_number(self, user_id, phone_number):
+        for c in self.__class__.commanders:
+            if c.user_id == user_id:
+                c.phone_number = phone_number
+                return
+
+    async def delete_user(self, user_id):
+        for c in list(self.__class__.commanders):
+            if c.user_id == user_id:
+                self.__class__.commanders.remove(c)
+                self.__class__.deleted = user_id
+                return True
+        if self.__class__.deleted == "missing":
+            return None
+        self.__class__.deleted = user_id
+        return True
 
 
 @pytest.fixture(autouse=True)
@@ -238,6 +277,61 @@ async def test_access_medical_data_respects_granular_consent(client, stub_user, 
 
 
 @pytest.mark.asyncio
+async def test_access_medical_data_allows_phone_with_flag(client, stub_user, stub_repository):
+    stub_user.role_id = 3
+    consent = {"share_all": False, "allow_phone": True}
+    stub_repository.medical_lookup_user = _make_target_user(consent=consent)
+
+    response = await client.post(
+        "/users/access-medical",
+        json={"public_user_code": "PUB123"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["sensitive_phone"] == "+19998887777"
+
+
+@pytest.mark.asyncio
+async def test_update_commander_returns_404_when_missing(stub_repository):
+    app = FastAPI()
+    app.include_router(users.router)
+
+    async def _db():
+        yield object()
+
+    async def _current_user():
+        return _commander()
+
+    app.dependency_overrides[users.get_db] = _db
+    app.dependency_overrides[get_current_user] = _current_user
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as ac:
+        resp = await ac.patch(f"/users/commander/commanders/{uuid4()}", json={"phone_number": "+1"})
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_delete_commander_returns_404_when_missing(stub_repository):
+    app = FastAPI()
+    app.include_router(users.router)
+
+    async def _db():
+        yield object()
+
+    async def _current_user():
+        return _commander()
+
+    app.dependency_overrides[users.get_db] = _db
+    app.dependency_overrides[get_current_user] = _current_user
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as ac:
+        resp = await ac.delete(f"/users/commander/commanders/{uuid4()}")
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
 async def test_access_medical_data_returns_404_for_missing_user(client, stub_user, stub_repository):
     stub_user.role_id = 2
     stub_repository.medical_lookup_user = None
@@ -248,3 +342,104 @@ async def test_access_medical_data_returns_404_for_missing_user(client, stub_use
     )
 
     assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_delete_my_account_invokes_repository(client, stub_repository):
+    response = await client.delete("/users/me")
+    assert response.status_code == 200
+    assert stub_repository.deleted is not None
+
+
+@pytest.mark.asyncio
+async def test_delete_my_account_handles_missing(client, stub_repository):
+    stub_repository.deleted = "missing"
+    response = await client.delete("/users/me")
+    assert response.status_code == 404
+
+
+def _commander(user_id=None):
+    return SimpleNamespace(user_id=user_id or uuid4(), role=SimpleNamespace(name="commander"))
+
+
+def _commander_app(stub_repo, commander=None):
+    app = FastAPI()
+    app.include_router(users.router)
+
+    async def _db():
+        yield object()
+
+    async def _current_user():
+        return commander or _commander()
+
+    app.dependency_overrides[users.get_db] = _db
+    app.dependency_overrides[get_current_user] = _current_user
+    return app
+
+
+@pytest.mark.asyncio
+async def test_create_commander_endpoint_returns_payload(stub_repository):
+    app = _commander_app(stub_repository)
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as ac:
+        resp = await ac.post(
+            "/users/commander/commanders",
+            json={"email": "cmd@example.com", "full_name": "Cmdr"},
+        )
+    assert resp.status_code == 200
+    assert resp.json()["email"] == "cmd@example.com"
+
+
+@pytest.mark.asyncio
+async def test_list_commanders_endpoint_returns_items(stub_repository):
+    commander = _commander()
+    stub_repository.commanders = [
+        SimpleNamespace(
+            user_id=commander.user_id,
+            email="c@example.com",
+            phone_number=None,
+            profile=SimpleNamespace(full_name="Cmd"),
+            role_id=3,
+        )
+    ]
+    app = _commander_app(stub_repository, commander)
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as ac:
+        resp = await ac.get("/users/commander/commanders")
+    assert resp.status_code == 200
+    assert resp.json()[0]["full_name"] == "Cmd"
+
+
+@pytest.mark.asyncio
+async def test_update_commander_endpoint_updates_profile(stub_repository):
+    commander = _commander()
+    target = _commander()
+    target.email = "target@example.com"
+    target.profile = SimpleNamespace(full_name="Target")
+    target.phone_number = None
+    target.role_id = 3
+    stub_repository.commanders = [target]
+    app = _commander_app(stub_repository, commander)
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as ac:
+        resp = await ac.patch(
+            f"/users/commander/commanders/{target.user_id}",
+            json={"phone_number": "+111", "profile": {"address": "HQ"}},
+        )
+    assert resp.status_code == 200
+    assert resp.json()["phone_number"] == "+111"
+
+
+@pytest.mark.asyncio
+async def test_delete_commander_endpoint_removes_user(stub_repository):
+    commander = _commander()
+    target = _commander()
+    target.role_id = 3
+    target.profile = SimpleNamespace(full_name="Del")
+    stub_repository.commanders = [target]
+    app = _commander_app(stub_repository, commander)
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as ac:
+        resp = await ac.delete(f"/users/commander/commanders/{target.user_id}")
+    assert resp.status_code == 200
+    assert stub_repository.commanders == []

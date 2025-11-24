@@ -17,6 +17,7 @@ class DummyTaskRepository:
     update_assignment_calls = []
     user_team_id = None
     override_status = None
+    deleted_task = None
 
     def __init__(self, *_args, **_kwargs):
         pass
@@ -29,6 +30,7 @@ class DummyTaskRepository:
         cls.update_assignment_calls = []
         cls.user_team_id = None
         cls.override_status = None
+        cls.deleted_task = None
 
     async def create_task(self, disaster_id, commander_id, payload):
         self.__class__.created_task = (disaster_id, commander_id, payload)
@@ -58,6 +60,12 @@ class DummyTaskRepository:
 
     async def update_task_status(self, task_id, status):
         self.__class__.override_status = (task_id, status)
+
+    async def delete_task(self, task_id):
+        if self.__class__.deleted_task == "missing":
+            return None
+        self.__class__.deleted_task = task_id
+        return True
 
 
 @pytest.fixture(autouse=True)
@@ -185,6 +193,61 @@ async def test_update_task_status_invokes_repository(commander_client, stub_repo
     response = await commander_client.patch(f"/tasks/{task_id}/status", json={"status": "cancelled"})
     assert response.status_code == 200
     assert stub_repository.override_status == (task_id, "cancelled")
+
+
+@pytest.mark.asyncio
+async def test_list_tasks_rejects_unauthorized():
+    app = _build_app("civilian")
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        resp = await client.get(f"/disasters/{uuid4()}/tasks")
+    assert resp.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_list_tasks_filters_to_responder_team(responder_client, stub_repository):
+    team_id = uuid4()
+    DummyTaskRepository.user_team_id = team_id
+    assigned = SimpleNamespace(
+        task_id=uuid4(),
+        disaster_id=uuid4(),
+        task_type="fire",
+        description="Team Task",
+        priority="high",
+        status="assigned",
+        location=None,
+        created_at=datetime.utcnow(),
+        assignments=[SimpleNamespace(team=SimpleNamespace(name="Alpha"), team_id=team_id, status="assigned", eta=None, arrived_at=None)],
+    )
+    DummyTaskRepository.task_list = [assigned]
+    resp = await responder_client.get(f"/disasters/{assigned.disaster_id}/tasks")
+    assert resp.status_code == 200
+    assert resp.json()[0]["description"] == "Team Task"
+
+
+@pytest.mark.asyncio
+async def test_list_tasks_returns_empty_for_responder_without_team():
+    app = _build_app("responder")
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        resp = await client.get(f"/disasters/{uuid4()}/tasks")
+    assert resp.status_code == 200
+    assert resp.json() == []
+
+
+@pytest.mark.asyncio
+async def test_delete_task_endpoint_handles_missing(commander_client, stub_repository):
+    DummyTaskRepository.deleted_task = "missing"
+    resp = await commander_client.delete(f"/tasks/{uuid4()}")
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_delete_task_endpoint_deletes(commander_client, stub_repository):
+    task_id = uuid4()
+    resp = await commander_client.delete(f"/tasks/{task_id}")
+    assert resp.status_code == 200
+    assert stub_repository.deleted_task == task_id
 @pytest.fixture(autouse=True)
 def setup_database():
     yield

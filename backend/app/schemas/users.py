@@ -60,3 +60,25 @@ class UserProfileResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# --- 6. Commander Management ---
+class CommanderCreateRequest(BaseModel):
+    email: str
+    full_name: str
+    phone_number: Optional[str] = None
+
+
+class CommanderUpdateRequest(BaseModel):
+    phone_number: Optional[str] = None
+    profile: Optional[UserProfileUpdate] = None
+
+
+class CommanderResponse(BaseModel):
+    user_id: UUID
+    email: Optional[str]
+    phone_number: Optional[str]
+    full_name: Optional[str]
+
+    class Config:
+        from_attributes = True

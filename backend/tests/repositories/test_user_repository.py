@@ -1,8 +1,10 @@
 from datetime import date
 from uuid import uuid4
+import secrets
 
 import pytest
 from geoalchemy2.shape import to_shape
+from sqlalchemy.exc import IntegrityError
 
 from app.models.user_family_models import Role, User, UserMedicalProfile, UserProfile
 from app.repositories.user_repository import UserRepository
@@ -26,8 +28,14 @@ class AsyncSessionAdapter:
     async def commit(self):
         self._session.commit()
 
+    async def rollback(self):
+        self._session.rollback()
+
     async def refresh(self, instance):
         self._session.refresh(instance)
+
+    async def get(self, model, pk):
+        return self._session.get(model, pk)
 
 
 @pytest.mark.asyncio
@@ -135,6 +143,40 @@ async def test_complete_onboarding_creates_medical_profile(db_session):
 
 
 @pytest.mark.asyncio
+async def test_complete_onboarding_retries_on_code_collision(db_session, monkeypatch):
+    async_session = AsyncSessionAdapter(db_session)
+    repo = UserRepository(async_session)
+
+    db_session.add(Role(role_id=1, name="Civilian"))
+    # Existing user with a specific code to collide with
+    existing_user = User(user_id=uuid4(), email="existing@example.com", role_id=1)
+    db_session.add(existing_user)
+    db_session.add(UserProfile(user_id=existing_user.user_id, full_name="Existing"))
+    db_session.add(UserMedicalProfile(user_id=existing_user.user_id, public_user_code="DUP123"))
+    db_session.commit()
+
+    # New user to onboard
+    user_id = uuid4()
+    db_session.add(User(user_id=user_id, email="new@example.com", role_id=1))
+    db_session.add(UserProfile(user_id=user_id, full_name="New User"))
+    db_session.commit()
+
+    # Force first attempt to collide, second to succeed
+    codes = iter(["DUP123", "NEW456"])
+    monkeypatch.setattr(secrets, "token_hex", lambda _n=3: next(codes))
+
+    updated = await repo.complete_onboarding(
+        user_id=user_id,
+        phone="+15550000000",
+        dob=date(1995, 5, 5),
+    )
+
+    assert updated.phone_number == "+15550000000"
+    med = db_session.get(UserMedicalProfile, user_id)
+    assert med.public_user_code == "NEW456"
+
+
+@pytest.mark.asyncio
 async def test_update_user_profile_ignores_none_values(db_session):
     async_session = AsyncSessionAdapter(db_session)
     repo = UserRepository(async_session)
@@ -159,6 +201,51 @@ async def test_update_user_profile_ignores_none_values(db_session):
     profile = db_session.get(UserProfile, user_id)
     assert profile.full_name == "Original"
     assert profile.address == "New Address"
+
+
+@pytest.mark.asyncio
+async def test_delete_user_returns_none_when_missing(db_session):
+    repo = UserRepository(AsyncSessionAdapter(db_session))
+    assert await repo.delete_user(uuid4()) is None
+
+
+@pytest.mark.asyncio
+async def test_delete_user_removes_record(db_session):
+    db_session.add(Role(role_id=1, name="Civilian"))
+    db_session.commit()
+    user_id = uuid4()
+    user = User(user_id=user_id, email="delete@example.com", role_id=1)
+    db_session.add(user)
+    db_session.commit()
+
+    repo = UserRepository(AsyncSessionAdapter(db_session))
+    assert await repo.delete_user(user_id) is True
+    assert db_session.query(User).filter_by(user_id=user_id).count() == 0
+
+
+@pytest.mark.asyncio
+async def test_update_phone_number_updates_user(db_session):
+    db_session.add(Role(role_id=1, name="Civilian"))
+    db_session.commit()
+    user = User(user_id=uuid4(), email="phone@example.com", role_id=1)
+    db_session.add(user)
+    db_session.commit()
+
+    repo = UserRepository(AsyncSessionAdapter(db_session))
+    await repo.update_phone_number(user.user_id, "+1999")
+    db_session.refresh(user)
+    assert user.phone_number == "+1999"
+
+
+@pytest.mark.asyncio
+async def test_create_and_list_commanders(db_session):
+    repo = UserRepository(AsyncSessionAdapter(db_session))
+    db_session.add(Role(role_id=3, name="commander"))
+    db_session.commit()
+    created = await repo.create_commander("cmd@example.com", "Commander Name", "+1222")
+    assert created.role_id == 3
+    commanders = await repo.list_commanders()
+    assert any(c.email == "cmd@example.com" for c in commanders)
 
 
 @pytest.mark.asyncio
