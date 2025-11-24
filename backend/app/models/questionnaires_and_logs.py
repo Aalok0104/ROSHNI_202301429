@@ -216,12 +216,18 @@ class DisasterChatMessage(Base):
         ForeignKey("disasters.disaster_id", ondelete="CASCADE"),
         nullable=False,
     )
+    team_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("teams.team_id", ondelete="SET NULL"),
+        nullable=True,
+    )
     sender_user_id = Column(
         UUID(as_uuid=True),
         ForeignKey("users.user_id", ondelete="CASCADE"),
         nullable=False,
     )
     message_text = Column(Text, nullable=False)
+    is_global = Column(Boolean, nullable=False, server_default="false")
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
     def __repr__(self) -> str:
@@ -244,3 +250,5 @@ Incident.media_items = relationship(
 )
 
 DisasterChatMessage.sender = relationship("User")
+from app.models.responder_management import Team
+DisasterChatMessage.team = relationship("Team")
