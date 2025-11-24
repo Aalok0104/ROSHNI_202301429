@@ -38,36 +38,34 @@ class DummyWebSocket:
         self.sent_messages.append(text)
 
 @pytest.mark.asyncio
-async def test_websocket_manager():
+async def test_connection_manager_room_keys():
     manager = ConnectionManager()
     disaster_id = uuid4()
-    
-    # Mock WebSocket
+
     class MockWS:
         def __init__(self, should_raise=False):
             self.accepted = False
-            self.closed = False
             self.sent_messages = []
             self.should_raise = should_raise
             
         async def accept(self):
             self.accepted = True
-            
+
         async def send_text(self, text):
             if self.should_raise:
                 raise RuntimeError("boom")
             self.sent_messages.append(text)
-            
+
     ws1 = MockWS()
     ws2 = MockWS()
     ws3 = MockWS(should_raise=True)
     
     # Connect
-    await manager.connect(ws1, disaster_id)
+    await manager.connect(ws1, room_key)
     assert ws1.accepted
-    assert str(disaster_id) in manager.active_connections
-    assert len(manager.active_connections[str(disaster_id)]) == 1
-    
+    assert room_key in manager.active_connections
+    assert len(manager.active_connections[room_key]) == 1
+
     # Connect second
     await manager.connect(ws2, disaster_id)
     await manager.connect(ws3, disaster_id)
@@ -75,7 +73,7 @@ async def test_websocket_manager():
     
     # Broadcast
     msg = {"text": "hello"}
-    await manager.broadcast(msg, disaster_id)
+    await manager.broadcast(msg, room_key)
     assert len(ws1.sent_messages) == 1
     assert len(ws2.sent_messages) == 1
     assert "hello" in ws1.sent_messages[0]
@@ -93,9 +91,12 @@ async def test_websocket_manager():
     assert str(disaster_id) not in manager.active_connections
 
 @pytest.mark.asyncio
-async def test_chat_history_endpoint(async_client, async_db_session, async_create_user, async_create_disaster):
-    # Setup
-    user = await async_create_user(email="chat_user@example.com")
+async def test_history_team_and_global(async_client, async_db_session, async_create_user, async_create_disaster):
+    # Create users
+    responder = await async_create_user(email="responder@example.com", role_name="responder")
+    commander = await async_create_user(email="commander@example.com", role_name="commander")
+
+    # Create disaster
     disaster = await async_create_disaster()
 
     msg = DisasterChatMessage(

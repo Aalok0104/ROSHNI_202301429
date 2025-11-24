@@ -8,7 +8,7 @@ from app.models.responder_models import Team, ResponderProfile
 from app.models.user_family_models import User, UserProfile
 
 class ResponderRepository:
-    def __init__(self, db: AsyncSession):
+    def _init_(self, db: AsyncSession):
         self.db = db
 
     async def create_team(self, data: dict) -> Team:
@@ -49,7 +49,7 @@ class ResponderRepository:
         for team, count, lat, lon in rows:
             # We attach the calculated fields to the object wrapper or return a dict
             # Using a wrapper method is cleaner for Pydantic "from_attributes"
-            team_data = team.__dict__.copy()
+            team_data = team._dict_.copy()
             team_data['member_count'] = count
             team_data['current_latitude'] = lat
             team_data['current_longitude'] = lon
@@ -155,8 +155,8 @@ class ResponderRepository:
         """
         Updates ResponderProfile. Handles team joining logic.
         """
-        # Clean data
-        updates = {k: v for k, v in data.items() if v is not None}
+        # Clean data - allow team_id to be None (for removing from team)
+        updates = {k: v for k, v in data.items() if k == 'team_id' or v is not None}
         
         if not updates:
             return
@@ -164,8 +164,11 @@ class ResponderRepository:
         stmt = update(ResponderProfile).where(ResponderProfile.user_id == user_id)
         
         if 'team_id' in updates:
-            # Add timestamp logic for team join
-            stmt = stmt.values(team_joined_at=func.now())
+            # Add timestamp logic for team join, or clear it when removing
+            if updates['team_id'] is not None:
+                stmt = stmt.values(team_joined_at=func.now())
+            else:
+                stmt = stmt.values(team_joined_at=None)
         
         stmt = stmt.values(**updates)
         
