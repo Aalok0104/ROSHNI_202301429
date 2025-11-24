@@ -1,0 +1,779 @@
+/* Teams Management Styles - Matching Commander Dashboard Theme */
+
+.teams-management-container {
+  min-height: 100vh;
+  background: hsl(221 51% 7%); /* var(--surface) */
+  padding: 2rem;
+  font-family: "Inter", sans-serif;
+  color: #f8fafc;
+}
+
+.teams-management-header {
+  margin-bottom: 2rem;
+}
+
+.teams-management-title {
+  font-size: 1.875rem;
+  font-weight: 600;
+  color: #f8fafc;
+  margin: 0 0 0.5rem 0;
+}
+
+.teams-management-subtitle {
+  font-size: 0.875rem;
+  color: #b8c6db; /* var(--text-muted) */
+  margin: 0;
+}
+
+/* Back Button */
+.back-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: transparent;
+  border: none;
+  color: #3b82f6; /* var(--accent-solid) */
+  cursor: pointer;
+  font-size: 0.875rem;
+  margin-bottom: 1.5rem;
+  padding: 0.5rem 0;
+  transition: color 0.2s ease;
+}
+
+.back-button:hover {
+  color: #5b64f6; /* var(--primary-solid) */
+}
+
+/* Controls Section */
+.controls-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  gap: 1rem;
+}
+
+/* Search Input */
+.search-container {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.search-input {
+  padding: 0.625rem 1rem 0.625rem 2.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.08); /* var(--border-color) */
+  border-radius: 0.75rem;
+  width: 18rem;
+  font-size: 0.875rem;
+  background: hsl(224 45% 12%); /* var(--panel-bg) */
+  color: #f8fafc;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #5b64f6; /* var(--primary-solid) */
+  box-shadow: 0 0 0 3px rgba(91, 100, 246, 0.1);
+}
+
+.search-input::placeholder {
+  color: #b8c6db; /* var(--text-muted) */
+}
+
+.search-icon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #b8c6db;
+  pointer-events: none;
+}
+
+/* Button Group */
+.button-group {
+  display: flex;
+  gap: 0.75rem;
+}
+
+/* Filter Dropdown Container */
+.filter-dropdown-container {
+  position: relative;
+}
+
+/* Filter Button */
+.filter-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  background: hsl(224 45% 12%);
+  color: #f8fafc;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+  white-space: nowrap;
+}
+
+.filter-button:hover {
+  background: hsl(222 40% 16%); /* var(--panel-accent) */
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+/* Filter Dropdown */
+.filter-dropdown {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 0;
+  min-width: 200px;
+  background: hsl(224 45% 12%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 40px rgba(2, 6, 23, 0.5);
+  z-index: 100;
+  overflow: hidden;
+}
+
+.filter-dropdown button {
+  display: block;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  background: transparent;
+  border: none;
+  color: #f8fafc;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.filter-dropdown button:hover {
+  background: hsl(222 40% 16%);
+}
+
+.filter-dropdown button:not(:last-child) {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Primary Button (Add/Create) */
+.primary-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, #5b64f6 0%, #4046b7 100%);
+  color: #ffffff;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  box-shadow: 
+    0 2px 8px rgba(91, 100, 246, 0.3),
+    0 0 0 0 rgba(91, 100, 246, 0);
+  letter-spacing: 0.01em;
+  position: relative;
+  overflow: hidden;
+}
+
+.primary-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.primary-button:hover::before {
+  left: 100%;
+}
+
+.primary-button:hover {
+  background: linear-gradient(135deg, #4046b7 0%, #3b3db7 100%);
+  box-shadow: 
+    0 4px 16px rgba(91, 100, 246, 0.5),
+    0 0 0 4px rgba(91, 100, 246, 0.1);
+  transform: translateY(-2px);
+}
+
+.primary-button:active {
+  transform: translateY(0);
+  box-shadow: 
+    0 2px 8px rgba(91, 100, 246, 0.4),
+    0 0 0 4px rgba(91, 100, 246, 0.1);
+}
+
+.primary-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Table Container */
+.table-container {
+  background: hsl(224 45% 12%); /* var(--panel-bg) */
+  border-radius: 1rem;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 20px 50px rgba(2, 6, 23, 0.35);
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+/* Table Header */
+.table-header {
+  background: hsl(222 40% 16%); /* var(--panel-accent) */
+}
+
+.table-header th {
+  padding: 1rem 1.5rem;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #b8c6db;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.table-header th:last-child {
+  text-align: right;
+}
+
+/* Table Body */
+.table-body {
+  background: hsl(224 45% 12%);
+}
+
+.table-body tr {
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  transition: background-color 0.15s ease;
+}
+
+.table-body tr:hover {
+  background: hsl(222 40% 16%);
+}
+
+.table-body td {
+  padding: 1rem 1.5rem;
+  font-size: 0.875rem;
+  color: #f8fafc;
+}
+
+.table-body td:last-child {
+  text-align: right;
+}
+
+/* Team/Responder Name Link */
+.name-link {
+  color: #3b82f6;
+  font-weight: 500;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: inherit;
+  text-align: left;
+  transition: color 0.2s ease;
+}
+
+.name-link:hover {
+  color: #5b64f6;
+}
+
+/* Badge Styles */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 9999px;
+  white-space: nowrap;
+}
+
+/* Team Type Badges */
+.badge-medic {
+  background: rgba(236, 72, 153, 0.15);
+  color: #f9a8d4;
+}
+
+.badge-fire {
+  background: rgba(251, 146, 60, 0.15);
+  color: #fdba74;
+}
+
+.badge-police {
+  background: rgba(59, 130, 246, 0.15);
+  color: #93c5fd;
+}
+
+.badge-mixed {
+  background: rgba(168, 85, 247, 0.15);
+  color: #c4b5fd;
+}
+
+.badge-disaster-response {
+  background: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+}
+
+/* Status Badges */
+.badge-active {
+  background: rgba(74, 222, 128, 0.15);
+  color: #86efac;
+}
+
+.badge-on-mission {
+  background: rgba(59, 130, 246, 0.15);
+  color: #93c5fd;
+}
+
+.badge-standby {
+  background: rgba(250, 204, 21, 0.15);
+  color: #fde047;
+}
+
+.badge-inactive {
+  background: rgba(156, 163, 175, 0.15);
+  color: #d1d5db;
+}
+
+/* Responder Type Badges */
+.badge-logistics {
+  background: rgba(168, 85, 247, 0.15);
+  color: #c4b5fd;
+}
+
+.badge-engineer {
+  background: rgba(168, 85, 247, 0.15);
+  color: #c4b5fd;
+}
+
+.badge-rescue {
+  background: rgba(59, 130, 246, 0.15);
+  color: #93c5fd;
+}
+
+/* Action Icons */
+.action-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.375rem;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  transition: transform 0.15s ease;
+}
+
+.action-icon:hover {
+  transform: scale(1.1);
+}
+
+.action-icon-view {
+  color: #3b82f6;
+}
+
+.action-icon-view:hover {
+  color: #5b64f6;
+}
+
+.action-icon-remove {
+  color: #f87171; /* var(--danger) */
+}
+
+.action-icon-remove:hover {
+  color: #ef4444;
+}
+
+.action-icon-add {
+  color: #4ade80; /* var(--success) */
+}
+
+.action-icon-add:hover {
+  color: #22c55e;
+}
+
+/* Text Button */
+.text-button {
+  background: none;
+  border: none;
+  color: #3b82f6;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0;
+  transition: color 0.2s ease;
+}
+
+.text-button:hover {
+  color: #5b64f6;
+}
+
+/* Icon with Text */
+.icon-text {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: #b8c6db;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #b8c6db;
+  font-size: 0.875rem;
+}
+
+/* Pagination */
+.pagination {
+  margin-top: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.pagination-button {
+  padding: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.5rem;
+  background: hsl(224 45% 12%);
+  color: #b8c6db;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.pagination-button:hover:not(:disabled) {
+  background: hsl(222 40% 16%);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.pagination-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pagination-page {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.5rem;
+  background: #5b64f6;
+  color: #ffffff;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* Team Context Header */
+.team-context {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+
+.team-name {
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: #f8fafc;
+  margin: 0;
+}
+
+/* Loading State */
+.loading-state {
+  padding: 2rem;
+  text-align: center;
+  color: #b8c6db;
+  font-size: 0.875rem;
+}
+
+/* Error State */
+.error-state {
+  padding: 2rem;
+  text-align: center;
+  color: #f87171;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .controls-section {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-container {
+    width: 100%;
+  }
+
+  .search-input {
+    width: 100%;
+  }
+
+  .button-group {
+    justify-content: space-between;
+  }
+}
+
+@media (max-width: 768px) {
+  .teams-management-container {
+    padding: 1rem;
+  }
+
+  .table-container {
+    overflow-x: auto;
+  }
+
+  .data-table {
+    min-width: 600px;
+  }
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.modal-content {
+  /* Simplified Create Team modal styling: keep theme but reduce visual complexity */
+  background: hsl(221 37% 12%); /* flat dark panel matching theme */
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 1.5rem; /* smaller padding for a compact box */
+  width: 100%;
+  max-width: 540px;
+  box-shadow: 0 10px 30px rgba(2, 6, 23, 0.45); /* softer shadow */
+  animation: slideUp 0.22s ease;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.modal-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #f8fafc;
+  margin: 0 0 0.5rem 0;
+  letter-spacing: -0.02em;
+}
+
+.modal-title::after {
+  content: '';
+  display: block;
+  width: 48px;
+  height: 2px;
+  background: #5b64f6; /* simple accent line */
+  border-radius: 2px;
+  margin-top: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.form-group {
+  margin-bottom: 1.75rem;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: #f1f5f9;
+  margin-bottom: 0.625rem;
+  letter-spacing: 0.01em;
+}
+
+.form-label::after {
+  content: ' *';
+  color: #ff6b6b;
+  font-weight: 600;
+}
+
+.form-input,
+.form-select {
+  width: 100%;
+  padding: 0.875rem 1.125rem;
+  background: hsl(221 51% 9%);
+  border: 1.5px solid hsl(221 20% 25%);
+  border-radius: 10px;
+  color: #f1f5f9; /* primary text color for inputs */
+  caret-color: #ffffff; /* ensure caret is visible */
+  -webkit-text-fill-color: #f1f5f9; /* handle Chrome autofill/text painting */
+  font-size: 1rem;
+  font-weight: 500;
+  transition: all 0.25s ease;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.form-input:focus,
+.form-select:focus {
+  outline: none;
+  border-color: #5b64f6;
+  background: hsl(221 51% 8%);
+  box-shadow: 
+    inset 0 2px 4px rgba(0, 0, 0, 0.2),
+    0 0 0 3px rgba(91, 100, 246, 0.15);
+}
+
+.form-input:hover:not(:disabled),
+.form-select:hover:not(:disabled) {
+  border-color: hsl(221 20% 25%);
+}
+
+.form-select {
+  cursor: pointer;
+  appearance: none;
+  background-color: hsl(221 51% 9%);
+  background-image: 
+    url("data:image/svg+xml,%3Csvg width='14' height='9' viewBox='0 0 14 9' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L7 7.5L13 1.5' stroke='%235b64f6' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 14px;
+  padding-right: 3.5rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #f1f5f9;
+}
+
+.form-select:hover:not(:disabled) {
+  background-color: hsl(221 51% 11%);
+  border-color: hsl(221 20% 30%);
+}
+
+.form-select option {
+  background: hsl(221 37% 12%);
+  color: #f8fafc;
+  padding: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.form-input::placeholder {
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+/* Chrome/Safari autofill overrides to keep text visible */
+input.form-input:-webkit-autofill,
+input.form-input:-webkit-autofill:focus,
+input.form-input:-webkit-autofill:hover {
+  -webkit-text-fill-color: #f1f5f9 !important;
+  caret-color: #ffffff !important;
+  box-shadow: 0 0 0px 1000px hsl(221 51% 9%) inset !important; /* preserve background */
+}
+
+/* Ensure disabled inputs remain readable */
+.form-input:disabled {
+  opacity: 0.9;
+  color: #cbd5e1;
+  -webkit-text-fill-color: #cbd5e1;
+}
+
+/* Strong overrides for modal inputs to avoid being overridden by browser/user-agent or third-party CSS */
+.modal-content .form-input,
+.modal-content .form-select {
+  background: hsl(221 51% 9%) !important; /* dark background */
+  color: #f1f5f9 !important; /* visible text color */
+  -webkit-text-fill-color: #f1f5f9 !important; /* Chrome autofill/text */
+  caret-color: #ffffff !important;
+  border: 1.5px solid hsl(221 20% 25%) !important;
+}
+
+.modal-content .form-input::placeholder {
+  color: #94a3b8 !important;
+  opacity: 1 !important;
+}
+
+/* Extra specificity for inputs that may be affected by third-party resets */
+div.modal-content input.form-input[type="text"],
+div.modal-content select.form-select {
+  color: #f1f5f9 !important;
+  background: hsl(221 51% 9%) !important;
+}
+
+/* If some browser or CSS sets the input background to white, force the dark background for the modal */
+.modal-content input.form-input:-moz-placeholder,
+.modal-content input.form-input::-moz-placeholder {
+  color: #94a3b8 !important;
+}
+
+.form-input:disabled,
+.form-select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: hsl(221 51% 5%);
+}
+
+.modal-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 2.5rem;
+}
+
+.secondary-button {
+  padding: 0.75rem 1.5rem;
+  background: hsl(221 37% 10%);
+  border: 1.5px solid hsl(221 20% 22%);
+  border-radius: 10px;
+  color: #e2e8f0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  letter-spacing: 0.01em;
+}
+
+.secondary-button:hover:not(:disabled) {
+  background: hsl(221 37% 14%);
+  border-color: hsl(221 20% 30%);
+  color: #f8fafc;
+  transform: translateY(-1px);
+}
+
+.secondary-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.secondary-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
