@@ -7,11 +7,22 @@ from datetime import datetime
 
 from app.models.disaster_management import DisasterTask, DisasterTaskAssignment
 from app.models.responder_models import Team, ResponderProfile
+from app.models.questionnaires_and_logs import DisasterLog
 from app.schemas.tasks import TaskCreateRequest
 
 class TaskRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
+
+    async def _log_task_action(self, disaster_id: UUID, user_id: UUID | None, title: str, body: str):
+        log = DisasterLog(
+            disaster_id=disaster_id,
+            created_by_user_id=user_id,
+            source_type="system",
+            title=title,
+            text_body=body,
+        )
+        self.db.add(log)
 
     async def create_task(self, disaster_id: UUID, commander_id: UUID, data: TaskCreateRequest) -> DisasterTask:
         point = WKTElement(f'POINT({data.longitude} {data.latitude})', srid=4326)
@@ -26,6 +37,12 @@ class TaskRepository:
             status='pending'
         )
         self.db.add(new_task)
+        await self._log_task_action(
+            disaster_id,
+            commander_id,
+            "Task Created",
+            f"Task {new_task.task_type} created with priority {new_task.priority}",
+        )
         await self.db.commit()
         await self.db.refresh(new_task)
         return new_task
@@ -46,6 +63,8 @@ class TaskRepository:
             query = query.where(DisasterTask.status == filters['status'])
         if filters and filters.get('priority'):
             query = query.where(DisasterTask.priority == filters['priority'])
+        if filters and filters.get('team_id'):
+            query = query.join(DisasterTaskAssignment).where(DisasterTaskAssignment.team_id == filters['team_id'])
             
         # Logic for "my_team_only" would require joining Assignments in the WHERE clause,
         # implemented in router logic usually or complex join here.
@@ -88,6 +107,12 @@ class TaskRepository:
             .values(status='deployed')
         )
 
+        await self._log_task_action(
+            (await self.db.get(DisasterTask, task_id)).disaster_id,
+            commander_id,
+            "Team Assigned",
+            f"Team {team_id} assigned to task {task_id}",
+        )
         await self.db.commit()
 
     async def update_assignment_status(self, task_id: UUID, team_id: UUID, status: str, eta: datetime = None):
@@ -144,6 +169,13 @@ class TaskRepository:
                     update(DisasterTask).where(DisasterTask.task_id == task_id).values(status='completed')
                 )
 
+        task = await self.db.get(DisasterTask, task_id)
+        await self._log_task_action(
+            task.disaster_id,
+            None,
+            "Assignment Updated",
+            f"Team {team_id} updated status to {status}",
+        )
         await self.db.commit()
 
     async def get_user_team_id(self, user_id: UUID) -> UUID | None:
@@ -156,4 +188,26 @@ class TaskRepository:
         await self.db.execute(
             update(DisasterTask).where(DisasterTask.task_id == task_id).values(status=status)
         )
+        task = await self.db.get(DisasterTask, task_id)
+        await self._log_task_action(
+            task.disaster_id,
+            None,
+            "Task Status Updated",
+            f"Task {task_id} set to {status}",
+        )
         await self.db.commit()
+
+    async def delete_task(self, task_id: UUID):
+        task = await self.db.get(DisasterTask, task_id)
+        if not task:
+            return None
+        disaster_id = task.disaster_id
+        await self.db.execute(DisasterTask.__table__.delete().where(DisasterTask.task_id == task_id))
+        await self._log_task_action(
+            disaster_id,
+            None,
+            "Task Deleted",
+            f"Task {task_id} deleted",
+        )
+        await self.db.commit()
+        return True

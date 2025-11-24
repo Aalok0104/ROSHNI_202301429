@@ -144,3 +144,20 @@ async def export_pdf(
         media_type="application/pdf",
         headers={"Content-Disposition": f"attachment; filename=report_{report.version_number}.pdf"}
     )
+
+
+@router.delete("/{report_id}")
+async def delete_report(
+    report_id: UUID,
+    current_user: User = Depends(RoleChecker(["commander"])),
+    db: AsyncSession = Depends(get_db)
+):
+    stmt = select(DisasterReportDraft).where(DisasterReportDraft.report_id == report_id)
+    result = await db.execute(stmt)
+    report = result.scalar_one_or_none()
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+
+    await db.delete(report)
+    await db.commit()
+    return {"message": "Report deleted"}

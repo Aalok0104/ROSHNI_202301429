@@ -12,7 +12,8 @@ from app.models.questionnaires_and_logs import DisasterChatMessage
 from app.models.responder_management import ResponderProfile
 from app.repositories.user_repository import UserRepository
 from app.services.websocket_manager import ConnectionManager
-from app.schemas.chat import ChatMessageResponse, ChatMessageCreate
+from app.schemas.chat import ChatMessageResponse, ChatMessageCreate, ChatMessageCreate as ChatMessageUpdate
+from app.dependencies import get_current_user, RoleChecker
 
 router = APIRouter(prefix="/chat", tags=["Real-Time Chat"])
 manager = ConnectionManager()
@@ -87,6 +88,60 @@ async def get_chat_history(
         ))
     
     return response
+
+
+def _format_message_response(msg: DisasterChatMessage, sender_name: str, sender_role: str) -> ChatMessageResponse:
+    return ChatMessageResponse(
+        message_id=msg.message_id,
+        disaster_id=msg.disaster_id,
+        sender_user_id=msg.sender_user_id,
+        sender_name=sender_name,
+        sender_role=sender_role,
+        message_text=msg.message_text,
+        created_at=msg.created_at,
+    )
+
+
+async def _can_modify_message(current_user: User, message: DisasterChatMessage):
+    if current_user.role and current_user.role.name == "commander":
+        return True
+    return message.sender_user_id == current_user.user_id
+
+
+@router.patch("/messages/{message_id}", response_model=ChatMessageResponse)
+async def update_message(
+    message_id: UUID,
+    payload: ChatMessageUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    message = await db.get(DisasterChatMessage, message_id)
+    if not message:
+        raise HTTPException(status_code=404, detail="Message not found")
+    if not await _can_modify_message(current_user, message):
+        raise HTTPException(status_code=403, detail="Not allowed")
+    message.message_text = payload.message_text
+    await db.commit()
+    await db.refresh(message)
+    sender_name = current_user.profile.full_name if current_user.profile else (current_user.email or "Unknown")
+    sender_role = current_user.role.name if current_user.role else "civilian"
+    return _format_message_response(message, sender_name, sender_role)
+
+
+@router.delete("/messages/{message_id}")
+async def delete_message(
+    message_id: UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    message = await db.get(DisasterChatMessage, message_id)
+    if not message:
+        raise HTTPException(status_code=404, detail="Message not found")
+    if not await _can_modify_message(current_user, message):
+        raise HTTPException(status_code=403, detail="Not allowed")
+    await db.delete(message)
+    await db.commit()
+    return {"message": "Message deleted"}
 
 @router.websocket("/ws/{disaster_id}")  # pragma: no cover
 async def websocket_endpoint(

@@ -81,7 +81,17 @@ async def list_tasks(
     db: AsyncSession = Depends(get_db)
 ):
     repo = TaskRepository(db)
-    tasks = await repo.get_tasks(disaster_id, {"status": status, "priority": priority})
+    role = current_user.role.name if current_user.role else None
+    if role not in ("commander", "responder"):
+        raise HTTPException(status_code=403, detail="Not authorized to view tasks")
+
+    team_id = None
+    if role == "responder":
+        team_id = await repo.get_user_team_id(current_user.user_id)
+        if not team_id:
+            return []
+
+    tasks = await repo.get_tasks(disaster_id, {"status": status, "priority": priority, "team_id": team_id})
     return [format_task_response(t) for t in tasks]
 
 # --- C. Assign Team ---
@@ -130,3 +140,16 @@ async def update_task_status(
     repo = TaskRepository(db)
     await repo.update_task_status(task_id, payload['status'])
     return {"message": "Task status updated"}
+
+
+@router.delete("/tasks/{task_id}")
+async def delete_task(
+    task_id: UUID,
+    current_user: User = Depends(RoleChecker(["commander"])),
+    db: AsyncSession = Depends(get_db)
+):
+    repo = TaskRepository(db)
+    deleted = await repo.delete_task(task_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return {"message": "Task deleted"}

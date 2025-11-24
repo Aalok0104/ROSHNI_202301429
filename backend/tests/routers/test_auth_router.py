@@ -7,6 +7,7 @@ import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 from starlette.middleware.sessions import SessionMiddleware
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.database import get_db
 from app.routers import auth
@@ -52,6 +53,8 @@ class DummyUserRepository:
     created_args = None
     update_calls = []
     get_by_id_result = None
+    raise_db_error = False
+    raise_generic_error = False
 
     def __init__(self, *_args, **_kwargs):
         pass
@@ -63,14 +66,28 @@ class DummyUserRepository:
         cls.created_args = None
         cls.update_calls = []
         cls.get_by_id_result = None
+        cls.raise_db_error = False
+        cls.raise_generic_error = False
 
     async def get_by_email(self, email):
+        if self.__class__.raise_db_error:
+            raise SQLAlchemyError("db boom")
+        if self.__class__.raise_generic_error:
+            raise RuntimeError("generic boom")
         return self.__class__.existing_user
 
     async def update_provider_id(self, user_id, provider_id):
+        if self.__class__.raise_db_error:
+            raise SQLAlchemyError("db boom")
+        if self.__class__.raise_generic_error:
+            raise RuntimeError("generic boom")
         self.__class__.update_calls.append((user_id, provider_id))
 
     async def create_civilian(self, email, provider_id, full_name):
+        if self.__class__.raise_db_error:
+            raise SQLAlchemyError("db boom")
+        if self.__class__.raise_generic_error:
+            raise RuntimeError("generic boom")
         self.__class__.created_args = (email, provider_id, full_name)
         return self.__class__.create_return
 
@@ -177,6 +194,20 @@ async def test_auth_callback_handles_oauth_errors(auth_app, stub_oauth):
 
 
 @pytest.mark.asyncio
+async def test_auth_callback_userinfo_fetch_failure(auth_app, stub_oauth, monkeypatch):
+    async def _userinfo_fail(*_args, **_kwargs):
+        raise RuntimeError("userinfo error")
+
+    stub_oauth.google.token_payload = {"userinfo": None}
+    monkeypatch.setattr(auth.oauth.google, "userinfo", _userinfo_fail)
+    auth_app.dependency_overrides[get_db] = _fake_db
+
+    async with _async_client(auth_app) as client:
+        response = await client.get("/auth/callback")
+    assert response.status_code == 400
+
+
+@pytest.mark.asyncio
 async def test_logout_clears_session(auth_app, stub_repository, stub_oauth):
     user = _make_user()
     stub_repository.existing_user = None
@@ -241,3 +272,100 @@ async def test_get_current_user_returns_profile_info(auth_app, stub_repository, 
     assert payload["role"] == "commander"
     assert payload["is_profile_complete"] is True
     assert payload["profile_picture"] == "pic-url"
+
+
+@pytest.mark.asyncio
+async def test_auth_callback_rejects_missing_email(auth_app, stub_oauth):
+    stub_oauth.google.token_payload = {"userinfo": {"sub": "google-123"}}
+    auth_app.dependency_overrides[get_db] = _fake_db
+
+    async with _async_client(auth_app) as client:
+        response = await client.get("/auth/callback")
+
+    assert response.status_code == 400
+    assert "email" in response.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_auth_callback_rejects_missing_sub(auth_app, stub_oauth):
+    stub_oauth.google.token_payload = {"userinfo": {"email": "missing-sub@example.com"}}
+    auth_app.dependency_overrides[get_db] = _fake_db
+
+    async with _async_client(auth_app) as client:
+        response = await client.get("/auth/callback")
+
+    assert response.status_code == 400
+    assert "provider id" in response.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_auth_callback_handles_db_error(auth_app, stub_repository, stub_oauth):
+    user = _make_user(provider_id=None, role_name="responder")
+    stub_repository.existing_user = user
+    stub_repository.raise_db_error = True
+    stub_oauth.google.token_payload = {
+        "userinfo": {"email": user.email, "sub": "google-123", "name": "Existing", "picture": "pic"}
+    }
+
+    auth_app.dependency_overrides[get_db] = _fake_db
+    async with _async_client(auth_app) as client:
+        response = await client.get("/auth/callback")
+
+    assert response.status_code == 500
+    assert "Database error" in response.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_auth_callback_handles_generic_error(auth_app, stub_repository, stub_oauth):
+    new_user = _make_user()
+    stub_repository.existing_user = None
+    stub_repository.create_return = new_user
+    stub_repository.raise_generic_error = True
+    stub_oauth.google.token_payload = {
+        "userinfo": {"email": "new2@example.com", "sub": "google-888", "name": "New User", "picture": "pic"}
+    }
+
+    auth_app.dependency_overrides[get_db] = _fake_db
+    async with _async_client(auth_app) as client:
+        response = await client.get("/auth/callback")
+
+    assert response.status_code == 500
+    assert "Unexpected error" in response.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_auth_callback_raises_when_no_user_created(auth_app, stub_repository, stub_oauth):
+    stub_repository.existing_user = None
+    stub_repository.create_return = None
+    stub_oauth.google.token_payload = {
+        "userinfo": {"email": "new3@example.com", "sub": "google-889", "name": "New User", "picture": "pic"}
+    }
+
+    auth_app.dependency_overrides[get_db] = _fake_db
+    async with _async_client(auth_app) as client:
+        response = await client.get("/auth/callback")
+
+    assert response.status_code == 500
+    assert "Failed to create" in response.json()["detail"]
+
+
+@pytest.mark.asyncio
+async def test_auth_callback_defaults_role_on_error(auth_app, stub_repository, stub_oauth):
+    class BadRole:
+        def __getattr__(self, _):
+            raise RuntimeError("role missing")
+
+    user = _make_user()
+    user.role = BadRole()
+    stub_repository.existing_user = None
+    stub_repository.create_return = user
+    stub_oauth.google.token_payload = {
+        "userinfo": {"email": user.email, "sub": "google-555", "name": "New User", "picture": "pic"}
+    }
+
+    auth_app.dependency_overrides[get_db] = _fake_db
+    async with _async_client(auth_app) as client:
+        response = await client.get("/auth/callback")
+        assert response.status_code == 307
+        # session should fall back to civilian when role lookup fails
+        assert client.cookies.get("session")

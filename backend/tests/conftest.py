@@ -20,11 +20,17 @@ BACKEND_DIR = Path(__file__).resolve().parent.parent
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
-TEST_DATABASE_URL = os.getenv(
-    "TEST_DATABASE_URL",
-    # point this to a dedicated TEST DB
-    "postgresql://parshv:parshv@localhost:5432/roshni_test",
-)
+from app.env import load_environment  # noqa: E402
+
+load_environment()
+
+TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL")
+if not TEST_DATABASE_URL:
+    raise RuntimeError(
+        "TEST_DATABASE_URL must be set in environment (.env / .env.local at project root)"
+    )
+
+# Ensure application code uses the same database URL during tests
 os.environ["DATABASE_URL"] = TEST_DATABASE_URL
 
 from app.database import Base  # noqa: E402

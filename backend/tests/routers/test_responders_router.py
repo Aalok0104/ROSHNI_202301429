@@ -23,6 +23,10 @@ class DummyResponderRepository:
     responders_response = []
     created_responder = None
     update_response = None
+    deleted_team = None
+    deleted_responder = None
+    assigned = None
+    team_lookup = None
 
     def __init__(self, *_args, **_kwargs):
         pass
@@ -34,6 +38,10 @@ class DummyResponderRepository:
         cls.responders_response = []
         cls.created_responder = None
         cls.update_response = None
+        cls.deleted_team = None
+        cls.deleted_responder = None
+        cls.assigned = None
+        cls.team_lookup = None
 
     async def create_team(self, data):
         self.__class__.created_team = data
@@ -51,6 +59,27 @@ class DummyResponderRepository:
 
     async def update_responder(self, user_id, data):
         return self.__class__.update_response
+
+    async def delete_responder(self, user_id):
+        if self.__class__.deleted_responder == "missing":
+            return None
+        self.__class__.deleted_responder = user_id
+        return True
+
+    async def delete_team(self, team_id):
+        if self.__class__.deleted_team == "missing":
+            return None
+        self.__class__.deleted_team = team_id
+        return SimpleNamespace(team_id=team_id)
+
+    async def assign_responder_to_team(self, user_id, team_id):
+        if self.__class__.assigned == "missing":
+            return None
+        self.__class__.assigned = (user_id, team_id)
+        return {"user_id": str(user_id), "full_name": "Assigned", "email": "a@example.com", "responder_type": "medic", "badge_number": "A1", "team_name": None, "status": "active", "last_known_latitude": None, "last_known_longitude": None}
+
+    async def get_responder_team(self, user_id):
+        return self.__class__.team_lookup
 
 
 class DummyUserRepository:
@@ -76,6 +105,7 @@ def stub_repositories(monkeypatch):
 def responders_app():
     app = FastAPI()
     app.include_router(responders.router)
+    app.include_router(responders.responder_router)
 
     async def _db():
         yield object()
@@ -90,6 +120,7 @@ def responders_app():
 
     app.dependency_overrides[responders.get_db] = _db
     app.dependency_overrides[dependencies.get_current_user] = _current_user
+    app.dependency_overrides[responders.RoleChecker] = lambda *_args, **_kwargs: commander
     return app
 
 
@@ -131,6 +162,21 @@ async def test_create_responder_rejects_duplicate_email(client, monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_create_responder_handles_exception(client, monkeypatch):
+    async def boom(*_args, **_kwargs):
+        raise RuntimeError("fail")
+    monkeypatch.setattr(responders, "ResponderRepository", lambda *_args, **_kwargs: SimpleNamespace(create_responder=boom))
+    payload = {
+        "email": "err@example.com",
+        "full_name": "Err",
+        "responder_type": "medic",
+        "badge_number": "B4",
+    }
+    resp = await client.post("/commander/responders", json=payload)
+    assert resp.status_code == 400
+
+
+@pytest.mark.asyncio
 async def test_create_responder_returns_payload(client, stub_repositories):
     payload = {
         "email": "new@example.com",
@@ -164,3 +210,113 @@ async def test_update_responder_returns_payload(client, stub_repositories):
     response = await client.patch(f"/commander/responders/{uuid4()}", json={"status": "active"})
     assert response.status_code == 200
     assert response.json()["full_name"] == "Updated"
+
+
+@pytest.mark.asyncio
+async def test_delete_responder_returns_404_when_missing(client, stub_repositories):
+    stub_repositories.deleted_responder = "missing"
+    response = await client.delete(f"/commander/responders/{uuid4()}")
+    assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_delete_responder_accepts_commanders(client, stub_repositories):
+    target = uuid4()
+    response = await client.delete(f"/commander/responders/{target}")
+    assert response.status_code == 200
+    assert stub_repositories.deleted_responder == target
+
+
+@pytest.mark.asyncio
+async def test_delete_team_unassigns_members(client, stub_repositories):
+    team_id = uuid4()
+    response = await client.delete(f"/commander/teams/{team_id}")
+    assert response.status_code == 200
+    assert stub_repositories.deleted_team == team_id
+
+
+@pytest.mark.asyncio
+async def test_delete_team_returns_404_when_missing(client, stub_repositories):
+    stub_repositories.deleted_team = "missing"
+    response = await client.delete(f"/commander/teams/{uuid4()}")
+    assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_assign_responder_to_team_returns_payload(client, stub_repositories):
+    user_id = uuid4()
+    team_id = uuid4()
+    response = await client.post(f"/commander/teams/{team_id}/responders/{user_id}")
+    assert response.status_code == 200
+    assert stub_repositories.assigned == (user_id, team_id)
+
+
+@pytest.mark.asyncio
+async def test_assign_responder_to_team_handles_missing(client, stub_repositories):
+    stub_repositories.assigned = "missing"
+    response = await client.post(f"/commander/teams/{uuid4()}/responders/{uuid4()}")
+    assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_unassign_responder_from_team(client, stub_repositories):
+    resp = await client.delete(f"/commander/teams/{uuid4()}/responders/{uuid4()}")
+    assert resp.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_unassign_responder_not_found(client, stub_repositories):
+    stub_repositories.assigned = "missing"
+    resp = await client.delete(f"/commander/teams/{uuid4()}/responders/{uuid4()}")
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_get_my_team_returns_team(monkeypatch, stub_repositories):
+    team = SimpleNamespace(team_id=uuid4(), name="MyTeam", team_type="medic", status="available", responder_profiles=[])
+    stub_repositories.team_lookup = team
+
+    app = FastAPI()
+    app.include_router(responders.responder_router)
+
+    async def _db():
+        yield object()
+
+    user = SimpleNamespace(user_id=uuid4(), role=SimpleNamespace(name="responder"))
+
+    async def _current_user():
+        return user
+
+    app.dependency_overrides[responders.get_db] = _db
+    app.dependency_overrides[dependencies.get_current_user] = _current_user
+    app.dependency_overrides[responders.RoleChecker] = lambda *_args, **_kwargs: user
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as ac:
+        resp = await ac.get("/responders/me/team")
+    assert resp.status_code == 200
+    assert resp.json()["name"] == "MyTeam"
+
+
+@pytest.mark.asyncio
+async def test_get_my_team_returns_404(monkeypatch, stub_repositories):
+    stub_repositories.team_lookup = None
+    app = FastAPI()
+    app.include_router(responders.responder_router)
+
+    async def _db():
+        yield object()
+
+    user = SimpleNamespace(user_id=uuid4(), role=SimpleNamespace(name="responder"))
+
+    async def _current_user():
+        return user
+
+    app.dependency_overrides[responders.get_db] = _db
+    app.dependency_overrides[dependencies.get_current_user] = _current_user
+    app.dependency_overrides[responders.RoleChecker] = lambda *_args, **_kwargs: user
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as ac:
+        resp = await ac.get("/responders/me/team")
+    assert resp.status_code == 404

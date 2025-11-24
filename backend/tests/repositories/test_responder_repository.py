@@ -31,6 +31,9 @@ class AsyncSessionAdapter:
     async def refresh(self, instance):
         self._session.refresh(instance)
 
+    async def get(self, model, pk):
+        return self._session.get(model, pk)
+
 
 def _seed_commander(db_session, role_id=920):
     role = Role(role_id=role_id, name=f"role_{role_id}")
@@ -257,6 +260,28 @@ async def test_update_responder_sets_team_join_timestamp(db_session):
 
 
 @pytest.mark.asyncio
+async def test_update_responder_returns_none_when_no_updates(db_session):
+    commander = _seed_commander(db_session, 940)
+    user = User(role_id=commander.role_id, email="noop@example.com")
+    db_session.add(user)
+    db_session.commit()
+    db_session.add(UserProfile(user_id=user.user_id, full_name="Noop User"))
+    db_session.add(
+        ResponderProfile(
+            user_id=user.user_id,
+            responder_type="medic",
+            badge_number="N-1",
+            status="active",
+        )
+    )
+    db_session.commit()
+
+    repo = ResponderRepository(AsyncSessionAdapter(db_session))
+    result = await repo.update_responder(user.user_id, {})
+    assert result is None
+
+
+@pytest.mark.asyncio
 async def test_get_responder_detail_returns_none_for_missing(db_session):
     repo = ResponderRepository(AsyncSessionAdapter(db_session))
     detail = await repo.get_responder_detail(uuid4())
@@ -289,3 +314,121 @@ async def test_get_responder_detail_populates_fields(db_session):
     detail = await repo.get_responder_detail(responder.user_id)
     assert detail["team_name"] == "Delta"
     assert detail["last_known_latitude"] == pytest.approx(13)
+
+
+@pytest.mark.asyncio
+async def test_delete_team_unassigns_members(db_session):
+    commander = _seed_commander(db_session, 950)
+    team = Team(name="Delete", team_type="medic", commander_user_id=commander.user_id, status="available")
+    db_session.add(team)
+    db_session.commit()
+    member = User(role_id=commander.role_id, email="member@example.com")
+    db_session.add(member)
+    db_session.commit()
+    db_session.add(UserProfile(user_id=member.user_id, full_name="Member"))
+    db_session.add(
+        ResponderProfile(
+            user_id=member.user_id,
+            responder_type="medic",
+            badge_number="D-1",
+            team_id=team.team_id,
+            status="active",
+        )
+    )
+    db_session.commit()
+
+    repo = ResponderRepository(AsyncSessionAdapter(db_session))
+    team_id = team.team_id
+    deleted = await repo.delete_team(team_id)
+    assert deleted is not None
+    profile = db_session.get(ResponderProfile, member.user_id)
+    assert profile.team_id is None
+    db_session.expire_all()
+    assert db_session.get(Team, team_id) is None
+
+
+@pytest.mark.asyncio
+async def test_delete_responder_removes_user(db_session):
+    commander = _seed_commander(db_session, 951)
+    user = User(role_id=commander.role_id, email="deleteme@example.com")
+    db_session.add(user)
+    db_session.commit()
+    db_session.add(UserProfile(user_id=user.user_id, full_name="Delete Me"))
+    db_session.add(
+        ResponderProfile(
+            user_id=user.user_id,
+            responder_type="medic",
+            badge_number="DEL-1",
+            status="active",
+        )
+    )
+    db_session.commit()
+
+    repo = ResponderRepository(AsyncSessionAdapter(db_session))
+    user_id = user.user_id
+    result = await repo.delete_responder(user_id)
+    assert result is True
+    db_session.expire_all()
+    assert db_session.get(User, user_id) is None
+
+
+@pytest.mark.asyncio
+async def test_delete_responder_returns_none_for_missing(db_session):
+    repo = ResponderRepository(AsyncSessionAdapter(db_session))
+    assert await repo.delete_responder(uuid4()) is None
+
+
+@pytest.mark.asyncio
+async def test_assign_responder_to_team_updates_membership(db_session):
+    commander = _seed_commander(db_session, 960)
+    team = Team(name="Assign", team_type="medic", commander_user_id=commander.user_id, status="available")
+    db_session.add(team)
+    db_session.commit()
+
+    user = User(role_id=commander.role_id, email="assign@example.com")
+    db_session.add(user)
+    db_session.commit()
+    db_session.add(UserProfile(user_id=user.user_id, full_name="Assign User"))
+    db_session.add(
+        ResponderProfile(
+            user_id=user.user_id,
+            responder_type="medic",
+            badge_number="AS-1",
+            status="active",
+        )
+    )
+    db_session.commit()
+
+    repo = ResponderRepository(AsyncSessionAdapter(db_session))
+    updated = await repo.assign_responder_to_team(user.user_id, team.team_id)
+    assert updated["team_name"] == "Assign"
+    # unassign
+    await repo.assign_responder_to_team(user.user_id, None)
+    profile = db_session.get(ResponderProfile, user.user_id)
+    assert profile.team_id is None
+
+
+@pytest.mark.asyncio
+async def test_get_responder_team_returns_team(db_session):
+    commander = _seed_commander(db_session, 961)
+    team = Team(name="Lookup", team_type="fire", commander_user_id=commander.user_id, status="available")
+    db_session.add(team)
+    db_session.commit()
+    user = User(role_id=commander.role_id, email="lookup@example.com")
+    db_session.add(user)
+    db_session.commit()
+    db_session.add(UserProfile(user_id=user.user_id, full_name="Lookup"))
+    db_session.add(
+        ResponderProfile(
+            user_id=user.user_id,
+            responder_type="firefighter",
+            badge_number="LK-1",
+            status="active",
+            team_id=team.team_id,
+        )
+    )
+    db_session.commit()
+
+    repo = ResponderRepository(AsyncSessionAdapter(db_session))
+    found = await repo.get_responder_team(user.user_id)
+    assert found.name == "Lookup"

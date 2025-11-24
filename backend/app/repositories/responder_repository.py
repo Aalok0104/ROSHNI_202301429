@@ -209,3 +209,60 @@ class ResponderRepository:
                 "last_known_longitude": row.lon
             }
         return None
+
+    async def delete_team(self, team_id: UUID):
+        """
+        Deletes a team and unassigns all responders from it.
+        """
+        # Unassign responders from the team
+        await self.db.execute(
+            update(ResponderProfile)
+            .where(ResponderProfile.team_id == team_id)
+            .values(team_id=None)
+        )
+
+        # Soft flag before removal to keep history consistent for ORM listeners
+        await self.db.execute(
+            update(Team).where(Team.team_id == team_id).values(status="offline")
+        )
+
+        team = await self.db.get(Team, team_id)
+        if team:
+            await self.db.execute(Team.__table__.delete().where(Team.team_id == team_id))
+
+        await self.db.commit()
+        return team
+
+    async def delete_responder(self, user_id: UUID):
+        """
+        Deletes a responder account (User + responder profile).
+        """
+        user = await self.db.get(User, user_id)
+        if not user:
+            return None
+
+        await self.db.execute(User.__table__.delete().where(User.user_id == user_id))
+        await self.db.commit()
+        return True
+
+    async def assign_responder_to_team(self, user_id: UUID, team_id: UUID | None):
+        """
+        Assign or unassign a responder to a team.
+        """
+        values = {"team_id": team_id}
+        if team_id:
+            values["team_joined_at"] = func.now()
+        await self.db.execute(
+            update(ResponderProfile).where(ResponderProfile.user_id == user_id).values(**values)
+        )
+        await self.db.commit()
+        return await self.get_responder_detail(user_id)
+
+    async def get_responder_team(self, user_id: UUID):
+        query = (
+            select(Team)
+            .join(ResponderProfile, Team.team_id == ResponderProfile.team_id)
+            .where(ResponderProfile.user_id == user_id)
+        )
+        result = await self.db.execute(query)
+        return result.scalar_one_or_none()

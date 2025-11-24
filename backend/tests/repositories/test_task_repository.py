@@ -8,6 +8,7 @@ from shapely.geometry import Point
 from app.models.disaster_management import Disaster, DisasterTask, DisasterTaskAssignment
 from app.models.responder_management import Team, ResponderProfile
 from app.models.user_family_models import Role, User, UserProfile
+from app.models.questionnaires_and_logs import DisasterLog
 from app.repositories.task_repository import TaskRepository
 from app.schemas.tasks import TaskCreateRequest
 
@@ -93,6 +94,8 @@ async def test_create_task_persists_geometry(db_session):
     stored = to_shape(db_task.location)
     assert stored.x == pytest.approx(77.2)
     assert stored.y == pytest.approx(12.1)
+    log = db_session.query(DisasterLog).filter_by(disaster_id=disaster.disaster_id).first()
+    assert log and "Task" in log.title
 
 
 @pytest.mark.asyncio
@@ -239,6 +242,7 @@ async def test_update_assignment_status_manages_team_and_task_completion(db_sess
         .one()
     )
     assert isinstance(assignment2.eta, datetime)
+    assert db_session.query(DisasterLog).filter_by(disaster_id=disaster.disaster_id).count() >= 1
 
 
 @pytest.mark.asyncio
@@ -287,6 +291,30 @@ async def test_update_task_status_executes_override(db_session):
 
 
 @pytest.mark.asyncio
+async def test_delete_task_removes_and_logs(db_session):
+    disaster, commander = _seed_disaster(db_session)
+    task = DisasterTask(
+        disaster_id=disaster.disaster_id,
+        created_by_commander_id=commander.user_id,
+        task_type="cleanup",
+        description="Clean area",
+        priority="low",
+        status="pending",
+        location=_make_point(),
+    )
+    db_session.add(task)
+    db_session.commit()
+
+    repo = TaskRepository(AsyncSessionAdapter(db_session))
+    task_id = task.task_id
+    assert await repo.delete_task(task_id) is True
+    db_session.expire_all()
+    assert db_session.get(DisasterTask, task_id) is None
+    log = db_session.query(DisasterLog).filter_by(disaster_id=disaster.disaster_id).order_by(DisasterLog.created_at.desc()).first()
+    assert log and "deleted" in log.text_body
+
+
+@pytest.mark.asyncio
 async def test_update_assignment_status_handles_cancelled_release(db_session):
     disaster, commander = _seed_disaster(db_session)
     team = _seed_team(db_session, commander)
@@ -314,3 +342,34 @@ async def test_update_assignment_status_handles_cancelled_release(db_session):
     assert assignment.released_at is not None
     db_session.refresh(team)
     assert team.status == "available"
+
+
+@pytest.mark.asyncio
+async def test_get_tasks_filters_by_team(db_session):
+    disaster, commander = _seed_disaster(db_session)
+    team = _seed_team(db_session, commander)
+    other_team = _seed_team(db_session, commander)
+    task = DisasterTask(
+        disaster_id=disaster.disaster_id,
+        created_by_commander_id=commander.user_id,
+        task_type="rescue",
+        description="Team specific",
+        priority="high",
+        status="pending",
+        location=_make_point(),
+    )
+    db_session.add(task)
+    db_session.commit()
+    db_session.add(DisasterTaskAssignment(task_id=task.task_id, team_id=team.team_id, status="assigned"))
+    db_session.add(DisasterTaskAssignment(task_id=task.task_id, team_id=other_team.team_id, status="assigned"))
+    db_session.commit()
+
+    repo = TaskRepository(AsyncSessionAdapter(db_session))
+    tasks = await repo.get_tasks(disaster.disaster_id, {"team_id": team.team_id})
+    assert len(tasks) == 1
+
+
+@pytest.mark.asyncio
+async def test_delete_task_returns_none_when_missing(db_session):
+    repo = TaskRepository(AsyncSessionAdapter(db_session))
+    assert await repo.delete_task(uuid4()) is None
