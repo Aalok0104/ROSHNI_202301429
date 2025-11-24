@@ -1,17 +1,17 @@
-Here is the detailed specification for **`app/routers/chat.py`**.
+## Chat Router Specification
 
-This router handles **Real-Time Communication**. Unlike standard HTTP endpoints, this relies heavily on **WebSockets** and an in-memory **Connection Manager**.
+This document describes the expected behavior and implementation details for `app/routers/chat.py`.
 
-### **Router Specification: `app/routers/chat.py`**
+Purpose: Real-time communication for disasters using WebSockets and a simple in-memory Connection Manager. The design supports two channels per disaster:
 
-**Purpose:** Enable real-time coordination between Commanders and Logisticians, while allowing other responders to stay informed via a read-only feed.
-**Dependencies:** `FastAPI WebSocket`, `ConnectionManager` (Custom Class), `SQLAlchemy` (Async Session for logging).
+- Team chat: per-team room (only team members may join and send; commanders are explicitly excluded from team rooms).
+- Global chat: disaster-wide channel where the disaster commander and logisticians on assigned teams can communicate.
 
------
+The router persists messages to the database for history and auditability and uses a `ConnectionManager` to route real-time messages.
 
-### **1. Pydantic Models (Schemas)**
+---
 
-Place these in `app/schemas/chat.py`.
+### 1. Schemas (place in `app/schemas/chat.py`)
 
 ```python
 from pydantic import BaseModel
@@ -19,137 +19,146 @@ from typing import Optional
 from uuid import UUID
 from datetime import datetime
 
-# 1. Outgoing Message (Sent to Client)
+
 class ChatMessageResponse(BaseModel):
     message_id: UUID
     disaster_id: UUID
     sender_user_id: UUID
     sender_name: str
-    sender_role: str # "commander", "medic", "civilian", etc.
+    sender_role: str  # e.g. "commander", "logistician", "medic"
     message_text: str
     created_at: datetime
 
     class Config:
         from_attributes = True
 
-# 2. Incoming Message (Received from Client)
-# Note: Usually WS just sends raw text, but JSON is safer for extensibility
+
 class ChatMessageCreate(BaseModel):
     message_text: str
 ```
 
------
+Notes:
+- `ChatMessageResponse` is used for responses and broadcasts.
+- `ChatMessageCreate` represents the incoming JSON payload over WebSocket (keeps it extensible).
 
-### **2. The Connection Manager (Service)**
+---
 
-You must instruct the Agent to create a `services/websocket_manager.py` file first. This is the "Switchboard" of the chat system.
+### 2. Connection Manager (service)
 
-**Logic for `ConnectionManager`:**
+Create `app/services/websocket_manager.py`. This is the switchboard.
 
-  * **Store:** `active_connections: Dict[str, List[WebSocket]]` (Key is `disaster_id`).
-  * **Connect(websocket, disaster\_id):** Accept socket, add to list.
-  * **Disconnect(websocket, disaster\_id):** Remove from list.
-  * **Broadcast(message, disaster\_id):** Loop through all sockets in that `disaster_id` list and send JSON.
+Requirements:
 
------
+- Maintain `active_connections: Dict[str, List[WebSocket]]` keyed by a room string (see room keys below).
+- `connect(websocket, room_key)`: accept connection and append to the list for that room.
+- `disconnect(websocket, room_key)`: remove the websocket; remove empty lists.
+- `broadcast(message: dict, room_key: str)`: send JSON to all connected sockets in that room (catch and cleanup errors).
 
-### **3. Endpoints**
+Important: instantiate a single `ConnectionManager` (singleton) at module-level in the router or an importable place so all handlers share the same instance.
 
-#### **A. `GET /chat/{disaster_id}/history`**
+---
 
-  * **Purpose:** Load past messages when a user first opens the chat window.
-  * **Role:** Authenticated User (Follower, Responder, Commander).
-  * **Logic:**
-      * Query `disaster_chat_messages`.
-      * Join with `users` and `user_profiles` to get sender names.
-      * Sort by `created_at` DESC.
-      * Limit 50 or 100.
-  * **Returns:** List of `ChatMessageResponse`.
+### 3. Endpoints (router behavior)
 
-#### **B. `WS /ws/chat/{disaster_id}`**
+All endpoints live in `app/routers/chat.py` and expect to use an `AsyncSession` for DB access.
 
-  * **Purpose:** The live WebSocket connection.
+#### A. GET /chat/{disaster_id}/history
 
-  * **Logic Flow:**
+- Purpose: load recent messages when a client opens chat.
+- Auth: any authenticated user (follower, responder, commander) may call this.
+- Query parameters:
+  - `scope`: `team` or `global` (validate with `pattern="^(team|global)$"`).
+  - `team_id` (UUID): REQUIRED when `scope=team`.
+- Behavior:
+  - Query `disaster_chat_messages` filtered by `disaster_id` and either `team_id` or `is_global` depending on `scope`.
+  - Join `users`/profiles to return `sender_name` + `sender_role`.
+  - Order by `created_at` DESC and limit (50 or 100 configurable).
+  - Return `List[ChatMessageResponse]`.
 
-    **Phase 1: Handshake & Auth**
+Examples:
 
-      * **Validation:** WebSockets don't always carry cookies automatically in some clients. The Agent should expect a `?token=` query param OR use the Session Cookie if the client supports it.
-      * **User Lookup:** Decode session/token to get `user_id` and `role`.
-      * **Role Check:**
-          * Is User a Commander? -\> **Write Access**.
-          * Is User a Responder (Logistician)? -\> **Write Access**.
-          * Is User a Responder (Medic/Fire)? -\> **Read-Only**.
-          * Is User a Civilian? -\> **Read-Only**.
+GET /chat/{disaster_id}/history?scope=team&team_id=<TEAM_UUID>
+GET /chat/{disaster_id}/history?scope=global
 
-    **Phase 2: Connection**
+#### B. WS /ws/chat/{disaster_id}
 
-      * `await manager.connect(websocket, disaster_id)`
+We provide two WS entrypoints (clear semantics): team and global. Each uses a room key string for the manager.
 
-    **Phase 3: Listening Loop**
+1) Team WebSocket: `ws://.../chat/ws/team/{disaster_id}?team_id=<TEAM_UUID>&token=<TOKEN_OR_user_id>`
 
-      * `while True:`
-          * `data = await websocket.receive_text()`
-          * **Permission Check:** If user is **Read-Only**, ignore the message (or send back an error frame).
-          * **Persistence:**
-              * Create `DisasterChatMessage` in DB.
-              * Commit (Critical for LLM history later).
-          * **Broadcast:**
-              * `await manager.broadcast(json_data, disaster_id)`
+- Room key: `team:<TEAM_UUID>`.
+- Connect policy: only responders whose `ResponderProfile.team_id == TEAM_UUID` may connect. Commanders are explicitly denied.
+- Write policy: connected team members may send messages (all have write access in the team room).
+- When a message is received:
+  - Verify `can_write` (see below); if not allowed, optionally send an error frame and continue.
+  - Persist a `DisasterChatMessage` with `disaster_id`, `team_id=TEAM_UUID`, `sender_user_id`, `message_text`, `is_global=False`.
+  - Broadcast the enriched payload (sender name, role, timestamp, ids) to `team:<TEAM_UUID>`.
 
-    **Phase 4: Disconnect**
+2) Global WebSocket: `ws://.../chat/ws/global/{disaster_id}?token=<TOKEN_OR_user_id>`
 
-      * Handle `WebSocketDisconnect` exception.
-      * `manager.disconnect(websocket, disaster_id)`
+- Room key: `global:<DISASTER_ID>`.
+- Connect policy: only the disaster commander and logisticians whose `ResponderProfile.team_id` is one of the teams assigned to the disaster may connect.
+- Write policy: commander and logisticians have write access; others should be rejected.
+- Message handling similar to team WS but persist `is_global=True` (and `team_id` if available).
 
------
+Handshake & Authorization details (applies to both endpoints):
 
-### **4. Critical Implementation Details**
+- The WebSocket should accept a `?token=` query param for auth (or rely on session cookie when available). Decode it to get `user_id` and `role`.
+- Determine responder profile (if applicable) to check `responder_type` and `team_id`.
 
-#### **1. Handling "Write" Permissions in a Loop**
-
-The prompt specifically stated: *"The team logistician can ... chat with commanders... By default, other members ... can only read."*
-
-The Agent must implement this check **inside the WebSocket loop**:
+Write-permission snippet (conceptual):
 
 ```python
-# Inside the router
+# pseudo
 responder_profile = await get_responder_profile(user_id)
 can_write = (
-    role == "commander" or 
-    (role == "responder" and responder_profile.responder_type == "logistician")
+    role == "commander"
+    or (role == "responder" and responder_profile and responder_profile.responder_type == "logistician")
 )
 
 while True:
     data = await websocket.receive_text()
     if not can_write:
-        # Optional: Send a private "Error" message back to this socket
-        continue 
-    
-    # Save and Broadcast...
+        # optionally send an error frame to the writer socket
+        continue
+
+    # persist using AsyncSession
+    # broadcast via manager.broadcast(payload, room_key)
 ```
 
-#### **2. Async Database Writes**
+Make sure to use `AsyncSession` for DB writes (or `run_in_threadpool` for sync DB code) to avoid blocking the event loop.
 
-WebSockets are `async`. If the Agent uses standard blocking SQLAlchemy calls inside the loop, it will freeze the chat for everyone.
+Disconnect handling: on `WebSocketDisconnect` call `manager.disconnect(websocket, room_key)` and cleanup.
 
-  * **Instruction:** Use `AsyncSession` (SQLAlchemy 1.4/2.0) or run DB writes in a separate thread using `fastapi.concurrency.run_in_threadpool`.
+---
 
-#### **3. Connection Manager Singleton**
+### 4. Critical Implementation Details
 
-Ensure `manager` is instantiated **once** in `main.py` or the router module level, not recreated on every request.
+- Use `AsyncSession` for database writes inside WebSocket handlers.
+- Keep a single `ConnectionManager` instance at module level and reuse it across requests.
+- Room keys: use `team:<team_id>` and `global:<disaster_id>`.
+- Broadcast payloads must include `sender_name`, `sender_role`, `created_at` plus IDs so the frontend can differentiate messages.
 
-```python
-# routers/chat.py
-manager = ConnectionManager() # Global instance
+Example broadcast payload (JSON):
+
+```json
+{
+  "message_id": "<UUID>",
+  "disaster_id": "<UUID>",
+  "team_id": "<UUID or null>",
+  "sender_user_id": "<UUID>",
+  "sender_name": "Alice Responder",
+  "sender_role": "logistician",
+  "message_text": "We are on the way",
+  "is_global": false,
+  "created_at": "2025-11-23T12:34:56.789Z"
+}
 ```
 
-#### **4. Frontend Context (Sender Name)**
+---
 
-When broadcasting, don't just send the text. Send the **Sender Name** and **Timestamp**. The frontend needs this to differentiate "My message" vs "Commander's message".
+### 5. Testing Recommendations
 
-### **Next Step**
-
-We have the Communication layer. The final major piece of the puzzle is the **Intelligence Layer**.
-This involves the **Questionnaires (Surveys)** for gathering data, and the **Reports (LLM)** for summarizing it.
-Shall we detail **`surveys.py`** and then **`reports.py`**? `surveys.py` is the input for the intelligence, so it should come first.
+- Unit test `ConnectionManager` (connect/disconnect/broadcast) with mocked WebSocket objects.
+- Integration tests for the history endpoint (create teams, assign them to a disaster, insert messages, verify history for `team` and `global`).
+- WebSocket tests: verify accept/reject behavior for different roles, persistence, and broadcast semantics.

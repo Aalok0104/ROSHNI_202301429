@@ -7,10 +7,12 @@ from datetime import datetime
 class ChatMessageResponse(BaseModel):
     message_id: UUID
     disaster_id: UUID
+    team_id: Optional[UUID] = None
     sender_user_id: UUID
     sender_name: str
     sender_role: str # "commander", "medic", "civilian", etc.
     message_text: str
+    is_global: bool = False
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
