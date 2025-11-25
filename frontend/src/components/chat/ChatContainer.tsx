@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import ChatBox from "./ChatBox";
 import GroupSelector from "./GroupSelector";
+import { useTheme } from "../../contexts/ThemeContext";
 
 interface ChatContainerProps {
   userId: string;
@@ -27,6 +28,7 @@ const ChatContainer: FC<ChatContainerProps> = ({
   responders,
   groupSelectorSignal = 0,
 }) => {
+  const { theme } = useTheme();
   const [groups, setGroups] = useState<Group[]>(seedGroups);
   const [selectedGroup, setSelectedGroup] = useState<string>(seedGroups[0]?.id ?? "");
   const [isSelectorOpen, setIsSelectorOpen] = useState(false);
@@ -50,6 +52,11 @@ const ChatContainer: FC<ChatContainerProps> = ({
     setIsSelectorOpen(false);
   };
 
+  const isLight = theme === 'light';
+  const selectBg = isLight ? '#ffffff' : '#0b1323';
+  const selectColor = isLight ? '#1e293b' : '#e2e8f0';
+  const selectBorder = isLight ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.15)';
+
   return (
     <div className="commander-chat" style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', gap: '0.5rem' }}>
       <div style={{ padding: '0.5rem 0' }}>
@@ -59,9 +66,9 @@ const ChatContainer: FC<ChatContainerProps> = ({
           style={{
             width: '100%',
             padding: '0.5rem 0.75rem',
-            backgroundColor: '#0b1323',
-            color: '#e2e8f0',
-            border: '1px solid rgba(255, 255, 255, 0.15)',
+            backgroundColor: selectBg,
+            color: selectColor,
+            border: `1px solid ${selectBorder}`,
             borderRadius: '0.5rem',
             cursor: 'pointer',
             fontSize: '0.9rem',

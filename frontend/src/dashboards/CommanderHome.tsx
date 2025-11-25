@@ -1,5 +1,6 @@
 import type { FC } from 'react';
 import { useEffect, useState } from 'react';
+import { useTheme } from '../contexts/ThemeContext';
 import '../components/commander/CommanderHome.css';
 import type { SessionUser } from '../types';
 import { API_BASE_URL } from '../config';
@@ -16,6 +17,7 @@ const CommanderHome: FC<Props> = ({ user: _user }: Props) => {
   const [reports, setReports] = useState<any[]>([]);
   const [units, setUnits] = useState<any[]>([]);
   const [activities, setActivities] = useState<any[]>([]);
+  const { theme } = useTheme();
 
   useEffect(() => {
     const fetchDisasters = async () => {
@@ -78,7 +80,7 @@ const CommanderHome: FC<Props> = ({ user: _user }: Props) => {
   }, [selectedDisasterId]);
 
   return (
-    <div className="commander-home-root">
+    <div className={`commander-home-root ${theme === 'light' ? 'light' : ''}`}>
       <div className="commander-header">
         <div>
           <h1>Commander Home</h1>

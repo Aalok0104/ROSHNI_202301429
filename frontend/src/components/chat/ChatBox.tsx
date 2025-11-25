@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { useChat } from "../../context/ChatContext";
+import { useTheme } from "../../contexts/ThemeContext";
 
 interface ChatBoxProps {
   groupId: string;
@@ -8,6 +9,7 @@ interface ChatBoxProps {
 
 const ChatBox: React.FC<ChatBoxProps> = ({ groupId, sender }) => {
   const { messages, sendChatMessage } = useChat();
+  const { theme } = useTheme();
   const [input, setInput] = useState("");
   const [recognizing, setRecognizing] = useState(false);
   const recognitionRef = useRef<any | null>(null);
@@ -89,12 +91,28 @@ const ChatBox: React.FC<ChatBoxProps> = ({ groupId, sender }) => {
     };
   }, []);
 
+  const isLight = theme === 'light';
+  const bgColor = isLight ? '#ffffff' : 'var(--surface, #0b1323)';
+  const borderColor = isLight ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.12)';
+  const inputBg = isLight ? '#f8fafc' : 'rgba(11, 19, 35, 0.9)';
+  const inputBorder = isLight ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.15)';
+  const textColor = isLight ? '#1e293b' : '#e2e8f0';
+  const sendButtonBg = isLight ? '#3b82f6' : '#00bbff';
+  const sendButtonColor = isLight ? '#ffffff' : '#01060f';
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '0.5rem', backgroundColor: 'var(--surface, #0b1323)', borderRadius: '0.85rem', padding: '0.9rem', border: '1px solid rgba(255, 255, 255, 0.12)' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '0.5rem', backgroundColor: bgColor, borderRadius: '0.85rem', padding: '0.9rem', border: `1px solid ${borderColor}` }}>
       <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem', padding: '0.45rem', minHeight: 0 }}>
         {groupMessages.map((msg, i) => {
           const isMine = msg.sender === sender;
           const isCommander = (msg.sender || "").toLowerCase().includes("commander");
+          const msgBg = isCommander 
+            ? (isLight ? 'rgba(59, 130, 246, 0.15)' : 'rgba(0, 187, 255, 0.15)')
+            : isMine 
+            ? (isLight ? 'rgba(59, 130, 246, 0.25)' : 'rgba(0, 187, 255, 0.25)')
+            : (isLight ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.1)');
+          const msgBorder = isCommander ? (isLight ? '2px solid #3b82f6' : '2px solid #00bbff') : 'none';
+          const senderColor = isCommander ? (isLight ? '#3b82f6' : '#00bbff') : (isLight ? '#64748b' : '#94a3b8');
 
           return (
             <div
@@ -107,14 +125,14 @@ const ChatBox: React.FC<ChatBoxProps> = ({ groupId, sender }) => {
                   padding: '0.5rem 0.6rem',
                   borderRadius: '0.6rem',
                   wordBreak: 'break-word',
-                  backgroundColor: isCommander ? 'rgba(0, 187, 255, 0.15)' : isMine ? 'rgba(0, 187, 255, 0.25)' : 'rgba(255, 255, 255, 0.1)',
-                  borderLeft: isCommander ? '2px solid #00bbff' : 'none',
-                  color: '#e2e8f0',
-                  boxShadow: '0 1px 4px rgba(0, 0, 0, 0.3)',
+                  backgroundColor: msgBg,
+                  borderLeft: msgBorder,
+                  color: textColor,
+                  boxShadow: isLight ? '0 1px 2px rgba(0, 0, 0, 0.1)' : '0 1px 4px rgba(0, 0, 0, 0.3)',
                 }}
               >
-                <div style={{ fontSize: '0.95rem', fontWeight: '700', color: isCommander ? '#00bbff' : '#94a3b8', marginBottom: '0.2rem', opacity: 0.95 }}>{msg.sender}</div>
-                <div style={{ fontSize: '1rem', color: '#e2e8f0', lineHeight: '1.3' }}>{msg.text}</div>
+                <div style={{ fontSize: '0.95rem', fontWeight: '700', color: senderColor, marginBottom: '0.2rem', opacity: 0.95 }}>{msg.sender}</div>
+                <div style={{ fontSize: '1rem', color: textColor, lineHeight: '1.3' }}>{msg.text}</div>
               </div>
             </div>
           );
@@ -131,9 +149,9 @@ const ChatBox: React.FC<ChatBoxProps> = ({ groupId, sender }) => {
             minWidth: 0,
             padding: '0.6rem 0.8rem',
             borderRadius: '0.5rem',
-            border: '1px solid rgba(255, 255, 255, 0.15)',
-            backgroundColor: 'rgba(11, 19, 35, 0.9)',
-            color: '#e2e8f0',
+            border: `1px solid ${inputBorder}`,
+            backgroundColor: inputBg,
+            color: textColor,
             fontSize: '1rem',
           }}
           placeholder="Message..."
@@ -147,9 +165,9 @@ const ChatBox: React.FC<ChatBoxProps> = ({ groupId, sender }) => {
           style={{
             padding: '0.45rem 0.6rem',
             borderRadius: '0.45rem',
-            border: '1px solid rgba(255, 255, 255, 0.15)',
-            backgroundColor: recognizing ? '#ff0000' : 'rgba(0, 187, 255, 0.2)',
-            color: recognizing ? '#fff' : '#00bbff',
+            border: `1px solid ${inputBorder}`,
+            backgroundColor: recognizing ? '#ff0000' : (isLight ? 'rgba(59, 130, 246, 0.2)' : 'rgba(0, 187, 255, 0.2)'),
+            color: recognizing ? '#fff' : (isLight ? '#3b82f6' : '#00bbff'),
             cursor: 'pointer',
             fontWeight: '600',
             transition: 'all 120ms ease',
@@ -166,8 +184,8 @@ const ChatBox: React.FC<ChatBoxProps> = ({ groupId, sender }) => {
             padding: '0.45rem 0.9rem',
             borderRadius: '0.45rem',
             border: 'none',
-            backgroundColor: '#00bbff',
-            color: '#01060f',
+            backgroundColor: sendButtonBg,
+            color: sendButtonColor,
             fontWeight: '700',
             cursor: 'pointer',
             transition: 'all 120ms ease',
@@ -175,7 +193,7 @@ const ChatBox: React.FC<ChatBoxProps> = ({ groupId, sender }) => {
             flexShrink: 0,
             whiteSpace: 'nowrap',
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.boxShadow = '0 6px 18px rgba(0, 187, 255, 0.45)')}
+          onMouseEnter={(e) => (e.currentTarget.style.boxShadow = isLight ? '0 6px 18px rgba(59, 130, 246, 0.45)' : '0 6px 18px rgba(0, 187, 255, 0.45)')}
           onMouseLeave={(e) => (e.currentTarget.style.boxShadow = 'none')}
         >
           Send

@@ -181,8 +181,33 @@ body {
 .report-modal__content label textarea {
   border: 1px solid rgba(71, 181, 255, 0.35);
   border-radius: 0.6rem;
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(15, 23, 42, 0.9);
   color: #e6eefc;
+}
+
+/* Hide spinner arrows for number inputs */
+.report-modal__content input[type="number"].no-spinner::-webkit-inner-spin-button,
+.report-modal__content input[type="number"].no-spinner::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.report-modal__content input[type="number"].no-spinner {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+/* Commander dropdowns - dark mode with rounded corners */
+.commander-panel select {
+  border-radius: 0.6rem;
+  background: rgba(15, 23, 42, 0.9);
+  color: #e5e7eb;
+  border: 1px solid rgba(148, 163, 184, 0.5);
+}
+
+.commander-panel select:focus {
+  outline: 2px solid #00bbff;
+  outline-offset: 1px;
 }
 
 
@@ -876,6 +901,24 @@ body {
   font-size: 0.85rem;
 }
 
+/* Task type icon container on the right side of task cards */
+.task-type-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.8);
+}
+
+.task-type-icon--medic { background: rgba(34, 197, 94, 0.2); color: #86efac; }
+.task-type-icon--fire { background: rgba(220, 38, 38, 0.2); color: #fca5a5; }
+.task-type-icon--police { background: rgba(56, 189, 248, 0.2); color: #bae6fd; }
+.task-type-icon--logistics { background: rgba(234, 179, 8, 0.2); color: #fde047; }
+.task-type-icon--search_rescue { background: rgba(147, 51, 234, 0.2); color: #c084fc; }
+.task-type-icon--evacuation { background: rgba(249, 115, 22, 0.2); color: #fdba74; }
+
 .task-priority {
   padding: 0.25rem 0.6rem;
   border-radius: 999px;
@@ -901,6 +944,7 @@ body {
 .status-in-progress { color: #60a5fa; }
 .status-assigned { color: #fcd34d; }
 .status-completed { color: #4ade80; }
+.status-cancelled { color: #fecaca; }
 
 @media (max-width: 1200px) {
   .commander-main {
@@ -915,4 +959,265 @@ body {
     height: 60vh;
   }
 }
+
+/* Light Mode Styles */
+[data-theme="light"] {
+  --commander-bg: #f8fafc;
+  --surface: #ffffff;
+  --panel-bg: #ffffff;
+  --panel-accent: #f1f5f9;
+  --border-color: rgba(0, 0, 0, 0.1);
+  --text-muted: #64748b;
+  --primary-solid: #5b64f6;
+  --primary-dark: #4046b7;
+  --accent-solid: #3b82f6;
+  --success: #22c55e;
+  --warning: #eab308;
+  --danger: #ef4444;
+  --emergency-button-primary: #47b5ff;
+  --emergency-button-shadow: rgba(71, 181, 255, 0.25);
+}
+
+[data-theme="light"] .commander-shell {
+  background: var(--commander-bg);
+  color: #1e293b;
+}
+
+[data-theme="light"] .commander-main {
+  background: var(--surface);
+}
+
+[data-theme="light"] .commander-panel {
+  background: var(--panel-bg);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .commander-panel.right {
+  border-left: 1px solid var(--border-color);
+  border-right: 1px solid var(--border-color);
+}
+
+[data-theme="light"] .commander-panel.left {
+  border-right: 1px solid var(--border-color);
+}
+
+[data-theme="light"] .report-modal {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="light"] .report-modal__content {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  color: #1e293b;
+}
+
+[data-theme="light"] .report-modal__content label input,
+[data-theme="light"] .report-modal__content label select,
+[data-theme="light"] .report-modal__content label textarea {
+  border: 1px solid rgba(71, 181, 255, 0.4);
+  background: #f8fafc;
+  color: #1e293b;
+}
+
+[data-theme="light"] .report-modal__header .meta {
+  color: #64748b;
+}
+
+[data-theme="light"] .report-modal__header button {
+  color: #1e293b;
+}
+
+[data-theme="light"] .report-modal__actions button:first-of-type {
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  background: transparent;
+  color: #1e293b;
+}
+
+[data-theme="light"] .commander-panel select {
+  background: #f8fafc;
+  color: #1e293b;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="light"] .ai-summary {
+  background: var(--panel-accent);
+}
+
+[data-theme="light"] .ai-summary-body {
+  color: var(--text-muted);
+}
+
+[data-theme="light"] .chat-window {
+  background: var(--panel-accent);
+}
+
+[data-theme="light"] .chat-bubble.other {
+  background: rgba(0, 0, 0, 0.05);
+  color: #1e293b;
+}
+
+[data-theme="light"] .chat-input input {
+  background: rgba(0, 0, 0, 0.05);
+  color: #1e293b;
+}
+
+[data-theme="light"] .commander-chat {
+  background: var(--panel-accent);
+}
+
+[data-theme="light"] .commander-chat__sidebar {
+  background: rgba(241, 245, 249, 0.8);
+  border: 1px solid var(--border-color);
+}
+
+[data-theme="light"] .commander-chat__sidebar-header {
+  color: #1e293b;
+}
+
+[data-theme="light"] .commander-chat__sidebar-header button {
+  border: 1px solid var(--border-color);
+  color: #1e293b;
+}
+
+[data-theme="light"] .commander-chat__group-list button {
+  background: rgba(0, 0, 0, 0.03);
+  color: #1e293b;
+}
+
+[data-theme="light"] .commander-chat__group-list button.active {
+  background: rgba(91, 100, 246, 0.15);
+  border: 1px solid rgba(91, 100, 246, 0.4);
+}
+
+[data-theme="light"] .commander-chat__conversation {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+}
+
+[data-theme="light"] .commander-chat__conversation-header .meta {
+  color: #64748b;
+}
+
+[data-theme="light"] .commander-chat__conversation-header button {
+  border: 1px solid var(--border-color);
+  color: #1e293b;
+}
+
+[data-theme="light"] .commander-chat-empty {
+  color: #64748b;
+}
+
+[data-theme="light"] .commander-chat-empty button {
+  border: 1px dashed rgba(0, 0, 0, 0.2);
+  color: #1e293b;
+}
+
+[data-theme="light"] .commander-chat__modal {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="light"] .commander-chat__modal-content {
+  background: #ffffff;
+  border: 1px solid var(--border-color);
+}
+
+[data-theme="light"] .commander-chat__modal-header button {
+  color: #1e293b;
+}
+
+[data-theme="light"] .commander-selector {
+  color: #1e293b;
+}
+
+[data-theme="light"] .map-area {
+  background: #f1f5f9;
+  border: 1px solid var(--border-color);
+}
+
+[data-theme="light"] .map-search {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  color: #1e293b;
+}
+
+[data-theme="light"] .map-search input {
+  color: #1e293b;
+}
+
+[data-theme="light"] .map-search input::placeholder {
+  color: rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="light"] .map-search button {
+  background: rgba(0, 0, 0, 0.05);
+  color: #1e293b;
+}
+
+[data-theme="light"] .map-search button:not(:disabled):hover {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .map-controls {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid var(--border-color);
+}
+
+[data-theme="light"] .map-controls button {
+  color: #1e293b;
+}
+
+[data-theme="light"] .map-controls button:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .map-locate {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid var(--border-color);
+  color: #1e293b;
+}
+
+[data-theme="light"] .map-status {
+  background: rgba(255, 255, 255, 0.95);
+  color: #d97706;
+  border: 1px solid var(--border-color);
+}
+
+[data-theme="light"] .leaflet-container {
+  background: #f1f5f9;
+}
+
+[data-theme="light"] .leaflet-control-attribution {
+  background: rgba(255, 255, 255, 0.9);
+  color: rgba(0, 0, 0, 0.7);
+}
+
+[data-theme="light"] .task-card {
+  background: var(--panel-accent);
+  border: 1px solid var(--border-color);
+}
+
+[data-theme="light"] .task-card:hover {
+  background: rgba(241, 245, 249, 0.8);
+}
+
+[data-theme="light"] .task-type-icon {
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .task-type-icon--medic { background: rgba(34, 197, 94, 0.15); color: #16a34a; }
+[data-theme="light"] .task-type-icon--fire { background: rgba(220, 38, 38, 0.15); color: #dc2626; }
+[data-theme="light"] .task-type-icon--police { background: rgba(56, 189, 248, 0.15); color: #0284c7; }
+[data-theme="light"] .task-type-icon--logistics { background: rgba(234, 179, 8, 0.15); color: #ca8a04; }
+[data-theme="light"] .task-type-icon--search_rescue { background: rgba(147, 51, 234, 0.15); color: #9333ea; }
+[data-theme="light"] .task-type-icon--evacuation { background: rgba(249, 115, 22, 0.15); color: #ea580c; }
+
+[data-theme="light"] .priority-high { background: rgba(248, 113, 113, 0.15); color: #dc2626; }
+[data-theme="light"] .priority-medium { background: rgba(250, 204, 21, 0.15); color: #ca8a04; }
+[data-theme="light"] .priority-low { background: rgba(74, 222, 128, 0.15); color: #16a34a; }
+
+[data-theme="light"] .status-in-progress { color: #0284c7; }
+[data-theme="light"] .status-assigned { color: #ca8a04; }
+[data-theme="light"] .status-completed { color: #16a34a; }
+[data-theme="light"] .status-cancelled { color: #dc2626; }
 
