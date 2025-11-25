@@ -255,7 +255,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
+  padding: 0rem;
 }
 
 /* Commander-specific small nav links placed beside user actions */
@@ -278,6 +278,87 @@
 .app-nav__link.active {
   background: rgba(255, 255, 255, 0.06);
   color: #fff;
+}
+
+.theme-toggle {
+  padding: 0rem 1.5rem;   /* match .app-nav__link */
+  height: 2.5rem;              /* match button height */
+  border-radius: 12px;       /* match rounded corners */
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: transparent;
+  color: #cbd5e1;
+  padding: 0.4rem 0.75rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+
+.theme-toggle:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Light Mode Navigation Styles */
+[data-theme="light"] .dashboard-shell {
+  background: #f8fafc;
+  color: #1e293b;
+}
+
+[data-theme="light"] .app-nav {
+  background: #ffffff;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] .app-nav__title {
+  color: #1e293b;
+}
+
+[data-theme="light"] .app-nav__actions {
+  color: #475569;
+}
+
+[data-theme="light"] .app-nav__link {
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: transparent;
+  color: #475569;
+}
+
+[data-theme="light"] .app-nav__link.active {
+  background: rgba(91, 100, 246, 0.1);
+  color: #5b64f6;
+  border-color: rgba(91, 100, 246, 0.3);
+}
+
+[data-theme="light"] .app-nav__link:hover:not(.active) {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .theme-toggle {
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: transparent;
+  color: #475569;
+}
+
+[data-theme="light"] .theme-toggle:hover {
+  background: rgba(0, 0, 0, 0.05);
+  border-color: rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="light"] .logout-button {
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  color: #1e293b;
+}
+
+[data-theme="light"] .logout-button:not(:disabled):hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .dashboard-main {
+  background: #f8fafc;
 }
 
 .dashboard {

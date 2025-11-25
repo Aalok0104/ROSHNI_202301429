@@ -8,7 +8,7 @@ from app.models.responder_models import Team, ResponderProfile
 from app.models.user_family_models import User, UserProfile
 
 class ResponderRepository:
-    def _init_(self, db: AsyncSession):
+    def __init__(self, db: AsyncSession):
         self.db = db
 
     async def create_team(self, data: dict) -> Team:
@@ -49,7 +49,7 @@ class ResponderRepository:
         for team, count, lat, lon in rows:
             # We attach the calculated fields to the object wrapper or return a dict
             # Using a wrapper method is cleaner for Pydantic "from_attributes"
-            team_data = team._dict_.copy()
+            team_data = team.__dict__.copy()
             team_data['member_count'] = count
             team_data['current_latitude'] = lat
             team_data['current_longitude'] = lon

@@ -1,5 +1,5 @@
 import type { FC } from 'react'; // Add 'type' here
-// import { useState } from "react";
+import { useCallback, useEffect, useState } from 'react';
 
 import type { SessionUser } from "../types";
 import LeftSidebar from "../components/commander/LeftSidebar";
@@ -14,7 +14,11 @@ type Props = {
 };
 
 const CommanderDashboard: FC<Props> = ({ user }) => {
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [showAllTasks, setShowAllTasks] = useState(false);
+  const [mapClickCallback, setMapClickCallback] = useState<((lat: number, lng: number) => void) | null>(null);
   const userId = user.user_id || user.email || "commander-user";
+
   const responders = [
     "Responder-07",
     "Responder-12",
@@ -24,28 +28,92 @@ const CommanderDashboard: FC<Props> = ({ user }) => {
     "Recon Scout",
   ];
 
+  const getDisasterIdFromLocation = () => {
+    if (typeof window === 'undefined') {
+      return null;
+    }
+
+    try {
+      const url = new URL(window.location.href);
+      return url.searchParams.get('disasterId');
+    } catch {
+      return null;
+    }
+  };
+
   const handleGenerateReport = () => {
     console.log("Generate report clicked");
   };
 
   // handleAddTask was removed; use handleAddTaskSubmit for actual submission.
+  const fetchTasks = useCallback(async () => {
+    const disasterId = getDisasterIdFromLocation();
+    if (!disasterId) {
+      return;
+    }
+
+    try {
+      const url = `${API_BASE_URL}/disasters/${encodeURIComponent(disasterId)}/tasks`;
+      const response = await fetch(url, {
+        method: 'GET',
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        return;
+      }
+
+      const data = await response.json();
+      const mappedTasks: Task[] = (data || []).map((item: any) => ({
+        taskId: item.task_id,
+        disasterId: item.disaster_id,
+        taskType: item.task_type,
+        description: item.description,
+        priority: item.priority,
+        status: item.status,
+        latitude: item.latitude,
+        longitude: item.longitude,
+        createdAt: item.created_at,
+        assignments: (item.assignments || []).map((a: any) => ({
+          teamId: a.team_id,
+          teamName: a.team_name,
+          status: a.status,
+          eta: a.eta,
+          arrivedAt: a.arrived_at,
+        })),
+      }));
+
+      setTasks(mappedTasks);
+    } catch (err) {
+      // swallow errors for now; backend integration point
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    fetchTasks();
+    const intervalId = window.setInterval(fetchTasks, 10000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [fetchTasks]);
 
   const handleAddTaskSubmit = async (task: Task) => {
     // Convenience integration point: attempt to POST the task to the API.
     // The backend may not expose this endpoint yet — this is where server wiring
     // should be added. We keep the UI optimistic regardless.
     try {
-      const disasterId =
-        typeof window !== 'undefined'
-          ? new URLSearchParams(window.location.search).get('disasterId')
-          : null;
-
+      const disasterId = getDisasterIdFromLocation();
       if (!disasterId) {
         console.warn('No disasterId specified in URL; skipping backend task creation');
         return;
       }
 
-      const url = `${API_BASE_URL}/api/disasters/${encodeURIComponent(disasterId)}/tasks`;
+      const url = `${API_BASE_URL}/disasters/${encodeURIComponent(disasterId)}/tasks`;
       const payload = {
         task_type: task.taskType,
         description: task.description,
@@ -54,14 +122,31 @@ const CommanderDashboard: FC<Props> = ({ user }) => {
         longitude: task.longitude,
       };
 
-      await fetch(url, {
+      const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify(payload),
       });
+
+      if (!response.ok) {
+        return;
+      }
+
+      await fetchTasks();
     } catch (err) {
       // swallow errors for now; backend integration point
+    }
+  };
+
+  const handleRequestMapClick = (callback: (lat: number, lng: number) => void) => {
+    setMapClickCallback(() => callback);
+  };
+
+  const handleMapClick = (lat: number, lng: number) => {
+    if (mapClickCallback) {
+      mapClickCallback(lat, lng);
+      setMapClickCallback(null); // Clear after one use
     }
   };
 
@@ -69,8 +154,20 @@ const CommanderDashboard: FC<Props> = ({ user }) => {
     <>
       <div className="commander-main">
         <LeftSidebar userId={userId} responders={responders} onGenerateReport={handleGenerateReport} />
-        <MapView />
-        <TaskList onAddTaskSubmit={handleAddTaskSubmit} />
+        <MapView 
+          tasks={tasks} 
+          showAllTasks={showAllTasks} 
+          onMapClick={handleMapClick}
+          isListeningForClick={mapClickCallback !== null}
+        />
+        <TaskList 
+          tasks={tasks} 
+          onAddTaskSubmit={handleAddTaskSubmit} 
+          onTasksUpdated={fetchTasks} 
+          showAllTasks={showAllTasks} 
+          onShowAllTasksChange={setShowAllTasks}
+          onRequestMapClick={handleRequestMapClick}
+        />
       </div>
     </>
   );
