@@ -9,6 +9,7 @@ import ResponderDashboard from './dashboards/ResponderDashboard';
 import CommanderDashboard from './dashboards/CommanderDashboard';
 import CommanderHome from './dashboards/CommanderHome';
 import CommanderLogs from './dashboards/CommanderLogs';
+import CommanderDisasters from './dashboards/CommanderDisasters';
 import CommanderTeams from './dashboards/CommanderTeams';
 import RegistrationForm from './components/RegistrationForm';
 import type { RegistrationData } from './components/RegistrationForm';
@@ -76,11 +77,12 @@ const DashboardView = ({ user, onLogout, loggingOut }: DashboardViewProps) => {
   const displayName = user.email;
   const ActiveDashboard = DASHBOARD_COMPONENTS[activeRole] ?? CivilianDashboard;
   const { theme, toggleTheme } = useTheme();
-  const [commanderView, setCommanderView] = useState<'dashboard' | 'home' | 'logs' | 'teams'>(() => {
+  const [commanderView, setCommanderView] = useState<'dashboard' | 'home' | 'logs' | 'teams' | 'disasters'>(() => {
     try {
       if (typeof window === 'undefined') return 'dashboard';
       const params = new URLSearchParams(window.location.search);
       const v = params.get('commanderView');
+      if (v === 'disasters') return 'disasters';
       if (v === 'home') return 'home';
       if (v === 'logs') return 'logs';
       if (v === 'teams') return 'teams';
@@ -107,6 +109,7 @@ const DashboardView = ({ user, onLogout, loggingOut }: DashboardViewProps) => {
       const v = params.get('commanderView');
       if (v === 'home') setCommanderView('home');
       else if (v === 'logs') setCommanderView('logs');
+      else if (v === 'disasters') setCommanderView('disasters');
       else if (v === 'teams') setCommanderView('teams');
       else setCommanderView('dashboard');
     };
@@ -117,6 +120,7 @@ const DashboardView = ({ user, onLogout, loggingOut }: DashboardViewProps) => {
 
   const renderContent = () => {
     if (activeRole === 'commander') {
+      if (commanderView === 'disasters') return <CommanderDisasters />;
       if (commanderView === 'home') return <CommanderHome />;
       if (commanderView === 'logs') return <CommanderLogs />;
       if (commanderView === 'teams') return <CommanderTeams />;
@@ -142,6 +146,13 @@ const DashboardView = ({ user, onLogout, loggingOut }: DashboardViewProps) => {
                 onClick={() => setCommanderView('home')}
               >
                 Home
+              </button>
+              <button
+                type="button"
+                className={`app-nav__link ${commanderView === 'disasters' ? 'active' : ''}`}
+                onClick={() => setCommanderView('disasters')}
+              >
+                Disasters
               </button>
               <button
                 type="button"
