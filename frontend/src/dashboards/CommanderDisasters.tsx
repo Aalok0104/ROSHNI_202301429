@@ -2,6 +2,9 @@ import React, { useEffect, useState } from 'react';
 import '../components/commander/commanderStyles.css';
 import '../components/commander/CommanderDisasters.css';
 import { API_BASE_URL } from '../config';
+import TeamAssignModal from '../components/commander/TeamAssignModal';
+import DeclareEmergencyModal from '../components/commander/DeclareEmergencyModal';
+import DisasterDetailModal from '../components/commander/DisasterDetailModal';
 
 type Incident = {
   incident_id: string;
@@ -18,6 +21,11 @@ type Incident = {
 const CommanderDisasters: React.FC = () => {
   const [disasters, setDisasters] = useState<Incident[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [activeIncidentId, setActiveIncidentId] = useState<string | null>(null);
+  const [showDeclareModal, setShowDeclareModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [detailIncident, setDetailIncident] = useState<Incident | null>(null);
 
   useEffect(() => {
     const fetchIncidents = async () => {
@@ -84,29 +92,55 @@ const CommanderDisasters: React.FC = () => {
     }
   };
 
+  const handleOpenAssign = (incidentId: string) => {
+    setActiveIncidentId(incidentId);
+    setShowAssignModal(true);
+  };
+
+  const handleOpenDetail = (incident: Incident) => {
+    setDetailIncident(incident);
+    setShowDetailModal(true);
+  };
+
+  const handleCloseDetail = () => {
+    setDetailIncident(null);
+    setShowDetailModal(false);
+  };
+
+  const handleDiscardFromModal = async (incidentId: string) => {
+    await handleDiscard(incidentId);
+    handleCloseDetail();
+  };
+
+  const handleConvertFromModal = async (incidentId: string) => {
+    await handleConvertToDisaster(incidentId);
+    handleCloseDetail();
+  };
+
+  const handleOpenAssignFromDetail = (incidentId: string) => {
+    // close detail and open assign modal for same incident
+    setShowDetailModal(false);
+    setActiveIncidentId(incidentId);
+    setShowAssignModal(true);
+  };
+
+  const handleAssignTeam = async (teamId: string) => {
+    // For now we just notify and close the modal. Integrating with task/disaster
+    // assignment endpoints requires additional context (task or disaster id).
+    // Keep this as a hook where real assignment logic can be added later.
+    console.log('Assigning team', teamId, 'to incident', activeIncidentId);
+    // Optionally: call backend here if you have an endpoint to assign directly.
+    alert(`Team assigned (local): ${teamId}`);
+  };
+
   const handleDeclareEmergency = async () => {
-    if (!confirm('Declare a civilian emergency? This will create an SOS incident.')) return;
+    // Open the declare emergency modal for commander input
+    setShowDeclareModal(true);
+  };
 
-    try {
-      // minimal SOS payload: use 0,0 coordinates if none available
-      const payload = { latitude: 0.0, longitude: 0.0, incident_type: 'sos' };
-      const res = await fetch(`${API_BASE_URL}/incidents`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-
-      if (res.ok) {
-        const created = await res.json();
-        // prepend to list
-        setDisasters((prev: Incident[]) => [created, ...prev]);
-      } else {
-        console.warn('Failed to declare emergency', await res.text());
-      }
-    } catch (err) {
-      console.error(err);
-    }
+  const handleCreatedIncident = (created: any) => {
+    setDisasters((prev: Incident[]) => [created, ...prev]);
+    setShowDeclareModal(false);
   };
 
   return (
@@ -138,7 +172,7 @@ const CommanderDisasters: React.FC = () => {
               <ul className="incidents-list">
                 {disasters.map((d) => (
                   <li key={d.incident_id} className="incident-item">
-                    <div className="incident-left">
+                    <div className="incident-left" onClick={() => handleOpenDetail(d)} style={{ cursor: 'pointer' }}>
                       <div className="incident-icon">{d.incident_type === 'fire' ? '🔥' : d.incident_type === 'power' ? '⚡' : '📍'}</div>
                       <div className="incident-text">
                         <div className="incident-title">{d.title}</div>
@@ -148,7 +182,8 @@ const CommanderDisasters: React.FC = () => {
 
                     <div className="incident-actions">
                       <button className="discard-btn" onClick={() => handleDiscard(d.incident_id)}>Discard</button>
-                      <button className="commander-button primary" onClick={() => handleConvertToDisaster(d.incident_id)}>Assign to Team</button>
+                      <button className="commander-button" onClick={() => handleConvertToDisaster(d.incident_id)}>Convert to Disaster</button>
+                      <button className="commander-button primary" onClick={() => handleOpenAssign(d.incident_id)}>Assign to Team</button>
                     </div>
                   </li>
                 ))}
@@ -161,6 +196,30 @@ const CommanderDisasters: React.FC = () => {
           Reduced width to give the main incidents panel more room. */}
         <div style={{ width: 700 }} />
       </div>
+      {showAssignModal && activeIncidentId && (
+        <TeamAssignModal
+          incidentId={activeIncidentId}
+          onClose={() => { setShowAssignModal(false); setActiveIncidentId(null); }}
+          onAssign={handleAssignTeam}
+        />
+      )}
+      {showDeclareModal && (
+        <DeclareEmergencyModal
+          onClose={() => setShowDeclareModal(false)}
+          onCreated={handleCreatedIncident}
+        />
+      )}
+      
+
+      {showDetailModal && detailIncident && (
+        <DisasterDetailModal
+          incident={detailIncident}
+          onClose={handleCloseDetail}
+          onDiscard={() => handleDiscardFromModal(detailIncident.incident_id)}
+          onConvert={() => handleConvertFromModal(detailIncident.incident_id)}
+          onOpenAssign={() => handleOpenAssignFromDetail(detailIncident.incident_id)}
+        />
+      )}
     </div>
   );
 };
