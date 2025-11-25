@@ -82,6 +82,20 @@ class IncidentRepository:
         result = await self.db.execute(query)
         return result.scalars().all()
 
+    async def get_incidents_for_user(self, user_id: UUID) -> list[Incident]:
+        query = (
+            select(Incident)
+            .options(selectinload(Incident.media))
+            .where(Incident.reported_by_user_id == user_id)
+        )
+        result = await self.db.execute(query)
+        return result.scalars().all()
+
+    async def get_incident(self, incident_id: UUID) -> Incident | None:
+        query = select(Incident).options(selectinload(Incident.media)).where(Incident.incident_id == incident_id)
+        result = await self.db.execute(query)
+        return result.scalars().first()
+
     async def add_media(self, incident_id: UUID, user_id: UUID, file_meta: dict) -> IncidentMedia:
         media = IncidentMedia(
             incident_id=incident_id,
@@ -181,3 +195,25 @@ class IncidentRepository:
         await self.db.commit()
         
         return new_disaster
+
+    async def delete_incident(self, incident_id: UUID):
+        incident = await self.db.get(Incident, incident_id)
+        if not incident:
+            return None
+        await self.db.execute(Incident.__table__.delete().where(Incident.incident_id == incident_id))
+        await self.db.commit()
+        return True
+
+    async def update_incident(self, incident_id: UUID, data: dict):
+        incident = await self.db.get(Incident, incident_id)
+        if not incident:
+            return None
+        clean = {k: v for k, v in data.items() if v is not None}
+        if not clean:
+            return incident
+        await self.db.execute(
+            Incident.__table__.update().where(Incident.incident_id == incident_id).values(**clean)
+        )
+        await self.db.commit()
+        await self.db.refresh(incident)
+        return incident

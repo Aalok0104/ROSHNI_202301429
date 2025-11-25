@@ -57,23 +57,22 @@ class UserRepository:
         """
         Updates phone, DOB, and generates unique medical code in a transaction.
         """
-        # 1. Update User Phone
-        await self.db.execute(
-            update(User).where(User.user_id == user_id).values(phone_number=phone)
-        )
-
-        # 2. Update Profile DOB
-        await self.db.execute(
-            update(UserProfile).where(UserProfile.user_id == user_id).values(date_of_birth=dob)
-        )
-
-        # 3. Generate Unique Code for Medical Profile
-        # Retry logic for collision (very rare with 3 bytes hex)
+        # Retry logic for collision (very rare with 3 bytes hex) - wrap updates + insert
         max_retries = 5
         for _ in range(max_retries):
             code = secrets.token_hex(3).upper() # e.g., "3F2A9C"
             try:
-                # Create Medical Profile
+                # 1. Update User Phone
+                await self.db.execute(
+                    update(User).where(User.user_id == user_id).values(phone_number=phone)
+                )
+
+                # 2. Update Profile DOB
+                await self.db.execute(
+                    update(UserProfile).where(UserProfile.user_id == user_id).values(date_of_birth=dob)
+                )
+
+                # 3. Create Medical Profile
                 med_profile = UserMedicalProfile(
                     user_id=user_id,
                     public_user_code=code,
@@ -134,3 +133,40 @@ class UserRepository:
         )
         result = await self.db.execute(query)
         return result.scalars().first()
+
+    async def delete_user(self, user_id: UUID):
+        user = await self.db.get(User, user_id)
+        if not user:
+            return None
+        await self.db.execute(User.__table__.delete().where(User.user_id == user_id))
+        await self.db.commit()
+        return True
+
+    async def update_phone_number(self, user_id: UUID, phone_number: str):
+        await self.db.execute(
+            update(User).where(User.user_id == user_id).values(phone_number=phone_number)
+        )
+        await self.db.commit()
+
+    async def create_commander(self, email: str, full_name: str, phone_number: str | None = None) -> User:
+        """
+        Creates a commander account with profile.
+        """
+        new_user = User(email=email, phone_number=phone_number, role_id=3, is_active=True)
+        self.db.add(new_user)
+        await self.db.flush()
+        await self.db.refresh(new_user)
+
+        profile = UserProfile(user_id=new_user.user_id, full_name=full_name)
+        self.db.add(profile)
+        await self.db.commit()
+        return await self.get_by_id(new_user.user_id)
+
+    async def list_commanders(self) -> list[User]:
+        query = (
+            select(User)
+            .options(selectinload(User.profile))
+            .where(User.role_id == 3)
+        )
+        result = await self.db.execute(query)
+        return result.scalars().all()
