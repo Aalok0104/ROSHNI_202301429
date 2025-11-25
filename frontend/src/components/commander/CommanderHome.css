@@ -7,6 +7,18 @@
   --card:#0b1522;
 }
 
+/* Light mode overrides when applied to the root element */
+.commander-home-root.light{
+  --bg: #f7fafc;
+  --panel: #ffffff;
+  --muted: #7b8794;
+  --text: #0b2233;
+  --accent: #1f6feb;
+  --card: #f3f6f9;
+  background: linear-gradient(180deg, var(--bg), #ffffff);
+  color: var(--text);
+}
+
 .commander-home-root{
   min-height:100vh;
   background:linear-gradient(180deg,var(--bg), #031021);
@@ -30,8 +42,22 @@
 .commander-header .subtitle{ color:var(--muted); margin-top:6px; }
 .header-actions{ color:var(--muted); }
 
+.header-actions .theme-toggle{
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.06);
+  color: var(--text);
+  padding:8px 10px;
+  border-radius:8px;
+  cursor:pointer;
+  font-weight:700;
+}
+.commander-home-root.light .header-actions .theme-toggle{
+  border:1px solid rgba(11,34,51,0.06);
+  color: var(--text);
+}
+
 .commander-grid{ display:grid; grid-template-columns: 1fr 360px; gap:20px; align-items:start; }
-.main-col{ }
+
 
 .metrics-row{ display:flex; gap:16px; margin-bottom:18px; }
 .metric-card{ background:var(--panel); border-radius:10px; padding:18px; min-width:180px; box-shadow:0 2px 0 rgba(0,0,0,0.25); border:1px solid rgba(255,255,255,0.03); }

@@ -1,6 +1,7 @@
 // SOSModal Component
 import { type FC, type FormEvent, useState } from 'react';
 import { saveReport, addNotification, getCurrentLocation, formatCoordinates, validateReport } from '../utils/civilianPortal';
+import { useTheme } from '../../../contexts/ThemeContext';
 
 interface SOSModalProps {
   isOpen: boolean;
@@ -9,6 +10,7 @@ interface SOSModalProps {
 }
 
 const SOSModal: FC<SOSModalProps> = ({ isOpen, onClose, onSuccess }) => {
+  const { theme } = useTheme();
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -100,14 +102,22 @@ const SOSModal: FC<SOSModalProps> = ({ isOpen, onClose, onSuccess }) => {
                 value={formData.location}
                 onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                 required
-                className="flex-1 bg-gray-900/40 border border-border-dark rounded-md px-3 py-2 text-sm"
+                className={`flex-1 rounded-md px-3 py-2 text-sm ${
+                  theme === 'light' 
+                    ? 'bg-white border border-gray-300 text-gray-900' 
+                    : 'bg-gray-900/40 border border-border-dark'
+                }`}
                 placeholder="Address or coordinates"
               />
               <button
                 type="button"
                 onClick={handleUseLocation}
                 disabled={loading}
-                className="px-3 py-2 rounded-md bg-gray-800 hover:bg-gray-700 text-sm disabled:opacity-50"
+                className={`px-3 py-2 rounded-md text-sm disabled:opacity-50 ${
+                  theme === 'light'
+                    ? 'bg-gray-200 hover:bg-gray-300 text-gray-900'
+                    : 'bg-gray-800 hover:bg-gray-700'
+                }`}
               >
                 {loading ? 'Getting...' : 'Use my location'}
               </button>

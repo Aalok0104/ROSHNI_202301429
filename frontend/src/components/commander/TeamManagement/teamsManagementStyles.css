@@ -707,13 +707,13 @@ input.form-input:-webkit-autofill:hover {
 }
 
 /* Strong overrides for modal inputs to avoid being overridden by browser/user-agent or third-party CSS */
-.modal-content .form-input,
-.modal-content .form-select {
-  background: hsl(221 51% 9%) !important; /* dark background */
-  color: #f1f5f9 !important; /* visible text color */
-  -webkit-text-fill-color: #f1f5f9 !important; /* Chrome autofill/text */
-  caret-color: #ffffff !important;
-  border: 1.5px solid hsl(221 20% 25%) !important;
+ .modal-content .form-input,
+ .modal-content .form-select {
+  background: hsl(221 51% 9%);
+  color: #f1f5f9;
+  -webkit-text-fill-color: #f1f5f9;
+  caret-color: #ffffff;
+  border: 1.5px solid hsl(221 20% 25%);
 }
 
 .modal-content .form-input::placeholder {
@@ -777,3 +777,250 @@ div.modal-content select.form-select {
   cursor: not-allowed;
 }
 
+[data-theme="light"] .teams-management-container {
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+[data-theme="light"] .teams-management-title {
+  color: #0f172a;
+}
+
+[data-theme="light"] .teams-management-subtitle,
+[data-theme="light"] .team-context,
+[data-theme="light"] .icon-text,
+[data-theme="light"] .empty-state,
+[data-theme="light"] .loading-state {
+  color: #64748b;
+}
+
+[data-theme="light"] .team-name {
+  color: #0f172a;
+}
+
+[data-theme="light"] .back-button,
+[data-theme="light"] .name-link,
+[data-theme="light"] .text-button,
+[data-theme="light"] .action-icon-view {
+  color: #2563eb;
+}
+
+[data-theme="light"] .back-button:hover,
+[data-theme="light"] .name-link:hover,
+[data-theme="light"] .text-button:hover,
+[data-theme="light"] .action-icon-view:hover {
+  color: #1d4ed8;
+}
+
+[data-theme="light"] .search-input {
+  background: #ffffff;
+  border-color: rgba(148, 163, 184, 0.5);
+  color: #0f172a;
+  box-shadow: 0 0 0 0 rgba(148, 163, 184, 0.1);
+}
+
+[data-theme="light"] .search-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+[data-theme="light"] .search-input::placeholder {
+  color: #94a3b8;
+}
+
+[data-theme="light"] .search-icon {
+  color: #94a3b8;
+}
+
+[data-theme="light"] .filter-button,
+[data-theme="light"] .pagination-button {
+  background: #ffffff;
+  border-color: rgba(148, 163, 184, 0.5);
+  color: #0f172a;
+}
+
+[data-theme="light"] .filter-button:hover,
+[data-theme="light"] .pagination-button:hover:not(:disabled) {
+  background: #eff6ff;
+  border-color: rgba(37, 99, 235, 0.5);
+}
+
+[data-theme="light"] .pagination-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #f9fafb;
+}
+
+[data-theme="light"] .pagination-page {
+  background: #2563eb;
+  border-color: transparent;
+  color: #ffffff;
+}
+
+[data-theme="light"] .table-container {
+  background: #ffffff;
+  border-color: rgba(148, 163, 184, 0.4);
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
+}
+
+[data-theme="light"] .table-header {
+  background: #f1f5f9;
+}
+
+[data-theme="light"] .table-header th {
+  color: #64748b;
+}
+
+[data-theme="light"] .table-body {
+  background: #ffffff;
+}
+
+[data-theme="light"] .table-body tr {
+  border-top-color: rgba(148, 163, 184, 0.25);
+}
+
+[data-theme="light"] .table-body tr:hover {
+  background: #f9fafb;
+}
+
+[data-theme="light"] .table-body td {
+  color: #0f172a;
+}
+
+[data-theme="light"] .badge-medic {
+  background: rgba(236, 72, 153, 0.12);
+  color: #db2777;
+}
+
+[data-theme="light"] .badge-fire {
+  background: rgba(251, 146, 60, 0.12);
+  color: #c2410c;
+}
+
+[data-theme="light"] .badge-police {
+  background: rgba(59, 130, 246, 0.12);
+  color: #1d4ed8;
+}
+
+[data-theme="light"] .badge-mixed,
+[data-theme="light"] .badge-logistics,
+[data-theme="light"] .badge-engineer {
+  background: rgba(168, 85, 247, 0.12);
+  color: #7c3aed;
+}
+
+[data-theme="light"] .badge-disaster-response {
+  background: rgba(239, 68, 68, 0.12);
+  color: #b91c1c;
+}
+
+[data-theme="light"] .badge-active {
+  background: rgba(34, 197, 94, 0.12);
+  color: #16a34a;
+}
+
+[data-theme="light"] .badge-on-mission {
+  background: rgba(59, 130, 246, 0.12);
+  color: #2563eb;
+}
+
+[data-theme="light"] .badge-standby {
+  background: rgba(250, 204, 21, 0.12);
+  color: #ca8a04;
+}
+
+[data-theme="light"] .badge-inactive {
+  background: rgba(148, 163, 184, 0.16);
+  color: #6b7280;
+}
+
+[data-theme="light"] .action-icon-remove {
+  color: #ef4444;
+}
+
+[data-theme="light"] .action-icon-remove:hover {
+  color: #b91c1c;
+}
+
+[data-theme="light"] .action-icon-add {
+  color: #16a34a;
+}
+
+[data-theme="light"] .action-icon-add:hover {
+  color: #15803d;
+}
+
+[data-theme="light"] .modal-overlay {
+  background: rgba(15, 23, 42, 0.45);
+}
+
+[data-theme="light"] .modal-content {
+  background: #ffffff;
+  border-color: rgba(148, 163, 184, 0.4);
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.12);
+}
+
+[data-theme="light"] .modal-title {
+  color: #0f172a;
+}
+
+[data-theme="light"] .form-label {
+  color: #0f172a;
+}
+
+ [data-theme="light"] .teams-management-container .modal-content .form-input,
+ [data-theme="light"] .teams-management-container .modal-content .form-select {
+  background: #f9fafb !important;
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.06) !important;
+}
+
+[data-theme="light"] .modal-content .form-input::placeholder {
+  color: #94a3b8 !important;
+}
+
+[data-theme="light"] .form-select option {
+  background: #ffffff;
+  color: #0f172a;
+}
+
+[data-theme="light"] .form-input:disabled,
+[data-theme="light"] .form-select:disabled {
+  background: #e5e7eb;
+  color: #6b7280;
+}
+
+[data-theme="light"] .modal-actions {
+  border-top-color: rgba(148, 163, 184, 0.25);
+}
+
+[data-theme="light"] .secondary-button {
+  background: #f9fafb;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+[data-theme="light"] .secondary-button:hover:not(:disabled) {
+  background: #eff6ff;
+  border-color: #93c5fd;
+  color: #0f172a;
+}
+
+[data-theme="light"] .secondary-button:disabled {
+  background: #e5e7eb;
+  border-color: #cbd5e1;
+  color: #9ca3af;
+}
+
+[data-theme="light"] .error-state {
+  color: #b91c1c;
+}
+
+[data-theme="light"] input.form-input {
+  background: #f9fafb !important;
+  color: #0f172a !important;
+  -webkit-text-fill-color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
