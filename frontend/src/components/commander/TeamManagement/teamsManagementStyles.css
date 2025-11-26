@@ -1,8 +1,8 @@
-/* Teams Management Styles - Matching Commander Dashboard Theme */
+
 
 .teams-management-container {
   min-height: 100vh;
-  background: hsl(221 51% 7%); /* var(--surface) */
+  background: hsl(221 51% 7%); 
   padding: 2rem;
   font-family: "Inter", sans-serif;
   color: #f8fafc;
@@ -566,15 +566,19 @@
 }
 
 .modal-content {
-  /* Simplified Create Team modal styling: keep theme but reduce visual complexity */
-  background: hsl(221 37% 12%); /* flat dark panel matching theme */
+ 
+  background: hsl(221 37% 12%); 
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 12px;
-  padding: 1.5rem; /* smaller padding for a compact box */
+  padding: 1.5rem;
   width: 100%;
   max-width: 540px;
+  max-height: 90vh;
+  overflow-y: auto;
   box-shadow: 0 10px 30px rgba(2, 6, 23, 0.45); /* softer shadow */
   animation: slideUp 0.22s ease;
+  display: flex;
+  flex-direction: column;
 }
 
 @keyframes slideUp {
@@ -601,7 +605,7 @@
   display: block;
   width: 48px;
   height: 2px;
-  background: #5b64f6; /* simple accent line */
+  background: #5b64f6; 
   border-radius: 2px;
   margin-top: 0.75rem;
   margin-bottom: 1rem;
@@ -633,9 +637,9 @@
   background: hsl(221 51% 9%);
   border: 1.5px solid hsl(221 20% 25%);
   border-radius: 10px;
-  color: #f1f5f9; /* primary text color for inputs */
-  caret-color: #ffffff; /* ensure caret is visible */
-  -webkit-text-fill-color: #f1f5f9; /* handle Chrome autofill/text painting */
+  color: #f1f5f9; 
+  caret-color: #ffffff; 
+  -webkit-text-fill-color: #f1f5f9; 
   font-size: 1rem;
   font-weight: 500;
   transition: all 0.25s ease;
@@ -699,14 +703,14 @@ input.form-input:-webkit-autofill:hover {
   box-shadow: 0 0 0px 1000px hsl(221 51% 9%) inset !important; /* preserve background */
 }
 
-/* Ensure disabled inputs remain readable */
+
 .form-input:disabled {
   opacity: 0.9;
   color: #cbd5e1;
   -webkit-text-fill-color: #cbd5e1;
 }
 
-/* Strong overrides for modal inputs to avoid being overridden by browser/user-agent or third-party CSS */
+
  .modal-content .form-input,
  .modal-content .form-select {
   background: hsl(221 51% 9%);
@@ -721,14 +725,14 @@ input.form-input:-webkit-autofill:hover {
   opacity: 1 !important;
 }
 
-/* Extra specificity for inputs that may be affected by third-party resets */
+
 div.modal-content input.form-input[type="text"],
 div.modal-content select.form-select {
   color: #f1f5f9 !important;
   background: hsl(221 51% 9%) !important;
 }
 
-/* If some browser or CSS sets the input background to white, force the dark background for the modal */
+
 .modal-content input.form-input:-moz-placeholder,
 .modal-content input.form-input::-moz-placeholder {
   color: #94a3b8 !important;
@@ -746,6 +750,12 @@ div.modal-content select.form-select {
   gap: 1rem;
   justify-content: flex-end;
   margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+  position: sticky;
+  bottom: 0;
+  background: hsl(221 37% 12%);
 }
 
 .secondary-button {
@@ -964,6 +974,14 @@ div.modal-content select.form-select {
   color: #0f172a;
 }
 
+[data-theme="light"] .modal-title::after {
+  background: #3b82f6;
+}
+
+[data-theme="light"] .form-label {
+  color: #0f172a;
+}
+
 [data-theme="light"] .form-label {
   color: #0f172a;
 }
@@ -1006,6 +1024,21 @@ div.modal-content select.form-select {
   background: #eff6ff;
   border-color: #93c5fd;
   color: #0f172a;
+}
+
+[data-theme="light"] .primary-button {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: #ffffff;
+}
+
+[data-theme="light"] .primary-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.4);
+}
+
+[data-theme="light"] .primary-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 [data-theme="light"] .secondary-button:disabled {

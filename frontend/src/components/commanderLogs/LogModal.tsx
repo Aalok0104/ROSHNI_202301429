@@ -29,11 +29,10 @@ type Props = {
 };
 
 const LogModal: React.FC<Props> = ({ open, mode, disasterId, initial, onClose, onSuccess }) => {
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
-
   // form state
   const [title, setTitle] = useState(initial?.title ?? '');
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [body, setBody] = useState(initial?.text_body ?? '');
   const [numDeaths, setNumDeaths] = useState(initial?.num_deaths != null ? String(initial.num_deaths) : '');
   const [numInjuries, setNumInjuries] = useState(initial?.num_injuries != null ? String(initial.num_injuries) : '');

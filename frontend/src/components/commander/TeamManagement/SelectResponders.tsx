@@ -1,23 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, ChevronLeft, ChevronRight, Filter, Search } from 'lucide-react';
+import { Plus, ChevronLeft, ChevronRight, Filter, Search, Trash2 } from 'lucide-react';
 import { API_BASE_URL } from '../../../config';
 import './teamsManagementStyles.css';
 
-// --- Types based on your backend schema (simplified for frontend use) ---
+
 interface Responder {
-  user_id: string; // The ID of the responder/user
-  full_name: string; // API returns full_name
+  user_id: string; 
+  full_name: string; 
   responder_type: string;
   badge_number: string;
   email?: string;
   status: string;
-  team_name?: string | null; // To check if responder is already assigned to a team
+  team_name?: string | null; 
 }
 
 interface SelectRespondersProps {
-    teamId: string; // The team the user is currently managing/creating
+    teamId: string; 
     teamName: string;
-    onBackToTeamManagement: () => void; // Handler to go back to the team members list
+    onBackToTeamManagement: () => void; 
 }
 
 // --- Responder Type Badge Component (reused) ---
@@ -47,20 +47,16 @@ const SelectResponders: React.FC<SelectRespondersProps> = ({ teamId, teamName, o
   const [selectedType, setSelectedType] = useState<string>('all');
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);
 
-  // --- API Call Integration (Fetching Available Responders) ---
   useEffect(() => {
     const fetchAvailableResponders = async () => {
       setIsLoading(true);
       setError(null);
       
-      // Target the FastAPI GET endpoint, filtering for responders NOT assigned to a team
-      // Backend uses null team_id to indicate no team assignment, but we can't pass null in query string
-      // So we fetch all active responders and filter those without team assignment
       const API_ENDPOINT = `${API_BASE_URL}/commander/responders?status=active`; 
 
       try {
         const response = await fetch(API_ENDPOINT, {
-          credentials: 'include', // Send cookies for authentication
+          credentials: 'include', 
         });
         
         if (!response.ok) {
@@ -68,7 +64,7 @@ const SelectResponders: React.FC<SelectRespondersProps> = ({ teamId, teamName, o
         }
         
         const data: Responder[] = await response.json();
-        // Filter to only show responders not assigned to any team
+       
         const available = data.filter(responder => !responder.team_name);
         setAvailableResponders(available);
         
@@ -96,7 +92,7 @@ const SelectResponders: React.FC<SelectRespondersProps> = ({ teamId, teamName, o
       const response = await fetch(API_ENDPOINT, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', // Send cookies for authentication
+        credentials: 'include', 
         body: JSON.stringify({ 
             team_id: teamId, 
             status: 'active',
@@ -107,13 +103,41 @@ const SelectResponders: React.FC<SelectRespondersProps> = ({ teamId, teamName, o
         throw new Error('Failed to add responder to team.');
       }
       
-      // Success: Remove the added responder from the available list displayed on the screen
+
       setAvailableResponders(prev => prev.filter(r => r.user_id !== responderId));
       alert(`${responderName} added successfully to ${teamName}!`);
 
     } catch (err) {
       console.error("Addition failed:", err);
       alert(`Failed to add responder: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  };
+
+  // --- API Call Integration (Deleting a Responder) ---
+  const handleDeleteResponder = async (responderId: string, responderName: string) => {
+    if (!window.confirm(`Are you sure you want to delete ${responderName}? This action cannot be undone.`)) {
+      return;
+    }
+
+    const API_ENDPOINT = `${API_BASE_URL}/commander/responders/${responderId}`;
+
+    try {
+      const response = await fetch(API_ENDPOINT, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete responder');
+      }
+
+      // Remove the deleted responder from the list
+      setAvailableResponders(prev => prev.filter(r => r.user_id !== responderId));
+      alert(`${responderName} has been deleted successfully!`);
+
+    } catch (err) {
+      console.error("Deletion failed:", err);
+      alert(`Failed to delete responder: ${err instanceof Error ? err.message : String(err)}`);
     }
   };
 
@@ -220,14 +244,23 @@ const SelectResponders: React.FC<SelectRespondersProps> = ({ teamId, teamName, o
                   <ResponderTypeBadge type={responder.responder_type} />
                 </td>
                 <td>
-                  {/* Action button: Green Plus Icon to add responder */}
-                  <button
-                    onClick={() => handleAddResponder(responder.user_id, responder.full_name)}
-                    className="action-icon action-icon-add"
-                    title="Add Responder to Team"
-                  >
-                    <Plus size={20} />
-                  </button>
+                  {/* Action buttons: Add and Delete */}
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button
+                      onClick={() => handleAddResponder(responder.user_id, responder.full_name)}
+                      className="action-icon action-icon-add"
+                      title="Add Responder to Team"
+                    >
+                      <Plus size={20} />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteResponder(responder.user_id, responder.full_name)}
+                      className="action-icon action-icon-remove"
+                      title="Delete Responder"
+                    >
+                      <Trash2 size={20} />
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}

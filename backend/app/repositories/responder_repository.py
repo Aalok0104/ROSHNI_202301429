@@ -71,17 +71,24 @@ class ResponderRepository:
         )
         self.db.add(new_user)
         await self.db.flush() # Generate UUID
+        
+       
+        user_id = new_user.user_id
+        email = new_user.email
 
         # 2. Insert User Profile
         new_profile = UserProfile(
-            user_id=new_user.user_id,
+            user_id=user_id,
             full_name=data['full_name']
         )
         self.db.add(new_profile)
+        
+       
+        full_name = new_profile.full_name
 
         # 3. Insert Responder Profile
         resp_profile = ResponderProfile(
-            user_id=new_user.user_id,
+            user_id=user_id,
             responder_type=data['responder_type'],
             badge_number=data['badge_number'],
             government_id_number=data.get('government_id_number'),
@@ -89,18 +96,23 @@ class ResponderRepository:
             status='active'
         )
         self.db.add(resp_profile)
+        
+        
+        responder_type = resp_profile.responder_type
+        badge_number = resp_profile.badge_number
+        status = resp_profile.status
 
         await self.db.commit()
         
         # Return a composite dict for response
         return {
-            "user_id": new_user.user_id,
-            "full_name": new_profile.full_name,
-            "email": new_user.email,
-            "responder_type": resp_profile.responder_type,
-            "badge_number": resp_profile.badge_number,
+            "user_id": user_id,
+            "full_name": full_name,
+            "email": email,
+            "responder_type": responder_type,
+            "badge_number": badge_number,
             "team_name": None, # Can be fetched if team_id provided
-            "status": resp_profile.status,
+            "status": status,
             "last_known_latitude": None,
             "last_known_longitude": None
         }
