@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { useTheme } from '../../contexts/ThemeContext';
 import './commanderLogsStyles.css';
 
 const API_BASE = (import.meta && (import.meta as any).env && (import.meta as any).env.VITE_API_URL) || 'http://localhost:8000';
@@ -29,9 +28,6 @@ type Props = {
 };
 
 const LogModal: React.FC<Props> = ({ open, mode, disasterId, initial, onClose, onSuccess }) => {
-  const { theme } = useTheme();
-  const isDark = theme === 'dark';
-
   // form state
   const [title, setTitle] = useState(initial?.title ?? '');
   const [body, setBody] = useState(initial?.text_body ?? '');
