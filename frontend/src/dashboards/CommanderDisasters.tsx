@@ -2,9 +2,12 @@ import React, { useEffect, useState } from 'react';
 import '../components/commander/commanderStyles.css';
 import '../components/commander/CommanderDisasters.css';
 import { API_BASE_URL } from '../config';
-import TeamAssignModal from '../components/commander/TeamAssignModal';
+// Team assignment flow removed per request
 import DeclareEmergencyModal from '../components/commander/DeclareEmergencyModal';
 import DisasterDetailModal from '../components/commander/DisasterDetailModal';
+import ConvertToDisasterModal from '../components/commander/ConvertToDisasterModal';
+import ConfirmModal from '../components/commander/ConfirmModal';
+import GenerateReportModal from '../components/commander/GenerateReportModal';
 
 type Incident = {
   incident_id: string;
@@ -18,14 +21,29 @@ type Incident = {
   longitude?: number;
 };
 
+type Disaster = {
+  disaster_id: string;
+  title?: string;
+  description?: string;
+  disaster_type?: string;
+  status?: string;
+  severity_level?: string;
+  latitude?: number;
+  longitude?: number;
+};
+
 const CommanderDisasters: React.FC = () => {
   const [disasters, setDisasters] = useState<Incident[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showAssignModal, setShowAssignModal] = useState(false);
-  const [activeIncidentId, setActiveIncidentId] = useState<string | null>(null);
+  const [disastersLoading, setDisastersLoading] = useState(true);
+  const [reportedDisasters, setReportedDisasters] = useState<Disaster[]>([]);
+  // assign-team state removed
   const [showDeclareModal, setShowDeclareModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [detailIncident, setDetailIncident] = useState<Incident | null>(null);
+  const [showConfirmEnd, setShowConfirmEnd] = useState(false);
+  const [endDisasterId, setEndDisasterId] = useState<string | null>(null);
+  const [showGenerateReport, setShowGenerateReport] = useState(false);
 
   useEffect(() => {
     const fetchIncidents = async () => {
@@ -45,8 +63,44 @@ const CommanderDisasters: React.FC = () => {
       }
     };
 
+    const fetchDisasters = async () => {
+      try {
+        setDisastersLoading(true);
+        const res = await fetch(`${API_BASE_URL}/disasters`, { credentials: 'include' });
+        if (!res.ok) {
+          setReportedDisasters([]);
+          return;
+        }
+        const data = await res.json();
+        setReportedDisasters(data || []);
+      } catch (err) {
+        setReportedDisasters([]);
+      } finally {
+        setDisastersLoading(false);
+      }
+    };
+
     fetchIncidents();
+    fetchDisasters();
   }, []);
+
+  // helper to refresh disasters list (used after closing/creating)
+  const refreshDisasters = async () => {
+    try {
+      setDisastersLoading(true);
+      const res = await fetch(`${API_BASE_URL}/disasters`, { credentials: 'include' });
+      if (!res.ok) {
+        setReportedDisasters([]);
+        return;
+      }
+      const data = await res.json();
+      setReportedDisasters(data || []);
+    } catch (err) {
+      setReportedDisasters([]);
+    } finally {
+      setDisastersLoading(false);
+    }
+  };
 
   const handleDiscard = async (incidentId: string) => {
     try {
@@ -68,34 +122,56 @@ const CommanderDisasters: React.FC = () => {
   };
 
   const handleConvertToDisaster = async (incidentId: string) => {
-    const severity = window.prompt('Severity level (low, medium, high, critical)', 'medium') || 'medium';
-    const type = window.prompt('Disaster type (fire, flood, accident, other)', 'other') || 'other';
+    // open modal instead
+    setConvertIncidentId(incidentId);
+    setShowConvertModal(true);
+  };
 
+  const [showConvertModal, setShowConvertModal] = useState(false);
+  const [convertIncidentId, setConvertIncidentId] = useState<string | null>(null);
+
+  const handleConverted = (created: any) => {
+    // remove source incident if present
+    if (created && created.disaster_id) {
+      setDisasters((prev: Incident[]) => prev.filter((d: Incident) => d.incident_id !== convertIncidentId));
+      setReportedDisasters((prev: Disaster[]) => [created, ...(prev || [])]);
+    }
+    setShowConvertModal(false);
+    setConvertIncidentId(null);
+  };
+
+  const handleEndDisasterConfirm = async () => {
+    if (!endDisasterId) return;
     try {
-      const res = await fetch(`${API_BASE_URL}/incidents/${encodeURIComponent(incidentId)}/status`, {
+      const res = await fetch(`${API_BASE_URL}/disasters/${encodeURIComponent(endDisasterId)}/close`, {
         method: 'PATCH',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'converted', severity_level: severity, disaster_type: type }),
+        credentials: 'include'
       });
-
-      if (res.ok) {
-        const json = await res.json();
-        // remove the incident from the list
-        setDisasters((prev: Incident[]) => prev.filter((d: Incident) => d.incident_id !== incidentId));
-        alert(`Converted to disaster ${json.disaster_id || ''}`);
-      } else {
-        console.warn('Failed to convert incident', await res.text());
+      if (!res.ok) {
+        const txt = await res.text();
+        console.error('Failed to close disaster', res.status, txt);
+        alert(`Failed to close disaster: ${txt || res.status}`);
+        return;
       }
+      // refresh list and show generate report option
+      await refreshDisasters();
+      setShowConfirmEnd(false);
+      setShowGenerateReport(true);
     } catch (err) {
       console.error(err);
+      alert('Failed to close disaster. See console.');
     }
   };
 
-  const handleOpenAssign = (incidentId: string) => {
-    setActiveIncidentId(incidentId);
-    setShowAssignModal(true);
+  const handleReportGenerated = (report: any) => {
+    // optionally do something with the report, for now just notify and close modal
+    console.log('Report generated', report);
+    alert('Report draft created');
+    setShowGenerateReport(false);
+    setEndDisasterId(null);
   };
+
+  // assign-team handler removed
 
   const handleOpenDetail = (incident: Incident) => {
     setDetailIncident(incident);
@@ -117,21 +193,9 @@ const CommanderDisasters: React.FC = () => {
     handleCloseDetail();
   };
 
-  const handleOpenAssignFromDetail = (incidentId: string) => {
-    // close detail and open assign modal for same incident
-    setShowDetailModal(false);
-    setActiveIncidentId(incidentId);
-    setShowAssignModal(true);
-  };
+  // assign-team handler removed
 
-  const handleAssignTeam = async (teamId: string) => {
-    // For now we just notify and close the modal. Integrating with task/disaster
-    // assignment endpoints requires additional context (task or disaster id).
-    // Keep this as a hook where real assignment logic can be added later.
-    console.log('Assigning team', teamId, 'to incident', activeIncidentId);
-    // Optionally: call backend here if you have an endpoint to assign directly.
-    alert(`Team assigned (local): ${teamId}`);
-  };
+  // assign-team functionality removed
 
   const handleDeclareEmergency = async () => {
     // Open the declare emergency modal for commander input
@@ -158,8 +222,8 @@ const CommanderDisasters: React.FC = () => {
         </div>
       </div>
 
-      <div className="commander-main" style={{ paddingTop: '1rem' }}>
-        <div style={{ flex: 1 }}>
+      <div className="commander-main" style={{ paddingTop: '1rem'}}>
+        <div style={{ flex: 1}}>
           <div className="panel" style={{ padding: '0', overflow: 'hidden' }}>
             <div className="panel-title">Reported Incidents</div>
             <div className="panel-body">
@@ -183,7 +247,7 @@ const CommanderDisasters: React.FC = () => {
                     <div className="incident-actions">
                       <button className="discard-btn" onClick={() => handleDiscard(d.incident_id)}>Discard</button>
                       <button className="commander-button" onClick={() => handleConvertToDisaster(d.incident_id)}>Convert to Disaster</button>
-                      <button className="commander-button primary" onClick={() => handleOpenAssign(d.incident_id)}>Assign to Team</button>
+                      {/* Assign-to-team removed */}
                     </div>
                   </li>
                 ))}
@@ -191,22 +255,68 @@ const CommanderDisasters: React.FC = () => {
             </div>
           </div>
         </div>
+        {/* Reported Disasters column */}
+        <div style={{width:700}}>
+          <div className="panel" style={{ marginLeft: 12 }}>
+            <div className="panel-title">Reported Disasters</div>
+            <div className="panel-body">
+              {disastersLoading && <div className="subtle">Loading disasters...</div>}
+              {!disastersLoading && reportedDisasters.length === 0 && (
+                <div className="subtle">No active disasters.</div>
+              )}
 
-        {/* Right column intentionally left empty to keep layout consistent with dashboard.
-          Reduced width to give the main incidents panel more room. */}
-        <div style={{ width: 700 }} />
+              <ul className="incidents-list">
+                {reportedDisasters.map((d: Disaster) => (
+                  <li key={d.disaster_id} className="incident-item">
+                    <div className="incident-left" style={{ cursor: 'default' }}>
+                      <div className="incident-icon">🚨</div>
+                      <div className="incident-text">
+                        <div className="incident-title">{d.title || 'Untitled Disaster'}</div>
+                        <div className="incident-sub">{d.description || `${d.latitude ?? 'Unknown'}, ${d.longitude ?? ''}`}</div>
+                      </div>
+                    </div>
+                    <div className="incident-actions">
+                      <div style={{ color: 'var(--text-muted)', fontSize: 12 }}>{d.severity_level || ''}</div>
+                      <button className="commander-button emergency" onClick={() => { setEndDisasterId(d.disaster_id); setShowConfirmEnd(true); }}>End Disaster</button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
       </div>
-      {showAssignModal && activeIncidentId && (
-        <TeamAssignModal
-          incidentId={activeIncidentId}
-          onClose={() => { setShowAssignModal(false); setActiveIncidentId(null); }}
-          onAssign={handleAssignTeam}
-        />
-      )}
+      {/* Assign modal removed */}
       {showDeclareModal && (
         <DeclareEmergencyModal
           onClose={() => setShowDeclareModal(false)}
           onCreated={handleCreatedIncident}
+        />
+      )}
+      {showConvertModal && convertIncidentId && (
+        <ConvertToDisasterModal
+          incidentId={convertIncidentId}
+          onClose={() => { setShowConvertModal(false); setConvertIncidentId(null); }}
+          onConverted={handleConverted}
+        />
+      )}
+
+      {showConfirmEnd && endDisasterId && (
+        <ConfirmModal
+          title="End Disaster"
+          message="Are you sure you want to end this disaster?"
+          onCancel={() => { setShowConfirmEnd(false); setEndDisasterId(null); }}
+          onConfirm={handleEndDisasterConfirm}
+          confirmLabel="Yes"
+          cancelLabel="No"
+        />
+      )}
+
+      {showGenerateReport && endDisasterId && (
+        <GenerateReportModal
+          disasterId={endDisasterId}
+          onClose={() => { setShowGenerateReport(false); setEndDisasterId(null); }}
+          onGenerated={handleReportGenerated}
         />
       )}
       
@@ -217,7 +327,6 @@ const CommanderDisasters: React.FC = () => {
           onClose={handleCloseDetail}
           onDiscard={() => handleDiscardFromModal(detailIncident.incident_id)}
           onConvert={() => handleConvertFromModal(detailIncident.incident_id)}
-          onOpenAssign={() => handleOpenAssignFromDetail(detailIncident.incident_id)}
         />
       )}
     </div>

@@ -15,10 +15,9 @@ type Props = {
   onClose: () => void;
   onDiscard: (id: string) => Promise<void> | void;
   onConvert: (id: string) => Promise<void> | void;
-  onOpenAssign: (id: string) => void;
 };
 
-const DisasterDetailModal: React.FC<Props> = ({ incident, onClose, onDiscard, onConvert, onOpenAssign }) => {
+const DisasterDetailModal: React.FC<Props> = ({ incident, onClose, onDiscard, onConvert }) => {
   return (
     <div style={backdropStyle}>
       <div style={modalStyle} role="dialog" aria-modal="true">
@@ -38,7 +37,7 @@ const DisasterDetailModal: React.FC<Props> = ({ incident, onClose, onDiscard, on
 
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 18 }}>
             <button className="discard-btn" onClick={() => onDiscard(incident.incident_id)}>Discard</button>
-            <button className="commander-button" onClick={() => onOpenAssign(incident.incident_id)}>Assign to Team</button>
+            {/* Assign-to-team removed */}
             <button className="commander-button primary" onClick={() => onConvert(incident.incident_id)}>Convert to Disaster</button>
           </div>
         </div>
