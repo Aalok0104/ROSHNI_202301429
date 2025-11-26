@@ -18,6 +18,9 @@ const CommanderLogs: FC = () => {
     resourceMax: 10000000,
   });
   const { theme } = useTheme();
+  const [logsRefreshSignal, setLogsRefreshSignal] = useState(0);
+
+  const handleLogCreated = () => setLogsRefreshSignal((s) => s + 1);
 
   useEffect(() => {
     const handleResize = () => {
@@ -37,8 +40,8 @@ const CommanderLogs: FC = () => {
         className="flex flex-1 overflow-hidden relative"
         style={{ paddingLeft: isSidebarOpen ? '20rem' : '0', transition: 'padding-left 300ms ease' }}
       >
-        <CommanderLogsSidebar isOpen={isSidebarOpen} onToggle={() => setIsSidebarOpen((prev) => !prev)} filters={filters} onFiltersChange={setFilters} />
-        <CommanderLogsTimeline filters={filters} />
+        <CommanderLogsSidebar isOpen={isSidebarOpen} onToggle={() => setIsSidebarOpen((prev) => !prev)} filters={filters} onFiltersChange={setFilters} onLogCreated={handleLogCreated} />
+        <CommanderLogsTimeline filters={filters} refreshSignal={logsRefreshSignal} onLogCreated={handleLogCreated} />
       </div>
     </div>
   );

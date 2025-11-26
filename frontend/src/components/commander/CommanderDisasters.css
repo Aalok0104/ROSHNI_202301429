@@ -79,8 +79,15 @@
 	cursor: pointer;
 }
 
-/* make emergency button more like the screenshot (red) without touching global commander styles */
-.commander-button.emergency {
+/* make incident emergency button red (scoped so it doesn't override global commander buttons) */
+.incident-actions .commander-button.emergency {
+    background: linear-gradient(135deg, #e64747, #ff6b6b);
+    color: #fff;
+    box-shadow: 0 8px 24px rgba(230, 71, 71, 0.18);
+}
+
+/* header 'Declare Civilian Emergency' button - match Cancel Task red style */
+.commander-button.declare-civilian-emergency {
 	background: linear-gradient(135deg, #e64747, #ff6b6b);
 	color: #fff;
 	box-shadow: 0 8px 24px rgba(230, 71, 71, 0.18);
