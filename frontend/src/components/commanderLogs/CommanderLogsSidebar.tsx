@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import LogModal from './LogModal';
 import { useTheme } from '../../contexts/ThemeContext';
 import './commanderLogsStyles.css';
 
@@ -18,6 +19,7 @@ export type CommanderLogsSidebarProps = {
   onToggle: () => void;
   filters: FiltersState;
   onFiltersChange: (filters: FiltersState) => void;
+  onLogCreated?: () => void;
 };
 
 const disasterTypes = [
@@ -33,7 +35,7 @@ const resourceNeeds = [
   { id: 'food', label: 'Food Aid' },
 ];
 
-function CommanderLogsSidebar({ isOpen, onToggle, filters, onFiltersChange }: CommanderLogsSidebarProps) {
+function CommanderLogsSidebar({ isOpen, onToggle, filters, onFiltersChange, onLogCreated }: CommanderLogsSidebarProps) {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
   const [checkboxBg, setCheckboxBg] = useState('#0f172a');
@@ -57,8 +59,8 @@ function CommanderLogsSidebar({ isOpen, onToggle, filters, onFiltersChange }: Co
   const updateFilters = (partial: Partial<FiltersState>) => {
     onFiltersChange({ ...filters, ...partial });
   };
-  const sidebarClassName = `w-80 flex flex-col transition-transform duration-300 ease-in-out z-10 absolute left-0 top-0 bottom-0 ${
-    isDark ? 'bg-[#1e293b] border-r border-gray-700' : 'bg-white border-r border-gray-200'
+  const sidebarClassName = `w-80 flex flex-col transition-transform duration-300 ease-in-out z-10 absolute left-0 top-0 ${
+    isDark ? 'bg-[#1e293b] border-r border-b border-gray-700 rounded-br-xl' : 'bg-white border-r border-b border-gray-200 rounded-br-xl'
   } ${isOpen ? 'translate-x-0' : '-translate-x-full'}`;
 
   const toggleIcon = isOpen ? 'chevron_left' : 'chevron_right';
@@ -165,9 +167,22 @@ function CommanderLogsSidebar({ isOpen, onToggle, filters, onFiltersChange }: Co
     );
   }
 
+  // Add Log modal state (using shared LogModal)
+  const [isAddLogOpen, setIsAddLogOpen] = useState(false);
+  const openAddLog = () => setIsAddLogOpen(true);
+  const closeAddLog = () => setIsAddLogOpen(false);
+
+  const notifyParent = () => {
+    if (typeof onLogCreated === 'function') {
+      try { onLogCreated(); } catch { /* ignore */ }
+    } else {
+      window.location.reload();
+    }
+  };
+
   return (
     <aside className={sidebarClassName} aria-label="Commander log filters">
-      <div className="grow p-6 min-h-screen pt-6" style={{ ['--checkbox-bg' as any]: checkboxBg } as React.CSSProperties}>
+      <div className="p-6 pt-6 max-h-screen overflow-auto" style={{ ['--checkbox-bg' as any]: checkboxBg } as React.CSSProperties}>
         <div className="space-y-6">
           <div>
             <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`} htmlFor="logs-search">
@@ -271,6 +286,25 @@ function CommanderLogsSidebar({ isOpen, onToggle, filters, onFiltersChange }: Co
           </div>
         </div>
       </div>
+
+      {/* Add Log button (opens modal) */}
+      <div style={{ padding: '0 1.5rem 1.5rem' }}>
+        <button type="button" className="commander-button emergency w-full" onClick={openAddLog} title="Add Log">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+            <path d="M12 5v14M5 12h14" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          Add Log
+        </button>
+      </div>
+      {isAddLogOpen && (
+        <LogModal
+          open={isAddLogOpen}
+          mode="add"
+          disasterId={new URLSearchParams(window.location.search).get('disasterId') || undefined}
+          onClose={closeAddLog}
+          onSuccess={notifyParent}
+        />
+      )}
 
       <button
         type="button"

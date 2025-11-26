@@ -3,6 +3,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useEffect, useState } from 'react';
 import { FireExtinguisher, Stethoscope, Siren } from 'lucide-react';
 import type { FiltersState } from './CommanderLogsSidebar';
+import LogModal from './LogModal';
 
 type LogResponse = {
   log_id: string;
@@ -28,10 +29,11 @@ type ExtendedLogResponse = LogResponse & {
 
 const API_BASE = (import.meta && (import.meta as any).env && (import.meta as any).env.VITE_API_URL) || 'http://localhost:8000';
 
-const CommanderLogsTimeline: FC<{ disasterId?: string; filters?: FiltersState }> = ({ disasterId, filters }) => {
+const CommanderLogsTimeline: FC<{ disasterId?: string; filters?: FiltersState; refreshSignal?: number; onLogCreated?: () => void }> = ({ disasterId, filters, refreshSignal, onLogCreated }) => {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
   const [logs, setLogs] = useState<ExtendedLogResponse[] | null>(null);
+  const [editingLog, setEditingLog] = useState<ExtendedLogResponse | null>(null);
   // Apply filters to logs
   const applyFilters = (allLogs: ExtendedLogResponse[]): ExtendedLogResponse[] => {
     if (!filters) return allLogs;
@@ -118,7 +120,7 @@ const CommanderLogsTimeline: FC<{ disasterId?: string; filters?: FiltersState }>
     })();
 
     return () => { mounted = false; };
-  }, [disasterId]);
+  }, [disasterId, refreshSignal]);
 
   const renderTime = (iso: string) => {
     try {
@@ -158,13 +160,13 @@ const CommanderLogsTimeline: FC<{ disasterId?: string; filters?: FiltersState }>
 
                       {leftTime ? (
                         <>
-                          <div className="w-1/2 pr-8 text-right">
+                          <div className="w-1/2 pr-4 text-right">
                             <time className="inline-block bg-purple-500 text-white text-xs font-medium px-3 py-1.5 rounded-full shadow-md">
                               {renderTime(log.created_at)}
                             </time>
                           </div>
 
-                          <div className="w-1/2 pl-8">
+                          <div className="w-1/2 pl-4">
                             <h3 className={`text-lg font-bold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>{log.title ?? 'Untitled Log'}</h3>
 
                             <div
@@ -176,78 +178,86 @@ const CommanderLogsTimeline: FC<{ disasterId?: string; filters?: FiltersState }>
                             >
                               <div className={`absolute -left-2 top-4 w-4 h-4 transform rotate-45 border-l border-b ${isDark ? 'bg-[#1e293b] border-gray-700' : 'bg-white border-gray-200'}`} />
 
-                              <div className="flex items-start justify-between gap-4">
-                                <div className="flex-1">
-                                  {hasSummaryBadges ? (
-                                    !isExpanded && (
-                                      <div className="flex flex-wrap gap-2 text-sm">
-                                        {((log as ExtendedLogResponse).estimated_damage_cost ?? null) != null && (
-                                          <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 font-medium ${isDark ? 'bg-indigo-900 text-indigo-200' : 'bg-indigo-100 text-indigo-700'}`}>
-                                            Damages: <span className="font-bold">{rupee.format((log as ExtendedLogResponse).estimated_damage_cost as number)}</span>
-                                          </span>
-                                        )}
-                                        {((log as ExtendedLogResponse).estimated_resource_cost ?? null) != null && (
-                                          <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 font-medium ${isDark ? 'bg-indigo-900 text-indigo-200' : 'bg-indigo-100 text-indigo-700'}`}>
-                                            Resource Cost: <span className="font-bold">{rupee.format((log as ExtendedLogResponse).estimated_resource_cost as number)}</span>
-                                          </span>
-                                        )}
-                                        {((log as ExtendedLogResponse).num_deaths ?? null) != null && (
-                                          <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 font-medium ${isDark ? 'bg-black/40 text-gray-200' : 'bg-gray-100 text-gray-800'}`}>
-                                            Deaths: <span className="font-bold">{(log as ExtendedLogResponse).num_deaths}</span>
-                                          </span>
-                                        )}
-                                      </div>
-                                    )
-                                  ) : (
-                                    <div className={`prose prose-sm max-w-none text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{log.text_body}</div>
-                                  )}
+                              <div>
+                                {hasSummaryBadges ? (
+                                  !isExpanded && (
+                                    <div className="flex flex-wrap gap-2 text-sm">
+                                      {((log as ExtendedLogResponse).estimated_damage_cost ?? null) != null && (
+                                        <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 font-medium ${isDark ? 'bg-indigo-900 text-indigo-200' : 'bg-indigo-100 text-indigo-700'}`}>
+                                          Damages: <span className="font-bold">{rupee.format((log as ExtendedLogResponse).estimated_damage_cost as number)}</span>
+                                        </span>
+                                      )}
+                                      {((log as ExtendedLogResponse).estimated_resource_cost ?? null) != null && (
+                                        <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 font-medium ${isDark ? 'bg-indigo-900 text-indigo-200' : 'bg-indigo-100 text-indigo-700'}`}>
+                                          Resource Cost: <span className="font-bold">{rupee.format((log as ExtendedLogResponse).estimated_resource_cost as number)}</span>
+                                        </span>
+                                      )}
+                                      {((log as ExtendedLogResponse).num_deaths ?? null) != null && (
+                                        <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 font-medium ${isDark ? 'bg-black/40 text-gray-200' : 'bg-gray-100 text-gray-800'}`}>
+                                          Deaths: <span className="font-bold">{(log as ExtendedLogResponse).num_deaths}</span>
+                                        </span>
+                                      )}
+                                    </div>
+                                  )
+                                ) : (
+                                  <div className={`prose prose-sm max-w-none text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{log.text_body}</div>
+                                )}
 
-                                  {/* Expanded detail area (keeps full badges) */}
-                                  <div className={`overflow-hidden transition-[max-height] duration-300 ease-in-out ${isExpanded ? 'max-h-[500px]' : 'max-h-0'}`} aria-hidden={!isExpanded}>
-                                    <div className={`pt-3 transform transition-all duration-200 ease-in-out ${isExpanded ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}`}>
-                                      <div className="flex flex-wrap gap-2">
-                                        {((log as ExtendedLogResponse).firefighter_required ?? null) != null && (
-                                          <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 font-medium ${isDark ? 'bg-red-900/50 text-red-300' : 'bg-red-100 text-red-700'}`}><FireExtinguisher className="w-4 h-4" aria-hidden /> Firefighters: <span className="font-bold">{(log as ExtendedLogResponse).firefighter_required}</span></span>
-                                        )}
-                                        {((log as ExtendedLogResponse).medic_required ?? null) != null && (
-                                          <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 font-medium ${isDark ? 'bg-orange-900/50 text-orange-300' : 'bg-orange-100 text-orange-700'}`}><Stethoscope className="w-4 h-4" aria-hidden /> Medics: <span className="font-bold">{(log as ExtendedLogResponse).medic_required}</span></span>
-                                        )}
-                                        {((log as ExtendedLogResponse).police_required ?? null) != null && (
-                                          <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 font-medium ${isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'}`}><Siren className="w-4 h-4" aria-hidden /> Police: <span className="font-bold">{(log as ExtendedLogResponse).police_required}</span></span>
-                                        )}
-                                        {((log as ExtendedLogResponse).help_required ?? null) != null && (
-                                          <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 font-medium ${isDark ? 'bg-green-800 text-green-200' : 'bg-green-100 text-green-700'}`}>Help Required: <span className="font-bold">{(log as ExtendedLogResponse).help_required ? 'Yes' : 'No'}</span></span>
-                                        )}
-                                        {((log as ExtendedLogResponse).food_required_for_people ?? null) != null && (
-                                          <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 font-medium ${isDark ? 'bg-yellow-900 text-yellow-200' : 'bg-yellow-100 text-yellow-700'}`}>Food for People: <span className="font-bold">{(log as ExtendedLogResponse).food_required_for_people}</span></span>
-                                        )}
-                                        {((log as ExtendedLogResponse).num_deaths ?? null) != null && (
-                                          <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 font-medium ${isDark ? 'bg-black/40 text-gray-200' : 'bg-gray-100 text-gray-800'}`}>Deaths: <span className="font-bold">{(log as ExtendedLogResponse).num_deaths}</span></span>
-                                        )}
-                                        {((log as ExtendedLogResponse).num_injuries ?? null) != null && (
-                                          <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 font-medium ${isDark ? 'bg-black/40 text-gray-200' : 'bg-gray-100 text-gray-800'}`}>Injuries: <span className="font-bold">{(log as ExtendedLogResponse).num_injuries}</span></span>
-                                        )}
-                                        {((log as ExtendedLogResponse).estimated_damage_cost ?? null) != null && (
-                                          <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 font-medium ${isDark ? 'bg-indigo-900 text-indigo-200' : 'bg-indigo-100 text-indigo-700'}`}>Damages: <span className="font-bold">{rupee.format((log as ExtendedLogResponse).estimated_damage_cost as number)}</span></span>
-                                        )}
-                                        {((log as ExtendedLogResponse).estimated_resource_cost ?? null) != null && (
-                                          <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 font-medium ${isDark ? 'bg-indigo-900 text-indigo-200' : 'bg-indigo-100 text-indigo-700'}`}>Resource Cost: <span className="font-bold">{rupee.format((log as ExtendedLogResponse).estimated_resource_cost as number)}</span></span>
-                                        )}
-                                      </div>
+                                {/* Expanded detail area (keeps full badges) */}
+                                <div className={`overflow-hidden transition-[max-height] duration-300 ease-in-out ${isExpanded ? 'max-h-[500px]' : 'max-h-0'}`} aria-hidden={!isExpanded}>
+                                  <div className={`pt-2 transform transition-all duration-200 ease-in-out ${isExpanded ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}`}>
+                                    <div className="flex flex-wrap gap-2">
+                                      {((log as ExtendedLogResponse).firefighter_required ?? null) != null && (
+                                        <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 font-medium ${isDark ? 'bg-red-900/50 text-red-300' : 'bg-red-100 text-red-700'}`}><FireExtinguisher className="w-4 h-4" aria-hidden /> Firefighters: <span className="font-bold">{(log as ExtendedLogResponse).firefighter_required}</span></span>
+                                      )}
+                                      {((log as ExtendedLogResponse).medic_required ?? null) != null && (
+                                        <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 font-medium ${isDark ? 'bg-orange-900/50 text-orange-300' : 'bg-orange-100 text-orange-700'}`}><Stethoscope className="w-4 h-4" aria-hidden /> Medics: <span className="font-bold">{(log as ExtendedLogResponse).medic_required}</span></span>
+                                      )}
+                                      {((log as ExtendedLogResponse).police_required ?? null) != null && (
+                                        <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 font-medium ${isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-200 text-gray-700'}`}><Siren className="w-4 h-4" aria-hidden /> Police: <span className="font-bold">{(log as ExtendedLogResponse).police_required}</span></span>
+                                      )}
+                                      {((log as ExtendedLogResponse).help_required ?? null) != null && (
+                                        <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 font-medium ${isDark ? 'bg-green-800 text-green-200' : 'bg-green-100 text-green-700'}`}>Help Required: <span className="font-bold">{(log as ExtendedLogResponse).help_required ? 'Yes' : 'No'}</span></span>
+                                      )}
+                                      {((log as ExtendedLogResponse).food_required_for_people ?? null) != null && (
+                                        <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 font-medium ${isDark ? 'bg-yellow-900 text-yellow-200' : 'bg-yellow-100 text-yellow-700'}`}>Food for People: <span className="font-bold">{(log as ExtendedLogResponse).food_required_for_people}</span></span>
+                                      )}
+                                      {((log as ExtendedLogResponse).num_deaths ?? null) != null && (
+                                        <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 font-medium ${isDark ? 'bg-black/40 text-gray-200' : 'bg-gray-100 text-gray-800'}`}>Deaths: <span className="font-bold">{(log as ExtendedLogResponse).num_deaths}</span></span>
+                                      )}
+                                      {((log as ExtendedLogResponse).num_injuries ?? null) != null && (
+                                        <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 font-medium ${isDark ? 'bg-black/40 text-gray-200' : 'bg-gray-100 text-gray-800'}`}>Injuries: <span className="font-bold">{(log as ExtendedLogResponse).num_injuries}</span></span>
+                                      )}
+                                      {((log as ExtendedLogResponse).estimated_damage_cost ?? null) != null && (
+                                        <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 font-medium ${isDark ? 'bg-indigo-900 text-indigo-200' : 'bg-indigo-100 text-indigo-700'}`}>Damages: <span className="font-bold">{rupee.format((log as ExtendedLogResponse).estimated_damage_cost as number)}</span></span>
+                                      )}
+                                      {((log as ExtendedLogResponse).estimated_resource_cost ?? null) != null && (
+                                        <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 font-medium ${isDark ? 'bg-indigo-900 text-indigo-200' : 'bg-indigo-100 text-indigo-700'}`}>Resource Cost: <span className="font-bold">{rupee.format((log as ExtendedLogResponse).estimated_resource_cost as number)}</span></span>
+                                      )}
+                                    </div>
 
-                                      <div className="mt-4 border-t pt-4 space-y-3">
-                                        <div className={`prose prose-sm max-w-none text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
-                                          {hasSummaryBadges ? log.text_body : null}
-                                        </div>
-                                        <div className="text-sm text-gray-400">ID: <span className={`text-sm ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{log.log_id}</span></div>
-                                        <div className="text-sm text-gray-400">Created by: <span className={`text-sm ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{log.created_by_user_id ?? 'Unknown'}</span></div>
-                                        <div className="text-sm text-gray-400">Created at: <span className={`text-sm ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{renderTime(log.created_at)}</span></div>
+                                    <div className="mt-2 border-t pt-2 space-y-2">
+                                      <div className={`prose prose-sm max-w-none text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                                        {hasSummaryBadges ? log.text_body : null}
                                       </div>
+                                      <div className="text-sm text-gray-400">ID: <span className={`text-sm ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{log.log_id}</span></div>
+                                      <div className="text-sm text-gray-400">Created by: <span className={`text-sm ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{log.created_by_user_id ?? 'Unknown'}</span></div>
+                                      <div className="text-sm text-gray-400">Created at: <span className={`text-sm ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{renderTime(log.created_at)}</span></div>
+                                    </div>
+                                    <div className="flex justify-start mt-3">
+                                      <button
+                                        type="button"
+                                        className="commander-button"
+                                        title="Edit Log"
+                                        onClick={(e) => { e.stopPropagation(); setEditingLog(log); }}
+                                        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
+                                      >
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+                                        Edit
+                                      </button>
                                     </div>
                                   </div>
                                 </div>
-
-                                <div className="ml-4 shrink-0" />
                               </div>
                             </div>
                           </div>
@@ -255,7 +265,7 @@ const CommanderLogsTimeline: FC<{ disasterId?: string; filters?: FiltersState }>
                         </>
                       ) : (
                         <>
-                          <div className="w-1/2 pr-8 ">
+                          <div className="w-1/2 pr-4 ">
                             <h3 className={`text-lg font-bold text-right mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>{log.title ?? 'Untitled Log'}</h3>
                             <div
                               role="button"
@@ -292,7 +302,7 @@ const CommanderLogsTimeline: FC<{ disasterId?: string; filters?: FiltersState }>
                                 )}
 
                                 <div className={`overflow-hidden transition-[max-height] duration-300 ease-in-out ${isExpanded ? 'max-h-[500px]' : 'max-h-0'}`} aria-hidden={!isExpanded}>
-                                  <div className={`pt-3 transform transition-all duration-200 ease-in-out ${isExpanded ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}`}>
+                                    <div className={`pt-2 transform transition-all duration-200 ease-in-out ${isExpanded ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}`}>
                                     <div className="flex flex-wrap gap-2">
                                       {((log as ExtendedLogResponse).firefighter_required ?? null) != null && (
                                         <span className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 font-medium ${isDark ? 'bg-red-900/50 text-red-300' : 'bg-red-100 text-red-700'}`}><FireExtinguisher className="w-4 h-4" aria-hidden /> Firefighters: <span className="font-bold">{(log as ExtendedLogResponse).firefighter_required}</span></span>
@@ -323,13 +333,25 @@ const CommanderLogsTimeline: FC<{ disasterId?: string; filters?: FiltersState }>
                                       )}
                                     </div>
 
-                                      <div className="mt-4 border-t pt-4 space-y-3">
+                                      <div className="mt-2 border-t pt-2 space-y-2">
                                         <div className={`prose prose-sm max-w-none text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                                           {hasSummaryBadges ? log.text_body : null}
                                         </div>
                                         <div className="text-sm text-gray-400">ID: <span className={`text-sm ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{log.log_id}</span></div>
                                         <div className="text-sm text-gray-400">Created by: <span className={`text-sm ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{log.created_by_user_id ?? 'Unknown'}</span></div>
                                         <div className="text-sm text-gray-400">Created at: <span className={`text-sm ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{renderTime(log.created_at)}</span></div>
+                                      </div>
+                                      <div className="flex justify-start mt-3">
+                                        <button
+                                          type="button"
+                                          className="commander-button"
+                                          title="Edit Log"
+                                          onClick={(e) => { e.stopPropagation(); setEditingLog(log); }}
+                                          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
+                                        >
+                                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+                                          Edit
+                                        </button>
                                       </div>
                                   </div>
                                 </div>
@@ -339,7 +361,7 @@ const CommanderLogsTimeline: FC<{ disasterId?: string; filters?: FiltersState }>
                             </div>
                           </div>
 
-                          <div className="w-1/2 pl-8 text-left">
+                          <div className="w-1/2 pl-4 text-left">
                             <time className="inline-block bg-purple-500 text-white text-xs font-medium px-3 py-1.5 rounded-full shadow-md">
                               {renderTime(log.created_at)}
                             </time>
@@ -362,6 +384,15 @@ const CommanderLogsTimeline: FC<{ disasterId?: string; filters?: FiltersState }>
           </div>
         </div>
       </main>
+      {editingLog && (
+        <LogModal
+          open={true}
+          mode="update"
+          initial={editingLog}
+          onClose={() => setEditingLog(null)}
+          onSuccess={() => { setEditingLog(null); if (onLogCreated) try { onLogCreated(); } catch {} }}
+        />
+      )}
     </div>
   );
 };

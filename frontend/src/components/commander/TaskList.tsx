@@ -265,6 +265,11 @@ const TaskList: FC<TaskListProps> = ({
                   ? undefined
                   : () => openAssignModal(task)
               }
+                onDelete={async () => {
+                  if (onTasksUpdated) {
+                    await onTasksUpdated();
+                  }
+                }}
             />
           ))}
         </div>

@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import type { FC, ReactElement } from 'react';
 import { Flame, DoorOpen, Stethoscope, ShieldHalf, FileText, UserRoundSearch } from 'lucide-react';
+import { API_BASE_URL } from '../../config';
 
 export type TaskType = 'medic' | 'fire' | 'police' | 'logistics' | 'search_rescue' | 'evacuation';
 export type TaskPriority = 'low' | 'medium' | 'high';
@@ -36,8 +38,8 @@ export type Task = {
 type TaskCardProps = {
   task: Task;
   onClick?: () => void;
+  onDelete?: () => Promise<void> | void;
 };
-
 
 const priorityDotMap: Record<TaskPriority, ReactElement> = {
   high: (
@@ -150,8 +152,12 @@ const formatTaskTypeLabel = (taskType: TaskType) => {
   return spaced.replace(/\b\w/g, (char) => char.toUpperCase());
 };
 
-const TaskCard: FC<TaskCardProps> = ({ task, onClick }) => {
+const TaskCard: FC<TaskCardProps> = ({ task, onClick, onDelete }) => {
   const { taskType, description, status, priority } = task;
+
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const statusConfig = statusConfigMap[status];
   const typeConfig = taskTypeIconMap[taskType];
@@ -161,25 +167,96 @@ const TaskCard: FC<TaskCardProps> = ({ task, onClick }) => {
   const typeIconClass = `task-type-icon ${typeConfig.className}`;
   const taskTypeLabel = formatTaskTypeLabel(taskType);
 
+  const handleDelete = async () => {
+    try {
+      setDeleting(true);
+      setDeleteError(null);
+      const url = `${API_BASE_URL}/tasks/${encodeURIComponent(task.taskId)}`;
+      const resp = await fetch(url, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+
+      if (!resp.ok) {
+        setDeleteError('Unable to delete task');
+        return;
+      }
+
+      if (onDelete) {
+        await onDelete();
+      }
+
+      setIsDeleteModalOpen(false);
+    } catch (err) {
+      setDeleteError('Unable to delete task');
+    } finally {
+      setDeleting(false);
+    }
+  };
+  const handleCardClick = () => {
+    if (onClick) {
+      onClick();
+      return;
+    }
+
+    if (status === 'completed' || status === 'cancelled') {
+      setIsDeleteModalOpen(true);
+    }
+  };
+
   return (
-    <div
-      className="task-card"
-      onClick={onClick}
-      style={onClick ? { cursor: 'pointer' } : undefined}
-    >
-      <div className="task-card-header">
-        <div>
-          <h3 style={{ marginBottom: '0rem' }}>{description}</h3>
-          <p style={{ marginBottom: '0rem' }}>{taskTypeLabel}</p>
+    <>
+      <div
+        className="task-card"
+        onClick={handleCardClick}
+        style={onClick || status === 'completed' || status === 'cancelled' ? { cursor: 'pointer' } : undefined}
+      >
+        <div className="task-card-header">
+          <div>
+            <h3 style={{ marginBottom: '0rem' }}>{description}</h3>
+            <p style={{ marginBottom: '0rem' }}>{taskTypeLabel}</p>
+          </div>
+          <div className={typeIconClass}>{typeIcon}</div>
         </div>
-        <div className={typeIconClass}>{typeIcon}</div>
+
+        <div className="task-card-footer">
+          <span>{priorityDots}</span>
+          <span className={statusClass}>{statusConfig.label}</span>
+        </div>
       </div>
 
-      <div className="task-card-footer">
-        <span>{priorityDots}</span>
-        <span className={statusClass}>{statusConfig.label}</span>
-      </div>
-    </div>
+      {isDeleteModalOpen && (
+        <div className="report-modal" role="dialog" aria-modal="true">
+          <div className="report-modal__content">
+            <header className="report-modal__header">
+              <div>
+                <p className="title">{description}</p>
+                <p className="meta">{taskTypeLabel}</p>
+              </div>
+              <button type="button" aria-label="Close" onClick={() => setIsDeleteModalOpen(false)}>
+                ×
+              </button>
+            </header>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <p style={{ margin: 0, color: '#374151' }}>This task is {status}. You can delete it permanently.</p>
+              {deleteError && <p style={{ color: '#b91c1c', fontSize: '0.875rem' }}>{deleteError}</p>}
+            </div>
+
+            <div className="report-modal__actions">
+              <button
+                type="button"
+                style={{ backgroundColor: '#f87171', color: '#ffffff', borderRadius: '0.85rem', padding: '0.75rem 1rem' }}
+                onClick={handleDelete}
+                disabled={deleting}
+              >
+                {deleting ? 'Deleting…' : 'Delete Task'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 
