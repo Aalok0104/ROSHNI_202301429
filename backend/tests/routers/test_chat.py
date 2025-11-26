@@ -5,6 +5,8 @@ from fastapi import status
 from sqlalchemy import text
 from httpx import ASGITransport, AsyncClient
 from types import SimpleNamespace
+import json
+from fastapi.testclient import TestClient
 
 from app.main import app
 from app.routers import chat
@@ -261,3 +263,67 @@ async def test_update_and_delete_message_permissions(async_db_session, async_cre
         assert resp_del.status_code == 200
         resp_missing = await ac.delete(f"/chat/messages/{uuid4()}")
         assert resp_missing.status_code == 404
+
+
+# --- REST /chat/{disaster_id}/summary tests ---
+@pytest.mark.asyncio
+async def test_chat_summary_access_control(async_client, async_create_user, async_create_disaster, async_db_session):
+    # Create users
+    commander = await async_create_user(email="cmdsum@example.com", role_name="commander")
+    responder = await async_create_user(email="respsum@example.com", role_name="responder")
+    outsider = await async_create_user(email="outsider@example.com", role_name="civilian")
+    disaster = await async_create_disaster()
+    # Add a message
+    from app.models.questionnaires_and_logs import DisasterChatMessage
+    msg = DisasterChatMessage(
+        disaster_id=disaster.disaster_id,
+        sender_user_id=commander.user_id,
+        message_text="Commander order!",
+        is_global=True,
+    )
+    async_db_session.add(msg)
+    await async_db_session.commit()
+    # Allowed: commander
+    resp = await async_client.get(f"/chat/{disaster.disaster_id}/summary?user_id={commander.user_id}")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "Commander order!" in data["context"]
+    # Allowed: responder
+    resp2 = await async_client.get(f"/chat/{disaster.disaster_id}/summary?user_id={responder.user_id}")
+    assert resp2.status_code == 200
+    # Forbidden: outsider
+    resp3 = await async_client.get(f"/chat/{disaster.disaster_id}/summary?user_id={outsider.user_id}")
+    assert resp3.status_code == 403
+    # Missing user_id
+    resp4 = await async_client.get(f"/chat/{disaster.disaster_id}/summary")
+    assert resp4.status_code == 401
+
+@pytest.mark.asyncio
+async def test_chat_summary_content(async_client, async_create_user, async_create_disaster, async_db_session):
+    # Create a commander and disaster
+    commander = await async_create_user(email="cmdsum2@example.com", role_name="commander")
+    disaster = await async_create_disaster()
+    # Add a global and a team message
+    from app.models.questionnaires_and_logs import DisasterChatMessage
+    msg1 = DisasterChatMessage(
+        disaster_id=disaster.disaster_id,
+        sender_user_id=commander.user_id,
+        message_text="Order: Evacuate area!",
+        is_global=True,
+    )
+    msg2 = DisasterChatMessage(
+        disaster_id=disaster.disaster_id,
+        sender_user_id=commander.user_id,
+        message_text="Team Alpha moving to sector 7.",
+        is_global=False,
+        team_id="team-alpha"
+    )
+    async_db_session.add_all([msg1, msg2])
+    await async_db_session.commit()
+    # Get summary
+    resp = await async_client.get(f"/chat/{disaster.disaster_id}/summary?user_id={commander.user_id}")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "Order: Evacuate area!" in data["context"]
+    assert "Team Alpha moving to sector 7." in data["context"]
+    assert "summary" in data
