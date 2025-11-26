@@ -47,7 +47,7 @@
 
 .incident-title {
 	font-weight: 600;
-	margin-right: 8px;
+	margin-right: 12px;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
