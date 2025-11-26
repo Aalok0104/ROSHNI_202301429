@@ -33,8 +33,13 @@
   background-color: #e5e7eb;
 }
 
-.dark .timeline-container::before {
-  background-color: #374151;
+/* Hide center line when there are no timeline entries */
+.timeline-container.no-logs::before {
+  display: none;
+}
+
+[data-theme="dark"] .timeline-container::before {
+  background-color: #475569;
 }
 
 ::-webkit-scrollbar {
@@ -57,4 +62,103 @@
 
 .dark ::-webkit-scrollbar-track {
   background-color: #1f2937;
+}
+
+.logs-checkbox {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 9999px;
+  border-width: 2px;
+  border-style: solid;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 150ms ease, background-color 150ms ease, box-shadow 150ms ease;
+  position: relative;
+}
+
+.logs-checkbox::after {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background-color: transparent;
+  transition: background-color 150ms ease;
+}
+
+.logs-checkbox:checked::after {
+  background-color: currentColor;
+}
+
+.logs-checkbox-dark {
+  border-color: #475569;
+  background-color: #0f172a;
+  color: #38bdf8;
+}
+
+.logs-checkbox-dark:hover {
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+}
+
+.logs-checkbox-light {
+  border-color: #cbd5f5;
+  background-color: var(--color-slate-50);
+  color: #2563eb;
+}
+
+.logs-checkbox-light:hover {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+}
+
+.logs-option {
+  display: flex;
+  align-items: center;
+  padding: 6px 8px;
+  border-radius: 10px;
+  transition: background-color 150ms ease, color 150ms ease;
+  cursor: pointer;
+}
+
+.logs-option-dark {
+  background-color: transparent;
+}
+
+.logs-option-dark:hover {
+  background-color: #1f2937;
+}
+
+.logs-option-light {
+  background-color: transparent;
+}
+
+.logs-option-light:hover {
+  background-color: #f1f5f9;
+}
+
+.logs-option span {
+  transition: color 150ms ease;
+}
+
+/* Checkbox styling moved to Tailwind-only in component */
+
+/* Remove number input spin buttons */
+input[type=number] {
+  appearance: textfield;
+  -moz-appearance: textfield; /* Firefox */
+}
+
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button {
+  -webkit-appearance: none; /* Chrome, Safari, Edge */
+  margin: 0;
+}
+
+/* For completeness, remove arrows on inputs with class .no-spinner as well */
+.no-spinner::-webkit-outer-spin-button,
+.no-spinner::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }

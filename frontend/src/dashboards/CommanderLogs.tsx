@@ -1,18 +1,31 @@
 import type { FC } from 'react';
 import { useState, useEffect } from 'react';
-import CommanderLogsSidebar from '../components/commanderLogs/CommanderLogsSidebar';
+import CommanderLogsSidebar, { type FiltersState } from '../components/commanderLogs/CommanderLogsSidebar';
 import CommanderLogsTimeline from '../components/commanderLogs/CommanderLogsTimeline';
 import '../components/commanderLogs/commanderLogsStyles.css';
+import { useTheme } from '../contexts/ThemeContext';
 
 const CommanderLogs: FC = () => {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [filters, setFilters] = useState<FiltersState>({
+    search: '',
+    sortBy: 'newest',
+    disasterTypes: {},
+    resourceNeeds: {},
+    damageMin: 0,
+    damageMax: 10000000,
+    resourceMin: 0,
+    resourceMax: 10000000,
+  });
+  const { theme } = useTheme();
+  const [logsRefreshSignal, setLogsRefreshSignal] = useState(0);
+
+  const handleLogCreated = () => setLogsRefreshSignal((s) => s + 1);
 
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth < 1024) {
         setIsSidebarOpen(false);
-      } else {
-        setIsSidebarOpen(true);
       }
     };
 
@@ -22,10 +35,13 @@ const CommanderLogs: FC = () => {
   }, []);
 
   return (
-    <div className="flex flex-col h-full w-full bg-slate-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 font-display">
-      <div className="flex flex-1 overflow-hidden">
-        <CommanderLogsSidebar isOpen={isSidebarOpen} onToggle={() => setIsSidebarOpen((prev) => !prev)} />
-        <CommanderLogsTimeline />
+    <div className={`flex flex-col h-full w-full font-display ${theme === 'light' ? 'bg-slate-50 text-gray-800' : 'bg-[#0f172a] text-gray-200'}`}>
+      <div
+        className="flex flex-1 overflow-hidden relative"
+        style={{ paddingLeft: isSidebarOpen ? '20rem' : '0', transition: 'padding-left 300ms ease' }}
+      >
+        <CommanderLogsSidebar isOpen={isSidebarOpen} onToggle={() => setIsSidebarOpen((prev) => !prev)} filters={filters} onFiltersChange={setFilters} onLogCreated={handleLogCreated} />
+        <CommanderLogsTimeline filters={filters} refreshSignal={logsRefreshSignal} onLogCreated={handleLogCreated} />
       </div>
     </div>
   );

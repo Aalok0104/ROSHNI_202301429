@@ -10,10 +10,11 @@ import CommanderDashboard from './dashboards/CommanderDashboard';
 import CommanderHome from './dashboards/CommanderHome';
 import CommanderLogs from './dashboards/CommanderLogs';
 import CommanderDisasters from './dashboards/CommanderDisasters';
-import TeamManagementContainer from './components/commander/TeamManagement/TeamManagementContainer';
+import CommanderTeams from './dashboards/CommanderTeams';
 import RegistrationForm from './components/RegistrationForm';
 import type { RegistrationData } from './components/RegistrationForm';
 import type { UserRole, SessionUser } from './types';
+import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 
 type AppProps = {
   onBeginLogin?: (url: string) => void;
@@ -75,6 +76,7 @@ const DashboardView = ({ user, onLogout, loggingOut }: DashboardViewProps) => {
   const activeRole = normalizeRole(user.role);
   const displayName = user.email;
   const ActiveDashboard = DASHBOARD_COMPONENTS[activeRole] ?? CivilianDashboard;
+  const { theme, toggleTheme } = useTheme();
   const [commanderView, setCommanderView] = useState<'dashboard' | 'home' | 'logs' | 'teams' | 'disasters'>(() => {
     try {
       if (typeof window === 'undefined') return 'dashboard';
@@ -121,7 +123,7 @@ const DashboardView = ({ user, onLogout, loggingOut }: DashboardViewProps) => {
       if (commanderView === 'disasters') return <CommanderDisasters />;
       if (commanderView === 'home') return <CommanderHome />;
       if (commanderView === 'logs') return <CommanderLogs />;
-      if (commanderView === 'teams') return <TeamManagementContainer />;
+      if (commanderView === 'teams') return <CommanderTeams />;
       return <ActiveDashboard user={user} />;
     }
 
@@ -175,6 +177,25 @@ const DashboardView = ({ user, onLogout, loggingOut }: DashboardViewProps) => {
               </button>
             </nav>
           )}
+
+          <button
+            type="button"
+            className="theme-toggle"
+            onClick={toggleTheme}
+            aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+            title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+          >
+            {theme === 'light' ? (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            ) : (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                <circle cx="12" cy="12" r="5" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            )}
+          </button>
 
           <div className="app-nav__actions">
             <span className="app-nav__user">
@@ -389,7 +410,11 @@ function App({ onBeginLogin = redirectTo }: AppProps = {}) {
   }
 
   if (user) {
-    return <DashboardView user={user} onLogout={handleLogout} loggingOut={loggingOut} />;
+    return (
+      <ThemeProvider>
+        <DashboardView user={user} onLogout={handleLogout} loggingOut={loggingOut} />
+      </ThemeProvider>
+    );
   }
 
   return (

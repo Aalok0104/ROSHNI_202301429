@@ -217,7 +217,7 @@ const CommanderDisasters: React.FC = () => {
           </div>
 
           <div>
-            <button className="commander-button emergency" title="Declare Civilian Emergency" onClick={handleDeclareEmergency}>Declare Civilian Emergency</button>
+            <button className="commander-button emergency declare-civilian-emergency" title="Declare Civilian Emergency" onClick={handleDeclareEmergency}>Declare Civilian Emergency</button>
           </div>
         </div>
       </div>

@@ -7,9 +7,14 @@ import 'leaflet/dist/leaflet.css';
 import markerRetina from 'leaflet/dist/images/marker-icon-2x.png';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
+import type { Task, TaskType } from './TaskCard';
 
 type MapViewProps = {
   className?: string;
+  tasks?: Task[];
+  showAllTasks?: boolean;
+  onMapClick?: (lat: number, lng: number) => void;
+  isListeningForClick?: boolean;
 };
 
 const INITIAL_POSITION: LatLngExpression = [22.543099, 114.057868];
@@ -26,6 +31,35 @@ const leafletIcon = L.icon({
 });
 L.Marker.prototype.options.icon = leafletIcon;
 
+// Task type color mapping
+const taskTypeColors: Record<TaskType, string> = {
+  medic: '#22c55e', // green
+  fire: '#dc2626', // vermilion/red
+  police: '#38bdf8', // blue
+  logistics: '#eab308', // yellow
+  evacuation: '#f97316', // orange
+  search_rescue: '#9333ea', // purple
+};
+
+// Create a custom colored icon for tasks
+const createTaskIcon = (taskType: TaskType): L.DivIcon => {
+  const color = taskTypeColors[taskType];
+  return L.divIcon({
+    className: 'task-marker',
+    html: `<div style="
+      width: 24px;
+      height: 24px;
+      background-color: ${color};
+      border: 2px solid #ffffff;
+      border-radius: 50%;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    "></div>`,
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
+    popupAnchor: [0, -12],
+  });
+};
+
 const MapReady: FC<{ onReady: (map: LeafletMap) => void }> = ({ onReady }) => {
   const map = useMap();
   useEffect(() => {
@@ -34,7 +68,13 @@ const MapReady: FC<{ onReady: (map: LeafletMap) => void }> = ({ onReady }) => {
   return null;
 };
 
-const MapView: FC<MapViewProps> = ({ className = '' }) => {
+const MapView: FC<MapViewProps> = ({ 
+  className = '', 
+  tasks = [], 
+  showAllTasks = false,
+  onMapClick,
+  isListeningForClick = false,
+}) => {
   const mapRef = useRef<LeafletMap | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [searching, setSearching] = useState(false);
@@ -42,6 +82,11 @@ const MapView: FC<MapViewProps> = ({ className = '' }) => {
   const [center, setCenter] = useState<LatLngExpression>(INITIAL_POSITION);
   const [markerPosition, setMarkerPosition] = useState<LatLngExpression>(INITIAL_POSITION);
   const [markerLabel, setMarkerLabel] = useState('Shenzhen Command Center');
+  
+  // Filter tasks based on showAllTasks
+  const filteredTasks = showAllTasks
+    ? tasks
+    : tasks.filter((task) => task.status !== 'completed' && task.status !== 'cancelled');
 
   const tileUrl = useMemo(
     () => 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -117,6 +162,32 @@ const MapView: FC<MapViewProps> = ({ className = '' }) => {
   const registerMap = useCallback((mapInstance: LeafletMap) => {
     mapRef.current = mapInstance;
   }, []);
+  
+  // Handle map click listener changes
+  useEffect(() => {
+    if (!mapRef.current) return;
+    
+    if (isListeningForClick && onMapClick) {
+      const handleMapClick = (e: L.LeafletMouseEvent) => {
+        onMapClick(e.latlng.lat, e.latlng.lng);
+      };
+      mapRef.current.on('click', handleMapClick);
+      
+      return () => {
+        mapRef.current?.off('click', handleMapClick);
+      };
+    }
+  }, [isListeningForClick, onMapClick]);
+  
+  // Fix map rendering when container size changes
+  useEffect(() => {
+    if (mapRef.current) {
+      // Use setTimeout to ensure DOM has updated
+      setTimeout(() => {
+        mapRef.current?.invalidateSize();
+      }, 100);
+    }
+  }, [filteredTasks.length, showAllTasks]);
 
   return (
     <div className={`map-area ${className}`}>
@@ -151,6 +222,7 @@ const MapView: FC<MapViewProps> = ({ className = '' }) => {
         center={center}
         zoom={12}
         zoomControl={false}
+        style={isListeningForClick ? { cursor: 'crosshair' } : undefined}
       >
         <MapReady onReady={registerMap} />
         <TileLayer
@@ -161,6 +233,25 @@ const MapView: FC<MapViewProps> = ({ className = '' }) => {
         <Marker position={markerPosition}>
           <Popup>{markerLabel}</Popup>
         </Marker>
+        {filteredTasks.map((task) => (
+          <Marker
+            key={task.taskId}
+            position={[task.latitude, task.longitude]}
+            icon={createTaskIcon(task.taskType)}
+          >
+            <Popup>
+              <div>
+                <strong>{task.description}</strong>
+                <br />
+                <small>{task.taskType === 'search_rescue' ? 'Search & Rescue' : task.taskType.replace('_', ' ').replace(/\b\w/g, (char) => char.toUpperCase())}</small>
+                <br />
+                <small>Priority: {task.priority}</small>
+                <br />
+                <small>Status: {task.status}</small>
+              </div>
+            </Popup>
+          </Marker>
+        ))}
       </MapContainer>
 
       <div className="map-controls" aria-label="map controls">
