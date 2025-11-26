@@ -5,6 +5,7 @@ import { API_BASE_URL } from '../config';
 // Team assignment flow removed per request
 import DeclareEmergencyModal from '../components/commander/DeclareEmergencyModal';
 import DisasterDetailModal from '../components/commander/DisasterDetailModal';
+import EditIncidentModal from '../components/commander/EditIncidentModal';
 import ConvertToDisasterModal from '../components/commander/ConvertToDisasterModal';
 import ConfirmModal from '../components/commander/ConfirmModal';
 import GenerateReportModal from '../components/commander/GenerateReportModal';
@@ -207,6 +208,35 @@ const CommanderDisasters: React.FC = () => {
     setShowDeclareModal(false);
   };
 
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editIncident, setEditIncident] = useState<Incident | null>(null);
+
+  const handleSaveIncident = async (incidentId: string, payload: any) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/incidents/${encodeURIComponent(incidentId)}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) {
+        const txt = await res.text();
+        console.error('Failed to update incident', res.status, txt);
+        alert(`Failed to update incident: ${txt || res.status}`);
+        return;
+      }
+      const updated = await res.json();
+      setDisasters((prev: Incident[]) => prev.map((it) => it.incident_id === incidentId ? updated : it));
+    } catch (err) {
+      console.error(err);
+      alert('Failed to update incident. See console.');
+    }
+  };
+
+  const handleDiscardFromEdit = async (incidentId: string) => {
+    await handleDiscard(incidentId);
+  };
+
   return (
     <div className="commander-shell">
       <div style={{ padding: '1.5rem 1.5rem 0.5rem 1.5rem' }}>
@@ -244,11 +274,11 @@ const CommanderDisasters: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="incident-actions">
-                      <button className="discard-btn" onClick={() => handleDiscard(d.incident_id)}>Discard</button>
-                      <button className="commander-button" onClick={() => handleConvertToDisaster(d.incident_id)}>Convert to Disaster</button>
-                      {/* Assign-to-team removed */}
-                    </div>
+                      <div className="incident-actions">
+                        <button className="commander-button" onClick={() => { setDetailIncident(d); setShowDetailModal(true); }}>View</button>
+                        <button className="commander-button" onClick={() => { setEditIncident(d); setShowEditModal(true); }}>Edit</button>
+                        <button className="commander-button" onClick={() => handleConvertToDisaster(d.incident_id)}>Convert to Disaster</button>
+                      </div>
                   </li>
                 ))}
               </ul>
@@ -329,8 +359,17 @@ const CommanderDisasters: React.FC = () => {
           onConvert={() => handleConvertFromModal(detailIncident.incident_id)}
         />
       )}
+      {showEditModal && editIncident && (
+        <EditIncidentModal
+          incident={editIncident}
+          onClose={() => setShowEditModal(false)}
+          onSave={handleSaveIncident}
+          onDiscard={handleDiscardFromEdit}
+        />
+      )}
     </div>
   );
 };
 
 export default CommanderDisasters;
+ 

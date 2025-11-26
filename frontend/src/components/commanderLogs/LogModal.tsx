@@ -29,6 +29,11 @@ type Props = {
 };
 
 const LogModal: React.FC<Props> = ({ open, mode, disasterId, initial, onClose, onSuccess }) => {
+<<<<<<< Updated upstream
+=======
+  useTheme();
+
+>>>>>>> Stashed changes
   // form state
   const [title, setTitle] = useState(initial?.title ?? '');
   const { theme } = useTheme();
