@@ -4,6 +4,8 @@
   background: radial-gradient(circle at top, rgba(15, 23, 42, 0.7), rgba(2, 6, 23, 0.95));
   color: #0f172a;
   font-family: 'Inter', 'Space Grotesk', system-ui, -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+  overflow-y: scroll;
+  /* Prevent layout shift from scrollbar appearance */
 }
 
 .login-panel {
@@ -253,9 +255,17 @@
 .dashboard-main {
   flex: 1;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0rem;
+  align-items: stretch;
+  justify-content: flex-start;
+  /* allow pages to expand full width */
+  padding: 0;
+  /* removed horizontal padding so pages fill edge-to-edge */
+  gap: 0;
+}
+
+/* Make direct children fill available width so pages (home/teams/disasters) span the main area */
+.dashboard-main>* {
+  width: 100%;
 }
 
 /* Commander-specific small nav links placed beside user actions */
@@ -281,9 +291,12 @@
 }
 
 .theme-toggle {
-  padding: 0rem 1.5rem;   /* match .app-nav__link */
-  height: 2.5rem;              /* match button height */
-  border-radius: 12px;       /* match rounded corners */
+  padding: 0rem 1.5rem;
+  /* match .app-nav__link */
+  height: 2.5rem;
+  /* match button height */
+  border-radius: 12px;
+  /* match rounded corners */
   border: 1px solid rgba(255, 255, 255, 0.06);
   background: transparent;
   color: #cbd5e1;

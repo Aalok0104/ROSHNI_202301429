@@ -22,6 +22,12 @@ const CommanderLogs: FC = () => {
 
   const handleLogCreated = () => setLogsRefreshSignal((s) => s + 1);
 
+  const getCookie = (name: string) => {
+    if (typeof document === 'undefined') return null;
+    const m = document.cookie.match(new RegExp('(^|\\s)' + name + '=([^;]+)'));
+    return m ? decodeURIComponent(m[2]) : null;
+  };
+
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth < 1024) {
@@ -37,11 +43,11 @@ const CommanderLogs: FC = () => {
   return (
     <div className={`flex flex-col h-full w-full font-display ${theme === 'light' ? 'bg-slate-50 text-gray-800' : 'bg-[#0f172a] text-gray-200'}`}>
       <div
-        className="flex flex-1 overflow-hidden relative"
+        className="flex flex-1 overflow-y-auto relative"
         style={{ paddingLeft: isSidebarOpen ? '20rem' : '0', transition: 'padding-left 300ms ease' }}
       >
         <CommanderLogsSidebar isOpen={isSidebarOpen} onToggle={() => setIsSidebarOpen((prev) => !prev)} filters={filters} onFiltersChange={setFilters} onLogCreated={handleLogCreated} />
-        <CommanderLogsTimeline filters={filters} refreshSignal={logsRefreshSignal} onLogCreated={handleLogCreated} />
+        <CommanderLogsTimeline disasterId={getCookie('commander_disaster_id') || undefined} filters={filters} refreshSignal={logsRefreshSignal} onLogCreated={handleLogCreated} />
       </div>
     </div>
   );

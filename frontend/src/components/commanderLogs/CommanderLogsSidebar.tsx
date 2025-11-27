@@ -182,7 +182,7 @@ function CommanderLogsSidebar({ isOpen, onToggle, filters, onFiltersChange, onLo
 
   return (
     <aside className={sidebarClassName} aria-label="Commander log filters">
-      <div className="p-6 pt-6 max-h-screen overflow-auto" style={{ ['--checkbox-bg' as any]: checkboxBg } as React.CSSProperties}>
+      <div className="p-6 pt-6" style={{ ['--checkbox-bg' as any]: checkboxBg } as React.CSSProperties}>
         <div className="space-y-6">
           <div>
             <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-gray-700'}`} htmlFor="logs-search">

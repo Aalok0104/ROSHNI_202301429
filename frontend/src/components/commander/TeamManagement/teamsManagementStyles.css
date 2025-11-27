@@ -2,8 +2,11 @@
 
 .teams-management-container {
   min-height: 100vh;
-  background: hsl(221 51% 7%); 
-  padding: 2rem;
+  background: hsl(221 51% 7%);
+  /* use full-width background and create inner empty space via horizontal padding */
+  width: 100%;
+  box-sizing: border-box;
+  padding: 2rem 15%; /* top/bottom 2rem, left/right 15% */
   font-family: "Inter", sans-serif;
   color: #f8fafc;
 }
@@ -177,6 +180,8 @@
   letter-spacing: 0.01em;
   position: relative;
   overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .primary-button::before {
@@ -414,6 +419,7 @@
   font-weight: 500;
   padding: 0;
   transition: color 0.2s ease;
+  white-space: nowrap;
 }
 
 .text-button:hover {
@@ -537,6 +543,17 @@
   .data-table {
     min-width: 600px;
   }
+
+  /* Reduce button padding / font-size slightly so labels fit on one line */
+  .primary-button {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+  }
+
+  .filter-button {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8125rem;
+  }
 }
 
 /* Modal Styles */
@@ -566,11 +583,12 @@
 }
 
 .modal-content {
- 
+  position: relative;
   background: hsl(221 37% 12%); 
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: 12px;
   padding: 1.5rem;
+  padding-bottom: 4.25rem; /* extra room so buttons don't crowd inputs */
   width: 100%;
   max-width: 540px;
   max-height: 90vh;
@@ -756,6 +774,18 @@ div.modal-content select.form-select {
   position: sticky;
   bottom: 0;
   background: hsl(221 37% 12%);
+}
+
+/* Corner-styled action buttons inside modals (left & right corners) */
+.modal-corner-actions {
+  position: absolute;
+  left: 1.5rem;
+  right: 1.5rem;
+  bottom: 1.25rem; /* nudge buttons slightly lower for more breathing room */
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
 }
 
 .secondary-button {
@@ -1056,4 +1086,11 @@ div.modal-content select.form-select {
   color: #0f172a !important;
   -webkit-text-fill-color: #0f172a !important;
   border-color: #cbd5e1 !important;
+}
+
+/* Responsive: reduce large side margins on smaller screens */
+@media (max-width: 1024px) {
+  .teams-management-container {
+    padding: 1.25rem; /* reduce large side padding on smaller screens */
+  }
 }

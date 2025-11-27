@@ -267,6 +267,13 @@ body {
   overflow-y: auto;
 }
 
+/* Light theme override: make the report editor light and readable */
+[data-theme="light"] .report-editor {
+  background: #f9fafb !important;
+  color: #0f172a !important;
+  border-color: #e6e9ee !important;
+}
+
 /* Limit editor height so toolbar & actions remain visible; scrollbar appears when needed */
 .report-editor {
   max-height: 50vh;

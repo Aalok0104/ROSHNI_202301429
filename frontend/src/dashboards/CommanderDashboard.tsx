@@ -1,5 +1,6 @@
-import type { FC } from 'react'; // Add 'type' here
+import type { FC } from 'react';
 import { useCallback, useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 
 import type { SessionUser } from "../types";
 import LeftSidebar from "../components/commander/LeftSidebar";
@@ -153,21 +154,35 @@ const CommanderDashboard: FC<Props> = ({ user }) => {
   return (
     <>
       <div className="commander-main">
-        <LeftSidebar userId={userId} responders={responders} onGenerateReport={handleGenerateReport} />
-        <MapView 
-          tasks={tasks} 
-          showAllTasks={showAllTasks} 
+        <motion.div
+          initial={{ x: -100, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          style={{ height: '100%', zIndex: 10 }}
+        >
+          <LeftSidebar userId={userId} responders={responders} onGenerateReport={handleGenerateReport} />
+        </motion.div>
+        <MapView
+          tasks={tasks}
+          showAllTasks={showAllTasks}
           onMapClick={handleMapClick}
           isListeningForClick={mapClickCallback !== null}
         />
-        <TaskList 
-          tasks={tasks} 
-          onAddTaskSubmit={handleAddTaskSubmit} 
-          onTasksUpdated={fetchTasks} 
-          showAllTasks={showAllTasks} 
-          onShowAllTasksChange={setShowAllTasks}
-          onRequestMapClick={handleRequestMapClick}
-        />
+        <motion.div
+          initial={{ x: 100, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          style={{ height: '100%', zIndex: 10 }}
+        >
+          <TaskList
+            tasks={tasks}
+            onAddTaskSubmit={handleAddTaskSubmit}
+            onTasksUpdated={fetchTasks}
+            showAllTasks={showAllTasks}
+            onShowAllTasksChange={setShowAllTasks}
+            onRequestMapClick={handleRequestMapClick}
+          />
+        </motion.div>
       </div>
     </>
   );

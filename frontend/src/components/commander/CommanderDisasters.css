@@ -1,3 +1,8 @@
+/*
+  Light-mode (default) styles for the disaster/incident lists.
+  Dark-mode overrides are applied under [data-theme="dark"] below.
+*/
+
 .incidents-list {
 	list-style: none;
 	padding: 0;
@@ -11,12 +16,15 @@
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
+	/* match dark-mode spacing so layout is identical across themes */
 	padding: 12px 44px;
 	border-radius: 10px;
-	background: rgba(255, 255, 255, 0.02);
-	border: 1px solid rgba(255, 255, 255, 0.03);
+	background: var(--color-slate-50, #ffffff);
+	border: 1px solid rgba(15, 23, 42, 0.06);
 	width: 100%;
 	box-sizing: border-box;
+	color: #0b1220;
+	box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
 .incident-left {
@@ -24,7 +32,8 @@
 	gap: 12px;
 	align-items: center;
 	flex: 1 1 auto;
-	min-width: 0; /* allow children to truncate */
+	min-width: 0;
+	/* allow children to truncate */
 }
 
 .incident-icon {
@@ -34,15 +43,17 @@
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	background: rgba(255, 255, 255, 0.02);
+	background: #f3f6fb;
 	font-size: 20px;
 	flex: 0 0 44px;
+	color: #0b1220;
 }
 
 .incident-text {
 	display: flex;
 	flex-direction: column;
-	min-width: 0; /* enable truncation inside */
+	min-width: 0;
+	/* enable truncation inside */
 }
 
 .incident-title {
@@ -54,43 +65,76 @@
 }
 
 .incident-sub {
- 	font-size: 13px;
- 	color: var(--text-muted);
- 	white-space: normal; /* allow subtitle to wrap under title */
- 	overflow: hidden;
- 	text-overflow: ellipsis;
+	font-size: 13px;
+	color: #64748b;
+	/* muted */
+	white-space: normal;
+	/* allow subtitle to wrap under title */
+	overflow: hidden;
+	text-overflow: ellipsis;
 }
 
 /* Actions stay fixed to the right */
 .incident-actions {
 	display: flex;
- 	gap: 10px;
- 	align-items: center;
- 	flex: 0 0 auto;
- 	margin-left: auto; /* push actions to the far right */
+	gap: 10px;
+	align-items: center;
+	flex: 0 0 auto;
+	margin-left: auto;
+	/* push actions to the far right */
 }
 
 .discard-btn {
 	background: transparent;
-	border: 1px solid rgba(255, 255, 255, 0.06);
+	border: 1px solid #e6e9ef;
 	padding: 6px 8px;
 	border-radius: 8px;
-	color: var(--text-muted);
+	color: #475569;
 	cursor: pointer;
 }
 
 /* make incident emergency button red (scoped so it doesn't override global commander buttons) */
 .incident-actions .commander-button.emergency {
-    background: linear-gradient(135deg, #e64747, #ff6b6b);
-    color: #fff;
-    box-shadow: 0 8px 24px rgba(230, 71, 71, 0.18);
+	background: linear-gradient(135deg, #e64747, #ff6b6b);
+	color: #fff;
+	box-shadow: 0 8px 24px rgba(230, 71, 71, 0.12);
 }
 
 /* header 'Declare Civilian Emergency' button - match Cancel Task red style */
 .commander-button.declare-civilian-emergency {
 	background: linear-gradient(135deg, #e64747, #ff6b6b);
 	color: #fff;
-	box-shadow: 0 8px 24px rgba(230, 71, 71, 0.18);
+	box-shadow: 0 8px 24px rgba(230, 71, 71, 0.12);
+}
+
+/* Severity Dots */
+.severity-dots {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+}
+
+.severity-dots .dot {
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	display: inline-block;
+}
+
+.severity-dots .dot.green {
+	background-color: #22c55e;
+}
+
+.severity-dots .dot.yellow {
+	background-color: #facc15;
+}
+
+.severity-dots .dot.red {
+	background-color: #ef4444;
+}
+
+.severity-dots .dot.black {
+	background-color: #000000;
 }
 
 /* Responsive: stack actions beneath info on narrow screens */
@@ -113,4 +157,133 @@
 		overflow: visible;
 		text-overflow: unset;
 	}
+}
+
+/* Dark theme overrides: keep existing dark styles inside this block */
+[data-theme="dark"] {
+
+	.incidents-list {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+
+	.incident-item {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		padding: 12px 44px;
+		border-radius: 10px;
+		background: rgba(255, 255, 255, 0.02);
+		border: 1px solid rgba(255, 255, 255, 0.03);
+		width: 100%;
+		box-sizing: border-box;
+		color: #ffffff;
+		/* ensure text is legible in dark mode */
+	}
+
+	.incident-left {
+		display: flex;
+		gap: 12px;
+		align-items: center;
+		flex: 1 1 auto;
+		min-width: 0;
+		/* allow children to truncate */
+	}
+
+	.incident-icon {
+		width: 44px;
+		height: 44px;
+		border-radius: 10px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: rgba(255, 255, 255, 0.02);
+		font-size: 20px;
+		flex: 0 0 44px;
+	}
+
+	.incident-text {
+		display: flex;
+		flex-direction: column;
+		min-width: 0;
+		/* enable truncation inside */
+	}
+
+	.incident-title {
+		font-weight: 600;
+		margin-right: 12px;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.incident-sub {
+		font-size: 13px;
+		color: rgba(255, 255, 255, 0.72);
+		white-space: normal;
+		/* allow subtitle to wrap under title */
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+
+	.incident-actions {
+		display: flex;
+		gap: 10px;
+		align-items: center;
+		flex: 0 0 auto;
+		margin-left: auto;
+		/* push actions to the far right */
+	}
+
+	.discard-btn {
+		background: transparent;
+		border: 1px solid rgba(255, 255, 255, 0.06);
+		padding: 6px 8px;
+		border-radius: 8px;
+		color: var(--text-muted);
+		cursor: pointer;
+	}
+
+	.incident-actions .commander-button.emergency {
+		background: linear-gradient(135deg, #e64747, #ff6b6b);
+		color: #fff;
+		box-shadow: 0 8px 24px rgba(230, 71, 71, 0.18);
+	}
+
+	.commander-button.declare-civilian-emergency {
+		background: linear-gradient(135deg, #e64747, #ff6b6b);
+		color: #fff;
+		box-shadow: 0 8px 24px rgba(230, 71, 71, 0.18);
+	}
+
+	/* Severity Dots Dark Mode */
+	.severity-dots .dot.black {
+		background-color: #000000;
+	}
+
+	@media (max-width: 640px) {
+		.incident-item {
+			flex-direction: column;
+			align-items: stretch;
+			gap: 8px;
+		}
+
+		.incident-actions {
+			justify-content: flex-end;
+			margin-left: 0;
+			align-self: end;
+		}
+
+		.incident-title,
+		.incident-sub {
+			white-space: normal;
+			overflow: visible;
+			text-overflow: unset;
+		}
+	}
+
 }

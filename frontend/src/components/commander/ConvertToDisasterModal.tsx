@@ -5,9 +5,10 @@ type Props = {
   incidentId: string;
   onClose: () => void;
   onConverted: (disaster: any) => void;
+  commanderId?: string;
 };
 
-const ConvertToDisasterModal: React.FC<Props> = ({ incidentId, onClose, onConverted }) => {
+const ConvertToDisasterModal: React.FC<Props> = ({ incidentId, onClose, onConverted, commanderId }) => {
   const [severity, setSeverity] = useState('medium');
   const [disasterType, setDisasterType] = useState('other');
   const [submitting, setSubmitting] = useState(false);
@@ -15,7 +16,9 @@ const ConvertToDisasterModal: React.FC<Props> = ({ incidentId, onClose, onConver
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
-      const payload = { severity_level: severity, disaster_type: disasterType };
+      const payload: any = { severity_level: severity, disaster_type: disasterType };
+      if (commanderId) payload.commander_id = commanderId;
+
       const res = await fetch(`${API_BASE_URL}/disasters/incidents/${encodeURIComponent(incidentId)}/convert`, {
         method: 'POST',
         credentials: 'include',
