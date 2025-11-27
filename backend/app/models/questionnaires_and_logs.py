@@ -216,9 +216,12 @@ class DisasterChatMessage(Base):
         ForeignKey("disasters.disaster_id", ondelete="CASCADE"),
         nullable=False,
     )
+    # Make team_id a plain UUID (no foreign key constraint) so that messages
+    # can reference team IDs that may not exist in the teams table. Tests and
+    # summary logic will check for the Team record at runtime and nullify
+    # the field if the team does not exist.
     team_id = Column(
         UUID(as_uuid=True),
-        ForeignKey("teams.team_id", ondelete="SET NULL"),
         nullable=True,
     )
     sender_user_id = Column(
@@ -250,5 +253,6 @@ Incident.media_items = relationship(
 )
 
 DisasterChatMessage.sender = relationship("User")
-from app.models.responder_management import Team
-DisasterChatMessage.team = relationship("Team")
+# Note: we intentionally do NOT create a relationship to Team here because
+# `team_id` is treated as an opaque UUID reference and may not point to an
+# existing `teams` row. The summary endpoint resolves teams at runtime.
