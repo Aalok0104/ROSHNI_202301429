@@ -8,12 +8,13 @@ type LeftSidebarProps = {
   userId: string;
   responders: string[];
   onGenerateReport?: () => void;
+  disasterId?: string | null;
 };
 
 const DEFAULT_SUMMARY =
   'Key points from the conversation: water levels are rising near the bridge, Team Alpha is on-site evacuating residents.';
 
-const LeftSidebar: FC<LeftSidebarProps> = ({ userId, responders, onGenerateReport }) => {
+const LeftSidebar: FC<LeftSidebarProps> = ({ userId, responders, onGenerateReport, disasterId }) => {
   const [groupSelectorSignal, setGroupSelectorSignal] = useState(0);
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [reportContent, setReportContent] = useState<string>(DEFAULT_SUMMARY);
@@ -49,7 +50,7 @@ const LeftSidebar: FC<LeftSidebarProps> = ({ userId, responders, onGenerateRepor
 
       <div className="live-feed">
         <h2 className="live-feed-title">Live Feed</h2>
-        <AISummary summary={DEFAULT_SUMMARY} />
+        <AISummary disasterId={disasterId} />
         <ChatWindow userId={userId} responders={responders} groupSelectorSignal={groupSelectorSignal} />
       </div>
 
