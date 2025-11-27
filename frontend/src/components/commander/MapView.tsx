@@ -68,9 +68,9 @@ const MapReady: FC<{ onReady: (map: LeafletMap) => void }> = ({ onReady }) => {
   return null;
 };
 
-const MapView: FC<MapViewProps> = ({ 
-  className = '', 
-  tasks = [], 
+const MapView: FC<MapViewProps> = ({
+  className = '',
+  tasks = [],
   showAllTasks = false,
   onMapClick,
   isListeningForClick = false,
@@ -82,7 +82,7 @@ const MapView: FC<MapViewProps> = ({
   const [center, setCenter] = useState<LatLngExpression>(INITIAL_POSITION);
   const [markerPosition, setMarkerPosition] = useState<LatLngExpression>(INITIAL_POSITION);
   const [markerLabel, setMarkerLabel] = useState('Shenzhen Command Center');
-  
+
   // Filter tasks based on showAllTasks
   const filteredTasks = showAllTasks
     ? tasks
@@ -162,23 +162,34 @@ const MapView: FC<MapViewProps> = ({
   const registerMap = useCallback((mapInstance: LeafletMap) => {
     mapRef.current = mapInstance;
   }, []);
-  
+
   // Handle map click listener changes
   useEffect(() => {
     if (!mapRef.current) return;
-    
+
     if (isListeningForClick && onMapClick) {
       const handleMapClick = (e: L.LeafletMouseEvent) => {
         onMapClick(e.latlng.lat, e.latlng.lng);
       };
       mapRef.current.on('click', handleMapClick);
-      
+
       return () => {
         mapRef.current?.off('click', handleMapClick);
       };
     }
   }, [isListeningForClick, onMapClick]);
-  
+
+  // Fix map rendering on initial mount
+  useEffect(() => {
+    if (mapRef.current) {
+      // Small delay to ensure DOM is ready
+      const timer = setTimeout(() => {
+        mapRef.current?.invalidateSize();
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
   // Fix map rendering when container size changes
   useEffect(() => {
     if (mapRef.current) {
@@ -222,7 +233,7 @@ const MapView: FC<MapViewProps> = ({
         center={center}
         zoom={12}
         zoomControl={false}
-        style={isListeningForClick ? { cursor: 'crosshair' } : undefined}
+        style={isListeningForClick ? { cursor: 'crosshair', height: '100%', width: '100%' } : { height: '100%', width: '100%' }}
       >
         <MapReady onReady={registerMap} />
         <TileLayer

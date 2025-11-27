@@ -158,7 +158,7 @@ const GenerateReportModal: React.FC<Props> = ({ disasterId, onClose, onGenerated
               contentEditable
               ref={editorRef}
               onInput={(event) => setReportContent((event.target as HTMLDivElement).innerHTML)}
-              style={{ minHeight: 160, borderRadius: 8, padding: 12, background: 'rgba(11,19,35,0.9)', color: '#e2e8f0', border: '1px solid rgba(255,255,255,0.1)' }}
+              style={{ minHeight: 160, borderRadius: 8, padding: 12 }}
             />
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginTop: 14 }}>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { Plus, ChevronLeft, ChevronRight, Filter, Search, Users, Trash2 } from 'lucide-react';
 import { API_BASE_URL } from '../../../config';
 
@@ -66,7 +67,7 @@ const TeamsManagement: React.FC<TeamsManagementProps> = ({ onViewTeamDetails }) 
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [showTypeDropdown, setShowTypeDropdown] = useState(false);
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
-  
+
   // Create Team Modal States
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newTeamName, setNewTeamName] = useState('');
@@ -88,21 +89,21 @@ const TeamsManagement: React.FC<TeamsManagementProps> = ({ onViewTeamDetails }) 
     const fetchTeams = async () => {
       setIsLoading(true);
       setError(null);
-      
+
       const API_ENDPOINT = `${API_BASE_URL}/commander/teams`;
-      
+
       try {
         const response = await fetch(API_ENDPOINT, {
           credentials: 'include', // Send cookies for authentication
         });
-        
+
         if (!response.ok) {
           throw new Error(`Failed to fetch teams: ${response.statusText}`);
         }
-        
+
         const data: Team[] = await response.json();
         setTeams(data);
-        
+
       } catch (err) {
         console.error("Failed to fetch teams:", err);
         setError("Could not load teams. Check the server connection.");
@@ -140,15 +141,15 @@ const TeamsManagement: React.FC<TeamsManagementProps> = ({ onViewTeamDetails }) 
       }
 
       const newTeam: Team = await response.json();
-      
+
       // Add new team to the list
       setTeams(prev => [...prev, newTeam]);
-      
+
       // Reset form and close modal
       setNewTeamName('');
       setNewTeamType('medic');
       setShowCreateModal(false);
-      
+
       alert(`Team "${newTeam.name}" created successfully!`);
     } catch (err) {
       console.error('Failed to create team:', err);
@@ -223,7 +224,7 @@ const TeamsManagement: React.FC<TeamsManagementProps> = ({ onViewTeamDetails }) 
         badge_number: '',
       });
       setShowAddResponderModal(false);
-      
+
       alert('Responder created successfully!');
     } catch (err) {
       console.error('Failed to create responder:', err);
@@ -238,30 +239,31 @@ const TeamsManagement: React.FC<TeamsManagementProps> = ({ onViewTeamDetails }) 
     const matchesSearch = team.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       team.team_type.toLowerCase().includes(searchTerm.toLowerCase()) ||
       team.status.toLowerCase().includes(searchTerm.toLowerCase());
-    
+
     const matchesType = selectedType === 'all' || team.team_type === selectedType;
     const matchesStatus = selectedStatus === 'all' || team.status === selectedStatus;
-    
+
     return matchesSearch && matchesType && matchesStatus;
   });
 
   // --- Rendering States ---
-  if (isLoading) {
-    return <div className="loading-state">Loading teams...</div>;
-  }
-  
   if (error) {
     return <div className="error-state">{error}</div>;
   }
 
   return (
     <div className="teams-management-container">
-      
+
       {/* Header */}
-      <div className="teams-management-header">
+      <motion.div
+        className="teams-management-header"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: isLoading ? 0 : 1 }}
+        transition={{ duration: 0.4 }}
+      >
         <h1 className="teams-management-title">Teams Management</h1>
         <p className="teams-management-subtitle">Manage and coordinate all response teams.</p>
-      </div>
+      </motion.div>
 
       {/* Controls Section */}
       <div className="controls-section">
@@ -281,7 +283,7 @@ const TeamsManagement: React.FC<TeamsManagementProps> = ({ onViewTeamDetails }) 
         <div className="button-group">
           {/* Type Filter Dropdown */}
           <div className="filter-dropdown-container">
-            <button 
+            <button
               className="filter-button"
               onClick={() => {
                 setShowTypeDropdown(!showTypeDropdown);
@@ -305,7 +307,7 @@ const TeamsManagement: React.FC<TeamsManagementProps> = ({ onViewTeamDetails }) 
 
           {/* Status Filter Dropdown */}
           <div className="filter-dropdown-container">
-            <button 
+            <button
               className="filter-button"
               onClick={() => {
                 setShowStatusDropdown(!showStatusDropdown);
@@ -324,8 +326,8 @@ const TeamsManagement: React.FC<TeamsManagementProps> = ({ onViewTeamDetails }) 
               </div>
             )}
           </div>
-          
-          <button 
+
+          <button
             className="primary-button"
             onClick={() => setShowCreateModal(true)}
           >
@@ -333,7 +335,7 @@ const TeamsManagement: React.FC<TeamsManagementProps> = ({ onViewTeamDetails }) 
             <span>Create New Team</span>
           </button>
 
-          <button 
+          <button
             className="primary-button"
             onClick={() => setShowAddResponderModal(true)}
             style={{ backgroundColor: '#10b981' }}
@@ -345,7 +347,12 @@ const TeamsManagement: React.FC<TeamsManagementProps> = ({ onViewTeamDetails }) 
       </div>
 
       {/* Teams Table */}
-      <div className="table-container">
+      <motion.div
+        className="table-container"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: isLoading ? 0 : 1, y: isLoading ? 20 : 0 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+      >
         <table className="data-table">
           <thead className="table-header">
             <tr>
@@ -401,7 +408,18 @@ const TeamsManagement: React.FC<TeamsManagementProps> = ({ onViewTeamDetails }) 
             ))}
           </tbody>
         </table>
-      </div>
+
+        {/* Pagination */}
+        <div className="pagination">
+          <button className="pagination-button">
+            <ChevronLeft size={16} />
+          </button>
+          <span className="pagination-page">1</span>
+          <button className="pagination-button">
+            <ChevronRight size={16} />
+          </button>
+        </div>
+      </motion.div>
 
       {/* Empty State */}
       {filteredTeams.length === 0 && (
@@ -410,23 +428,12 @@ const TeamsManagement: React.FC<TeamsManagementProps> = ({ onViewTeamDetails }) 
         </div>
       )}
 
-      {/* Pagination */}
-      <div className="pagination">
-        <button className="pagination-button">
-          <ChevronLeft size={16} />
-        </button>
-        <span className="pagination-page">1</span>
-        <button className="pagination-button">
-          <ChevronRight size={16} />
-        </button>
-      </div>
-
       {/* Create Team Modal */}
       {showCreateModal && (
         <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <h2 className="modal-title">Create New Team</h2>
-            
+
             <div className="form-group">
               <label className="form-label">Team Name *</label>
               <input
@@ -455,7 +462,7 @@ const TeamsManagement: React.FC<TeamsManagementProps> = ({ onViewTeamDetails }) 
               </select>
             </div>
 
-            <div className="modal-actions">
+            <div className="modal-corner-actions">
               <button
                 className="secondary-button"
                 onClick={() => {
@@ -467,6 +474,7 @@ const TeamsManagement: React.FC<TeamsManagementProps> = ({ onViewTeamDetails }) 
               >
                 Cancel
               </button>
+
               <button
                 className="primary-button"
                 onClick={handleCreateTeam}
@@ -484,7 +492,7 @@ const TeamsManagement: React.FC<TeamsManagementProps> = ({ onViewTeamDetails }) 
         <div className="modal-overlay" onClick={() => setShowAddResponderModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
             <h2 className="modal-title">Add New Responder</h2>
-            
+
             <div className="form-group">
               <label className="form-label">Email Address *</label>
               <input
@@ -537,7 +545,7 @@ const TeamsManagement: React.FC<TeamsManagementProps> = ({ onViewTeamDetails }) 
               />
             </div>
 
-            <div className="modal-actions">
+            <div className="modal-corner-actions">
               <button
                 className="secondary-button"
                 onClick={() => {
@@ -553,6 +561,7 @@ const TeamsManagement: React.FC<TeamsManagementProps> = ({ onViewTeamDetails }) 
               >
                 Cancel
               </button>
+
               <button
                 className="primary-button"
                 onClick={handleAddResponder}

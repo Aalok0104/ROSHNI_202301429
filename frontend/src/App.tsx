@@ -15,6 +15,7 @@ import RegistrationForm from './components/RegistrationForm';
 import type { RegistrationData } from './components/RegistrationForm';
 import type { UserRole, SessionUser } from './types';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
+import { AnimatePresence, motion } from 'framer-motion';
 
 type AppProps = {
   onBeginLogin?: (url: string) => void;
@@ -97,7 +98,7 @@ const DashboardView = ({ user, onLogout, loggingOut }: DashboardViewProps) => {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
     params.set('commanderView', commanderView);
-    const newUrl = `${window.location.pathname}?${params.toString()}${window.location.hash}`;
+    const newUrl = `/?${params.toString()}${window.location.hash}`;
     window.history.replaceState(null, '', newUrl);
   }, [commanderView]);
 
@@ -120,7 +121,7 @@ const DashboardView = ({ user, onLogout, loggingOut }: DashboardViewProps) => {
 
   const renderContent = () => {
     if (activeRole === 'commander') {
-      if (commanderView === 'disasters') return <CommanderDisasters />;
+      if (commanderView === 'disasters') return <CommanderDisasters user={user} />;
       if (commanderView === 'home') return <CommanderHome />;
       if (commanderView === 'logs') return <CommanderLogs />;
       if (commanderView === 'teams') return <CommanderTeams />;
@@ -214,7 +215,18 @@ const DashboardView = ({ user, onLogout, loggingOut }: DashboardViewProps) => {
       </header>
 
       <main className="dashboard-main" aria-label={`${activeRole} dashboard`}>
-        {renderContent()}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={commanderView}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            style={{ width: '100%', height: '100%' }}
+          >
+            {renderContent()}
+          </motion.div>
+        </AnimatePresence>
       </main>
     </div>
   );
