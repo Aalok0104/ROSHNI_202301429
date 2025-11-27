@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import type { ComponentType } from 'react';
 import './App.css';
 import './components/commander/commanderStyles.css';
-import { API_ENDPOINTS } from './config';
+import { API_ENDPOINTS, API_BASE_URL } from './config';
 import { redirectTo } from './navigation';
 import CivilianDashboard from './dashboards/CivilianDashboard';
 import ResponderDashboard from './dashboards/ResponderDashboard';
@@ -16,6 +16,9 @@ import type { RegistrationData } from './components/RegistrationForm';
 import type { UserRole, SessionUser } from './types';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { AnimatePresence, motion } from 'framer-motion';
+import LogoutConfirmModal from './components/LogoutConfirmModal';
+import ProfileDropdown from './components/ProfileDropdown';
+import EditProfileModal from './components/EditProfileModal';
 
 type AppProps = {
   onBeginLogin?: (url: string) => void;
@@ -75,9 +78,57 @@ type DashboardViewProps = {
 
 const DashboardView = ({ user, onLogout, loggingOut }: DashboardViewProps) => {
   const activeRole = normalizeRole(user.role);
-  const displayName = user.email;
+  const [fullName, setFullName] = useState<string | null>(null);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showEditProfile, setShowEditProfile] = useState(false);
+  const displayName = fullName || user.email;
   const ActiveDashboard = DASHBOARD_COMPONENTS[activeRole] ?? CivilianDashboard;
   const { theme, toggleTheme } = useTheme();
+
+  const handleLogoutClick = () => {
+    setShowLogoutConfirm(true);
+  };
+
+  const handleLogoutConfirm = () => {
+    setShowLogoutConfirm(false);
+    onLogout();
+  };
+
+  const handleLogoutCancel = () => {
+    setShowLogoutConfirm(false);
+  };
+
+  const handleEditProfile = () => {
+    setShowEditProfile(true);
+  };
+
+  const handleEditProfileClose = () => {
+    setShowEditProfile(false);
+  };
+
+  const handleProfileUpdateSuccess = () => {
+    // Refresh profile data
+    fetchProfile();
+  };
+
+  const fetchProfile = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/users/me/profile`, {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const profile = await response.json();
+        setFullName(profile.full_name);
+      }
+    } catch (error) {
+      console.error('Failed to fetch user profile:', error);
+    }
+  };
+
+  // Fetch user profile to get full_name
+  useEffect(() => {
+    fetchProfile();
+  }, []);
   const [commanderView, setCommanderView] = useState<'dashboard' | 'home' | 'logs' | 'teams' | 'disasters'>(() => {
     try {
       if (typeof window === 'undefined') return 'dashboard';
@@ -178,6 +229,40 @@ const DashboardView = ({ user, onLogout, loggingOut }: DashboardViewProps) => {
               </button>
             </nav>
           )}
+          {activeRole === 'civilian' && (
+            <nav className="app-nav__links" aria-label="Civilian links">
+              <button
+                type="button"
+                className="app-nav__link"
+                onClick={() => {
+                  const elem = document.getElementById('civilian-home');
+                  elem?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }}
+              >
+                Home
+              </button>
+              <button
+                type="button"
+                className="app-nav__link"
+                onClick={() => {
+                  const elem = document.getElementById('civilian-portal');
+                  elem?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }}
+              >
+                Portal
+              </button>
+              <button
+                type="button"
+                className="app-nav__link"
+                onClick={() => {
+                  const elem = document.getElementById('civilian-guidelines');
+                  elem?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }}
+              >
+                Guidelines
+              </button>
+            </nav>
+          )}
 
           <button
             type="button"
@@ -199,13 +284,15 @@ const DashboardView = ({ user, onLogout, loggingOut }: DashboardViewProps) => {
           </button>
 
           <div className="app-nav__actions">
-            <span className="app-nav__user">
-              {displayName} <span className="app-nav__role">({activeRole})</span>
-            </span>
+            <ProfileDropdown 
+              displayName={displayName}
+              role={activeRole}
+              onEditProfile={handleEditProfile}
+            />
             <button
               type="button"
               className="logout-button"
-              onClick={onLogout}
+              onClick={handleLogoutClick}
               disabled={loggingOut}
             >
               {loggingOut ? 'Signing out…' : 'Logout'}
@@ -228,6 +315,16 @@ const DashboardView = ({ user, onLogout, loggingOut }: DashboardViewProps) => {
           </motion.div>
         </AnimatePresence>
       </main>
+      <EditProfileModal 
+        isOpen={showEditProfile}
+        onClose={handleEditProfileClose}
+        onSuccess={handleProfileUpdateSuccess}
+      />
+      <LogoutConfirmModal 
+        isOpen={showLogoutConfirm}
+        onConfirm={handleLogoutConfirm}
+        onCancel={handleLogoutCancel}
+      />
     </div>
   );
 };
