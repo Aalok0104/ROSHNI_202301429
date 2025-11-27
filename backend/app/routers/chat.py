@@ -1,7 +1,7 @@
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from uuid import UUID
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, Query, status
+from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, Query, status, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
 from sqlalchemy.orm import selectinload
@@ -13,12 +13,62 @@ from app.models.responder_management import ResponderProfile, Team
 from app.models.disaster_management import DisasterTask, DisasterTaskAssignment
 from app.repositories.user_repository import UserRepository
 from app.services.websocket_manager import ConnectionManager
-from app.schemas.chat import ChatMessageResponse, ChatMessageCreate, ChatMessageCreate as ChatMessageUpdate
-from app.dependencies import get_current_user, RoleChecker
+from app.schemas.chat import ChatMessageResponse, ChatMessageCreate
+from app.dependencies import RoleChecker, get_current_user
+import os
+import httpx
+
+# LLM configuration via environment
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+OPENAI_API_URL = os.getenv("OPENAI_API_URL", "https://api.openai.com/v1/chat/completions")
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-3.5-turbo")
+
 
 router = APIRouter(prefix="/chat", tags=["Real-Time Chat"])
 manager = ConnectionManager()
 
+
+async def _call_llm(context: str, prompt: str) -> dict:
+    """Call an OpenAI-compatible chat completions endpoint asynchronously.
+
+    Returns a dict with keys: `text` (str) and `raw` (response json) on success.
+    If the API key is not configured, returns a fallback containing the
+    provided context and an explanatory message.
+    """
+    if not OPENAI_API_KEY:
+        return {
+            "text": (
+                "LLM not configured (OPENAI_API_KEY missing). Returning summarizer output:\n\n" + context
+            ),
+            "raw": None,
+        }
+
+    headers = {"Authorization": f"Bearer {OPENAI_API_KEY}", "Content-Type": "application/json"}
+    messages = [
+        {"role": "system", "content": "You are a concise assistant that summarizes chat logs."},
+        {"role": "user", "content": prompt + "\n\nContext:\n" + context},
+    ]
+
+    payload = {
+        "model": OPENAI_MODEL,
+        "messages": messages,
+        "max_tokens": 200,
+        "temperature": 0.2,
+    }
+
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        resp = await client.post(OPENAI_API_URL, json=payload, headers=headers)
+        resp.raise_for_status()
+        data = resp.json()
+        # Extract assistant message (compatible with OpenAI chat response)
+        try:
+            text = data["choices"][0]["message"]["content"].strip()
+        except Exception:
+            # Fallback: stringify top-level fields
+            text = data.get("choices") and str(data["choices"]) or str(data)
+
+        return {"text": text, "raw": data}
+    
 
 # Helper to get user from session cookie or token
 async def get_user_from_token_or_cookie(
@@ -147,7 +197,7 @@ async def _can_modify_message(current_user: User, message: DisasterChatMessage):
 @router.patch("/messages/{message_id}", response_model=ChatMessageResponse)
 async def update_message(
     message_id: UUID,
-    payload: ChatMessageUpdate,
+    message_text: str = Body(..., min_length=1, max_length=5000, embed=True),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -156,7 +206,7 @@ async def update_message(
         raise HTTPException(status_code=404, detail="Message not found")
     if not await _can_modify_message(current_user, message):
         raise HTTPException(status_code=403, detail="Not allowed")
-    message.message_text = payload.message_text
+    message.message_text = message_text
     await db.commit()
     await db.refresh(message)
     sender_name = current_user.profile.full_name if current_user.profile else (current_user.email or "Unknown")
@@ -195,29 +245,17 @@ async def websocket_endpoint(
             await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
             return
 
-        # Require the client to specify which team chat to join.
-        # Validate that the provided `team_id` is assigned to this disaster.
-        if not team_id:
-            # No team specified — close with policy violation
-            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
-            return
-
-        if team_id not in teams:
-            # The requested team is not assigned to this disaster
-            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
-            return
-
         # Check membership: only allow actual team members (commanders removed)
         stmt = select(ResponderProfile).where(ResponderProfile.user_id == user.user_id)
         rres = await db.execute(stmt)
         profile = rres.scalar_one_or_none()
 
         # Only a responder with a profile assigned to this team can join
-        if not profile or profile.team_id != team_id:
+        if not profile or profile.team_id not in teams:
             await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
             return
 
-        room_key = f"team:{team_id}"
+        room_key = f"teams:{disaster_id}"
         await manager.connect(websocket, room_key)
 
         can_write = bool(profile)
@@ -231,7 +269,7 @@ async def websocket_endpoint(
             async with AsyncSessionLocal() as db:
                 new_msg = DisasterChatMessage(
                     disaster_id=disaster_id,
-                    team_id=team_id,
+                    team_id=profile.team_id,
                     sender_user_id=user.user_id,
                     message_text=data,
                     is_global=False,
@@ -326,3 +364,115 @@ async def websocket_global(
 
     except WebSocketDisconnect:
         manager.disconnect(websocket, room_key)
+        
+
+def _categorize_messages(all_msgs):
+    """Categorize messages into orders, relays, and team actions."""
+    orders = []
+    relays = []
+    team_actions = {}
+
+    for m in all_msgs:
+        sender_role = "civilian"
+        if m.sender and m.sender.role:
+            sender_role = m.sender.role.name.lower()
+
+        ts = m.created_at.isoformat() if isinstance(m.created_at, datetime) else str(m.created_at)
+
+        msg_obj = {
+            "sender_role": sender_role,
+            "message_text": m.message_text,
+            "is_global": getattr(m, "is_global", False),
+            "created_at": ts,
+            "team_id": getattr(m, "team_id", None),
+        }
+
+        if getattr(m, "is_global", False):
+            if sender_role == "commander":
+                orders.append(msg_obj)
+            else:
+                relays.append(msg_obj)
+        else:
+            team_id_key = str(getattr(m, "team_id", None)) or "unknown"
+            team_actions.setdefault(team_id_key, []).append(msg_obj)
+
+    return orders, relays, team_actions
+
+
+def _build_context_for_llm(orders, relays, team_actions):
+    """Build formatted context text for the LLM."""
+    context_parts = ["=== DISASTER CHAT SUMMARY ===\n"]
+
+    if orders:
+        context_parts.append("COMMANDER ORDERS (Global):")
+        for o in orders:
+            context_parts.append(f"  [{o['created_at']}] {o['message_text']}")
+        context_parts.append("")
+
+    if relays:
+        context_parts.append("LOGISTICIAN RELAYS / GLOBAL NOTES:")
+        for r in relays:
+            context_parts.append(f"  [{r['created_at']}] {r['message_text']}")
+        context_parts.append("")
+
+    if team_actions:
+        context_parts.append("TEAM ACTIONS:")
+        for t_id, actions in team_actions.items():
+            context_parts.append(f"  Team {t_id}:")
+            for a in actions:
+                context_parts.append(f"    [{a['created_at']}] {a['message_text']}")
+        context_parts.append("")
+
+    return "\n".join(context_parts)
+
+
+@router.get("/{disaster_id}/summary")
+async def get_disaster_chat_summary(
+    disaster_id: UUID,
+    db: AsyncSession = Depends(get_db),
+    user_id: Optional[UUID] = None
+):
+    """Collect and categorize disaster messages, then send to LLM for summarization."""
+
+    # Fetch current user from DB (simulate auth, expects ?user_id=...)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Missing user_id for access check")
+    user = await db.get(User, user_id)
+    if not user or not user.role or user.role.name not in ("commander", "responder"):
+        raise HTTPException(status_code=403, detail="Not authorized: must be commander or responder")
+
+    # Fetch all messages for the disaster in chronological order
+    stmt = (
+        select(DisasterChatMessage)
+        .options(
+            selectinload(DisasterChatMessage.sender)
+                .selectinload(User.role)
+        )
+        .where(DisasterChatMessage.disaster_id == disaster_id)
+        .order_by(DisasterChatMessage.created_at)
+    )
+    res = await db.execute(stmt)
+    all_msgs = res.scalars().all()
+
+    # Categorize and build context
+    orders, relays, team_actions = _categorize_messages(all_msgs)
+    context_text = _build_context_for_llm(orders, relays, team_actions)
+
+    instruction = (
+        "An disaster has occurred and various teams are responding to commander. "
+        "when you give it global message commander give this orders to teams through logistician "
+        "and temas have done this by analysing chat" 
+        "Provide a concise summary of the disaster chat messages."
+    )
+
+    # Call the configured LLM to get a short summary
+    ai_prompt = instruction
+    ai_result = await _call_llm(context_text, ai_prompt)
+
+    return {
+        "disaster_id": disaster_id,
+        "ai_prompt": ai_prompt,
+        "summary": ai_result.get("text"),
+        "context": context_text,
+        "llm_raw": ai_result.get("raw"),
+    }

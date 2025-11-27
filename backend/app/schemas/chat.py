@@ -21,3 +21,4 @@ class ChatMessageResponse(BaseModel):
 # Note: Usually WS just sends raw text, but JSON is safer for extensibility
 class ChatMessageCreate(BaseModel):
     message_text: str
+
