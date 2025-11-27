@@ -1,239 +1,199 @@
 import { type FC, useState, useRef } from 'react';
 import type { SessionUser } from '../types';
 import SOSModal from '../components/civilian/modals/SOSModal';
+import SOSConfirmModal from '../components/civilian/modals/SOSConfirmModal';
 import ReportsList from '../components/civilian/lists/ReportsList';
-import NotificationPanel from '../components/civilian/panels/NotificationPanel';
-import ProfileModal from '../components/civilian/modals/ProfileModal';
 import '../components/civilian/styles/civilian-portal.css';
 
 type Props = {
   user: SessionUser;
 };
 
-const CivilianDashboard: FC<Props> = ({ user: initialUser }) => {
-  const [user, setUser] = useState(initialUser);
+const CivilianDashboard: FC<Props> = () => {
   const [sosOpen, setSosOpen] = useState(false);
-  const [notifOpen, setNotifOpen] = useState(false);
-  const [profileOpen, setProfileOpen] = useState(false);
-  const [darkMode, setDarkMode] = useState(true);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [refresh, setRefresh] = useState(0);
   
   const homeRef = useRef<HTMLDivElement>(null);
   const guidelinesRef = useRef<HTMLDivElement>(null);
-  const reportsRef = useRef<HTMLDivElement>(null);
+  const portalRef = useRef<HTMLDivElement>(null);
 
   const handleSosSuccess = () => {
     setRefresh((prev) => prev + 1);
   };
 
-  const handleProfileUpdate = (updatedUser: SessionUser) => {
-    setUser(updatedUser);
-  };
-
-  const scrollToSection = (ref: React.RefObject<HTMLDivElement | null>) => {
-    ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
-
-  const toggleTheme = () => {
-    setDarkMode(!darkMode);
-    // You can implement actual theme switching logic here
-  };
-
   return (
-    <div className="civilian-portal min-h-screen">
-      {/* Header */}
-      <header className="border-b border-gray-800 bg-gray-900/40 px-8 py-3">
-        <div className="max-w-[1400px] mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-teal-600 rounded flex items-center justify-center text-white font-bold text-sm">
-              R
-            </div>
-            <div>
-              <div className="font-bold text-base">ROSHNI</div>
-              <div className="text-xs text-gray-400">Citizen Emergency Portal</div>
-            </div>
-          </div>
-          <nav className="flex items-center gap-6">
-            <button onClick={() => scrollToSection(homeRef)} className="text-sm text-gray-300 hover:text-white transition-colors">Home</button>
-            <button onClick={() => scrollToSection(reportsRef)} className="text-sm text-gray-300 hover:text-white transition-colors">Portal</button>
-            <button onClick={() => scrollToSection(guidelinesRef)} className="text-sm text-gray-300 hover:text-white transition-colors">Guidelines</button>
-            <button onClick={() => setNotifOpen(true)} className="p-1.5 hover:bg-gray-800 rounded transition-colors text-lg" aria-label="Notifications">🔔</button>
-            <button onClick={toggleTheme} className="p-1.5 hover:bg-gray-800 rounded transition-colors text-lg" aria-label="Toggle Theme">🌙</button>
-            <button 
-              onClick={() => setProfileOpen(true)}
-              className="text-sm text-gray-400 hover:text-white transition-colors cursor-pointer"
-            >
-              {(user as any).name?.trim() || user.email}
-            </button>
-          </nav>
+    <div className="min-h-screen bg-[#0a0e27] text-white">
+      {/* Emergency SOS Button - Below Navbar */}
+      <div className="bg-[#0a0e27] border-b border-gray-800">
+        <div className="max-w-[1400px] mx-auto px-6 py-3 flex items-center justify-end">
+          <button
+            onClick={() => setShowConfirm(true)}
+            className="bg-red-600 hover:bg-red-700 text-white px-6 py-2.5 rounded-lg font-semibold transition-colors shadow-lg"
+          >
+            🚨 Emergency SOS
+          </button>
         </div>
-      </header>
+      </div>
 
       {/* Main Content */}
-      <main className="max-w-[1400px] mx-auto px-8 py-6">
-        {/* Hero Section */}
-        <section ref={homeRef} className="mb-6">
-          <div className="flex items-start justify-between">
+      <main className="max-w-[1400px] mx-auto px-6 py-8">
+        {/* Home Section */}
+        <div id="civilian-home" ref={homeRef} className="mb-8">
+          {/* Active Alert */}
+          <div className="bg-red-900/20 border border-red-800/50 rounded-lg p-4 flex items-start gap-3 mb-8">
+            <span className="text-red-500 text-xl mt-0.5">⚠️</span>
             <div>
-              <h1 className="text-3xl font-bold mb-2">Citizen Emergency Portal</h1>
-              <p className="text-gray-400 text-base">Report emergencies and get guidance.</p>
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setSosOpen(true)}
-                id="sosBtn"
-                className="relative px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded text-sm transition-colors"
-              >
-                SOS Emergency SOS
-              </button>
-              <button className="px-5 py-2.5 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded text-sm transition-colors">
-                Quick Report
-              </button>
-            </div>
-          </div>
-        </section>
-
-        {/* Active Alert */}
-        <div className="mb-6 bg-red-900/20 border border-red-800/50 rounded-lg p-3.5 flex items-center gap-3">
-          <span className="text-red-500 text-lg">⚠️</span>
-          <div className="text-sm">
-            <span className="font-semibold text-red-400">Active Alert:</span>
-            <span className="text-gray-300 ml-2">Wildfires reported in Northern Districts - Evacuate if instructed.</span>
-          </div>
-        </div>
-
-        {/* Three Column Layout */}
-        <div ref={guidelinesRef} className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-          {/* Left Column - Quick Navigation */}
-          <div className="bg-gray-900/40 border border-gray-800 rounded-lg p-5">
-            <div className="flex items-center gap-2 mb-4">
-              <span className="text-blue-400 text-lg">📋</span>
-              <h2 className="text-lg font-semibold">Quick Navigation</h2>
-            </div>
-            <nav className="space-y-1">
-              <button onClick={() => scrollToSection(guidelinesRef)} className="w-full text-left px-3 py-2 rounded hover:bg-gray-800 transition-colors text-gray-300 text-sm">Before a Disaster</button>
-              <button onClick={() => scrollToSection(guidelinesRef)} className="w-full text-left px-3 py-2 rounded hover:bg-gray-800 transition-colors text-gray-300 text-sm">During an Emergency</button>
-              <button onClick={() => scrollToSection(guidelinesRef)} className="w-full text-left px-3 py-2 rounded hover:bg-gray-800 transition-colors text-gray-300 text-sm">After a Disaster</button>
-              <button onClick={() => scrollToSection(reportsRef)} className="w-full text-left px-3 py-2 rounded hover:bg-gray-800 transition-colors text-gray-300 text-sm">My Reports</button>
-              <button onClick={() => scrollToSection(guidelinesRef)} className="w-full text-left px-3 py-2 rounded hover:bg-gray-800 transition-colors text-gray-300 text-sm">Emergency Contacts</button>
-            </nav>
-          </div>
-
-          {/* Middle Column - Guidelines */}
-          <div className="bg-gray-900/40 border border-gray-800 rounded-lg p-5">
-            <div className="flex items-center gap-2 mb-4">
-              <span className="text-blue-400 text-lg">🛡️</span>
-              <h2 className="text-lg font-semibold">Disaster Preparedness Guidelines</h2>
-            </div>
-            
-            <div className="space-y-5">
-              <div>
-                <h3 className="font-semibold mb-2.5 text-gray-200 text-sm">BEFORE A DISASTER</h3>
-                <ul className="space-y-2 text-xs">
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-500 mt-0.5 text-sm">✓</span>
-                    <span className="text-gray-300">Prepare an emergency kit with essential supplies (water, food, first aid).</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-500 mt-0.5 text-sm">✓</span>
-                    <span className="text-gray-300">Know your evacuation routes and assembly points.</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-500 mt-0.5 text-sm">✓</span>
-                    <span className="text-gray-300">Keep important documents in waterproof containers.</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-500 mt-0.5 text-sm">✓</span>
-                    <span className="text-gray-300">Maintain a list of emergency contacts.</span>
-                  </li>
-                </ul>
-              </div>
-
-              <div>
-                <h3 className="font-semibold mb-2.5 text-gray-200 text-sm">DURING AN EMERGENCY</h3>
-                <ul className="space-y-2 text-xs">
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-500 mt-0.5 text-sm">✓</span>
-                    <span className="text-gray-300">Stay calm and assess the situation.</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-500 mt-0.5 text-sm">✓</span>
-                    <span className="text-gray-300">Follow instructions from local authorities.</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-500 mt-0.5 text-sm">✓</span>
-                    <span className="text-gray-300">Use the SOS button above to report your response (immediate).</span>
-                  </li>
-                </ul>
-              </div>
-
-              <div>
-                <h3 className="font-semibold mb-2.5 text-gray-200 text-sm">AFTER A DISASTER</h3>
-                <ul className="space-y-2 text-xs">
-                  <li className="flex items-start gap-2">
-                    <span className="text-green-500 mt-0.5 text-sm">✓</span>
-                    <span className="text-gray-300">Check for injuries and provide first aid if trained.</span>
-                  </li>
-                </ul>
-              </div>
+              <span className="font-semibold text-red-400">Active Alert:</span>
+              <span className="text-gray-300 ml-2">Wildfires reported in Northern Districts - Evacuate if instructed.</span>
             </div>
           </div>
 
-          {/* Right Column - Emergency Contacts */}
-          <div className="bg-gray-900/40 border border-gray-800 rounded-lg p-5">
-            <div className="flex items-center gap-2 mb-4">
-              <span className="text-blue-400 text-lg">📞</span>
-              <h2 className="text-lg font-semibold">Emergency Contacts</h2>
+          {/* Three Column Layout */}
+          <div id="civilian-guidelines" ref={guidelinesRef} className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            {/* Quick Navigation */}
+            <div className="bg-[#1a1f3a] border border-gray-800 rounded-lg p-6">
+              <div className="flex items-center gap-2 mb-5">
+                <span className="text-2xl">📋</span>
+                <h2 className="text-xl font-bold">Quick Navigation</h2>
+              </div>
+              <nav className="space-y-2">
+                <button className="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-800 transition-colors text-gray-300">
+                  Before a Disaster
+                </button>
+                <button className="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-800 transition-colors text-gray-300">
+                  During an Emergency
+                </button>
+                <button className="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-800 transition-colors text-gray-300">
+                  After a Disaster
+                </button>
+                <button 
+                  onClick={() => portalRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                  className="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-800 transition-colors text-gray-300"
+                >
+                  My Reports
+                </button>
+                <button className="w-full text-left px-4 py-3 rounded-lg hover:bg-gray-800 transition-colors text-gray-300">
+                  Emergency Contacts
+                </button>
+              </nav>
             </div>
-            <div className="space-y-2.5">
-              <div className="flex justify-between items-center p-2.5 bg-gray-800/40 rounded hover-card">
-                <span className="text-gray-300 text-sm">National Emergency</span>
-                <a href="tel:112" className="text-blue-400 font-semibold hover:text-blue-300 text-sm">112</a>
+
+            {/* Disaster Preparedness Guidelines */}
+            <div className="bg-[#1a1f3a] border border-gray-800 rounded-lg p-6">
+              <div className="flex items-center gap-2 mb-5">
+                <span className="text-2xl">🛡️</span>
+                <h2 className="text-xl font-bold">Disaster Preparedness Guidelines</h2>
               </div>
-              <div className="flex justify-between items-center p-2.5 bg-gray-800/40 rounded hover-card">
-                <span className="text-gray-300 text-sm">Police</span>
-                <a href="tel:100" className="text-blue-400 font-semibold hover:text-blue-300 text-sm">100</a>
+              
+              <div className="space-y-6">
+                <div>
+                  <h3 className="font-semibold mb-3 text-gray-200 uppercase tracking-wide text-sm">Before a Disaster</h3>
+                  <ul className="space-y-2.5">
+                    <li className="flex items-start gap-2.5">
+                      <span className="text-green-500 mt-1">✓</span>
+                      <span className="text-gray-300 text-sm">Prepare an emergency kit with essential supplies (water, food, first aid).</span>
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <span className="text-green-500 mt-1">✓</span>
+                      <span className="text-gray-300 text-sm">Know your evacuation routes and assembly points.</span>
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <span className="text-green-500 mt-1">✓</span>
+                      <span className="text-gray-300 text-sm">Keep important documents in waterproof containers.</span>
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <span className="text-green-500 mt-1">✓</span>
+                      <span className="text-gray-300 text-sm">Maintain a list of emergency contacts.</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold mb-3 text-gray-200 uppercase tracking-wide text-sm">During an Emergency</h3>
+                  <ul className="space-y-2.5">
+                    <li className="flex items-start gap-2.5">
+                      <span className="text-green-500 mt-1">✓</span>
+                      <span className="text-gray-300 text-sm">Stay calm and assess the situation.</span>
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <span className="text-green-500 mt-1">✓</span>
+                      <span className="text-gray-300 text-sm">Follow instructions from local authorities.</span>
+                    </li>
+                    <li className="flex items-start gap-2.5">
+                      <span className="text-green-500 mt-1">✓</span>
+                      <span className="text-gray-300 text-sm">Use the SOS button above to report your response (immediate).</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold mb-3 text-gray-200 uppercase tracking-wide text-sm">After a Disaster</h3>
+                  <ul className="space-y-2.5">
+                    <li className="flex items-start gap-2.5">
+                      <span className="text-green-500 mt-1">✓</span>
+                      <span className="text-gray-300 text-sm">Check for injuries and provide first aid if trained.</span>
+                    </li>
+                  </ul>
+                </div>
               </div>
-              <div className="flex justify-between items-center p-2.5 bg-gray-800/40 rounded hover-card">
-                <span className="text-gray-300 text-sm">Fire</span>
-                <a href="tel:101" className="text-blue-400 font-semibold hover:text-blue-300 text-sm">101</a>
+            </div>
+
+            {/* Emergency Contacts */}
+            <div className="bg-[#1a1f3a] border border-gray-800 rounded-lg p-6">
+              <div className="flex items-center gap-2 mb-5">
+                <span className="text-2xl">📞</span>
+                <h2 className="text-xl font-bold">Emergency Contacts</h2>
               </div>
-              <div className="flex justify-between items-center p-2.5 bg-gray-800/40 rounded hover-card">
-                <span className="text-gray-300 text-sm">Ambulance</span>
-                <a href="tel:102" className="text-blue-400 font-semibold hover:text-blue-300 text-sm">102</a>
-              </div>
-              <div className="flex justify-between items-center p-2.5 bg-gray-800/40 rounded hover-card">
-                <span className="text-gray-300 text-sm">Disaster Helpline</span>
-                <a href="tel:1070" className="text-blue-400 font-semibold hover:text-blue-300 text-sm">1070</a>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center p-3 bg-gray-800/40 rounded-lg hover:bg-gray-800/60 transition-colors">
+                  <span className="text-gray-300">National Emergency</span>
+                  <a href="tel:112" className="text-blue-400 font-bold text-lg hover:text-blue-300">112</a>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-gray-800/40 rounded-lg hover:bg-gray-800/60 transition-colors">
+                  <span className="text-gray-300">Police</span>
+                  <a href="tel:100" className="text-blue-400 font-bold text-lg hover:text-blue-300">100</a>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-gray-800/40 rounded-lg hover:bg-gray-800/60 transition-colors">
+                  <span className="text-gray-300">Fire</span>
+                  <a href="tel:101" className="text-blue-400 font-bold text-lg hover:text-blue-300">101</a>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-gray-800/40 rounded-lg hover:bg-gray-800/60 transition-colors">
+                  <span className="text-gray-300">Ambulance</span>
+                  <a href="tel:102" className="text-blue-400 font-bold text-lg hover:text-blue-300">102</a>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-gray-800/40 rounded-lg hover:bg-gray-800/60 transition-colors">
+                  <span className="text-gray-300">Disaster Helpline</span>
+                  <a href="tel:1070" className="text-blue-400 font-bold text-lg hover:text-blue-300">1070</a>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* My Reports Section */}
-        <section ref={reportsRef} className="mt-6 bg-gray-900/40 border border-gray-800 rounded-lg p-5">
-          <h2 className="text-lg font-semibold mb-4">📋 Your Emergency Reports</h2>
+        {/* Your Emergency Reports Section */}
+        <section id="civilian-portal" ref={portalRef} className="bg-[#1a1f3a] border border-gray-800 rounded-lg p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <span className="text-2xl">📋</span>
+            <h2 className="text-2xl font-bold">Your Emergency Reports</h2>
+          </div>
           <ReportsList refresh={refresh} />
         </section>
       </main>
+
+      <SOSConfirmModal
+        isOpen={showConfirm}
+        onConfirm={() => {
+          setShowConfirm(false);
+          setSosOpen(true);
+        }}
+        onCancel={() => setShowConfirm(false)}
+      />
 
       <SOSModal
         isOpen={sosOpen}
         onClose={() => setSosOpen(false)}
         onSuccess={handleSosSuccess}
-      />
-
-      <NotificationPanel
-        isOpen={notifOpen}
-        onClose={() => setNotifOpen(false)}
-        refresh={refresh}
-      />
-
-      <ProfileModal
-        isOpen={profileOpen}
-        onClose={() => setProfileOpen(false)}
-        user={user}
-        onUpdate={handleProfileUpdate}
       />
     </div>
   );
