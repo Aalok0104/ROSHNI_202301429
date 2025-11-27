@@ -1,36 +1,46 @@
-// src/components/GroupSelector.tsx
-import React, { useState } from "react";
+import type { FC } from "react";
+import { useState } from "react";
+import { sendMessage } from "../../services/websocket";
 
-interface Props {
-  onCreateGroup: (groupId: string) => void;
+interface GroupSelectorProps {
+  responders: string[];
+  onCreateGroup: (groupId: string, members: string[]) => void;
 }
 
-const sampleResponders = ["Responder-01", "Responder-02", "Logistics-1", "Responder-03"];
-
-const GroupSelector: React.FC<Props> = ({ onCreateGroup }) => {
+const GroupSelector: FC<GroupSelectorProps> = ({ responders, onCreateGroup }) => {
   const [selected, setSelected] = useState<string[]>([]);
-  const toggle = (r: string) => setSelected((p) => (p.includes(r) ? p.filter(x => x !== r) : [...p, r]));
+
+  const handleToggle = (responder: string) => {
+    setSelected((prev) =>
+      prev.includes(responder) ? prev.filter((r) => r !== responder) : [...prev, responder]
+    );
+  };
 
   const handleCreate = () => {
-    const id = `grp-${Date.now()}`;
-    onCreateGroup(id);
+    const groupId = "grp-" + Date.now();
+    onCreateGroup(groupId, selected);
+    sendMessage({
+      type: "joinGroup",
+      groupId,
+      members: ["Commander1", ...selected],
+    });
     setSelected([]);
   };
 
   return (
-    <div>
-      <h4 className="font-semibold mb-2">Select Responders (local)</h4>
-      <div className="grid grid-cols-2 gap-2 mb-4">
-        {sampleResponders.map(r => (
-          <label key={r} className="flex items-center gap-2">
-            <input type="checkbox" checked={selected.includes(r)} onChange={() => toggle(r)} />
-            <span>{r}</span>
-          </label>
-        ))}
-      </div>
-      <div className="flex gap-2">
-        <button onClick={handleCreate} className="px-3 py-1 bg-blue-600 text-white rounded">Create Group</button>
-      </div>
+    <div className="commander-selector">
+      <h3>Select Responders</h3>
+      {responders.map((r) => (
+        <label key={r}>
+          <input
+            type="checkbox"
+            checked={selected.includes(r)}
+            onChange={() => handleToggle(r)}
+          />
+          <span>{r}</span>
+        </label>
+      ))}
+      <button onClick={handleCreate}>Create Group</button>
     </div>
   );
 };

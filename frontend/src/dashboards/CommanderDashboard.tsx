@@ -153,12 +153,7 @@ const CommanderDashboard: FC<Props> = ({ user }) => {
   return (
     <>
       <div className="commander-main">
-        <LeftSidebar 
-          userId={userId} 
-          responders={responders} 
-          onGenerateReport={handleGenerateReport}
-          disasterId={getDisasterIdFromLocation()}
-        />
+        <LeftSidebar userId={userId} responders={responders} onGenerateReport={handleGenerateReport} />
         <MapView 
           tasks={tasks} 
           showAllTasks={showAllTasks} 
