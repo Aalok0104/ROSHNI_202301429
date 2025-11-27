@@ -7,6 +7,8 @@ from httpx import ASGITransport, AsyncClient
 from types import SimpleNamespace
 import json
 from fastapi.testclient import TestClient
+import httpx
+from datetime import datetime
 
 from app.main import app
 from app.routers import chat
@@ -63,6 +65,8 @@ async def test_connection_manager_room_keys():
     ws3 = MockWS(should_raise=True)
     
     # Connect
+    # use a stable room_key derived from the generated disaster id
+    room_key = str(disaster_id)
     await manager.connect(ws1, room_key)
     assert ws1.accepted
     assert room_key in manager.active_connections
@@ -103,7 +107,7 @@ async def test_history_team_and_global(async_client, async_db_session, async_cre
 
     msg = DisasterChatMessage(
         disaster_id=disaster.disaster_id,
-        sender_user_id=user.user_id,
+        sender_user_id=commander.user_id,
         message_text="Test History Message",
     )
     async_db_session.add(msg)
@@ -116,11 +120,6 @@ async def test_history_team_and_global(async_client, async_db_session, async_cre
     assert len(data) == 1
     assert data[0]["message_text"] == "Test History Message"
     assert data[0]["sender_name"] == "Test User" # Default from create_user fixture
-
-# WebSocket testing with TestClient is limited for async/complex auth flows
-# We will rely on the unit test for the manager and basic connection test
-from fastapi.testclient import TestClient
-
 
 @pytest.mark.asyncio
 async def test_websocket_connection_rejected_without_user():
@@ -265,16 +264,14 @@ async def test_update_and_delete_message_permissions(async_db_session, async_cre
         assert resp_missing.status_code == 404
 
 
-# --- REST /chat/{disaster_id}/summary tests ---
 @pytest.mark.asyncio
-async def test_chat_summary_access_control(async_client, async_create_user, async_create_disaster, async_db_session):
-    # Create users
+async def test_chat_summary_access_control(async_db_session, async_create_user, async_create_disaster):
     commander = await async_create_user(email="cmdsum@example.com", role_name="commander")
     responder = await async_create_user(email="respsum@example.com", role_name="responder")
     outsider = await async_create_user(email="outsider@example.com", role_name="civilian")
     disaster = await async_create_disaster()
-    # Add a message
-    from app.models.questionnaires_and_logs import DisasterChatMessage
+
+    # Insert message directly using SAME DB session
     msg = DisasterChatMessage(
         disaster_id=disaster.disaster_id,
         sender_user_id=commander.user_id,
@@ -283,28 +280,41 @@ async def test_chat_summary_access_control(async_client, async_create_user, asyn
     )
     async_db_session.add(msg)
     await async_db_session.commit()
-    # Allowed: commander
-    resp = await async_client.get(f"/chat/{disaster.disaster_id}/summary?user_id={commander.user_id}")
-    assert resp.status_code == 200
-    data = resp.json()
-    assert "Commander order!" in data["context"]
-    # Allowed: responder
-    resp2 = await async_client.get(f"/chat/{disaster.disaster_id}/summary?user_id={responder.user_id}")
-    assert resp2.status_code == 200
-    # Forbidden: outsider
-    resp3 = await async_client.get(f"/chat/{disaster.disaster_id}/summary?user_id={outsider.user_id}")
-    assert resp3.status_code == 403
-    # Missing user_id
-    resp4 = await async_client.get(f"/chat/{disaster.disaster_id}/summary")
-    assert resp4.status_code == 401
+
+    # Create isolated app that uses SAME DB session
+    test_app = FastAPI()
+    test_app.include_router(chat.router)
+
+    async def override_db():
+        yield async_db_session
+
+    test_app.dependency_overrides[get_db] = override_db
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+
+        # commander allowed
+        r1 = await ac.get(f"/chat/{disaster.disaster_id}/summary?user_id={commander.user_id}")
+        assert r1.status_code == 200
+        assert "Commander order!" in r1.json()["context"]
+
+        # responder allowed
+        r2 = await ac.get(f"/chat/{disaster.disaster_id}/summary?user_id={responder.user_id}")
+        assert r2.status_code == 200
+
+        # outsider forbidden
+        r3 = await ac.get(f"/chat/{disaster.disaster_id}/summary?user_id={outsider.user_id}")
+        assert r3.status_code == 403
+
+        # missing user_id
+        r4 = await ac.get(f"/chat/{disaster.disaster_id}/summary")
+        assert r4.status_code == 401
 
 @pytest.mark.asyncio
-async def test_chat_summary_content(async_client, async_create_user, async_create_disaster, async_db_session):
-    # Create a commander and disaster
+async def test_chat_summary_content(async_db_session, async_create_user, async_create_disaster):
     commander = await async_create_user(email="cmdsum2@example.com", role_name="commander")
     disaster = await async_create_disaster()
-    # Add a global and a team message
-    from app.models.questionnaires_and_logs import DisasterChatMessage
+
     msg1 = DisasterChatMessage(
         disaster_id=disaster.disaster_id,
         sender_user_id=commander.user_id,
@@ -315,15 +325,147 @@ async def test_chat_summary_content(async_client, async_create_user, async_creat
         disaster_id=disaster.disaster_id,
         sender_user_id=commander.user_id,
         message_text="Team Alpha moving to sector 7.",
-        is_global=False,
-        team_id="team-alpha"
+        is_global=False
     )
     async_db_session.add_all([msg1, msg2])
     await async_db_session.commit()
-    # Get summary
-    resp = await async_client.get(f"/chat/{disaster.disaster_id}/summary?user_id={commander.user_id}")
-    assert resp.status_code == 200
-    data = resp.json()
-    assert "Order: Evacuate area!" in data["context"]
-    assert "Team Alpha moving to sector 7." in data["context"]
-    assert "summary" in data
+
+    # isolated app using SAME DB session
+    test_app = FastAPI()
+    test_app.include_router(chat.router)
+
+    async def override_db():
+        yield async_db_session
+
+    test_app.dependency_overrides[get_db] = override_db
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        resp = await ac.get(f"/chat/{disaster.disaster_id}/summary?user_id={commander.user_id}")
+        assert resp.status_code == 200
+
+        data = resp.json()
+        assert "Order: Evacuate area!" in data["context"]
+        assert "Team Alpha moving to sector 7." in data["context"]
+        assert "summary" in data
+        
+# -------------------------------------------------------------------
+# 1. TEST _call_llm() WHEN OPENAI_API_KEY EXISTS + SUCCESS RESPONSE
+# -------------------------------------------------------------------
+@pytest.mark.asyncio
+async def test_llm_call_success(monkeypatch):
+    async def mock_post(self, url, json, headers):
+        class Resp:
+            def raise_for_status(self): pass
+            def json(self):
+                return {"choices": [{"message": {"content": "LLM summary text"}}]}
+        return Resp()
+
+    monkeypatch.setenv("OPENAI_API_KEY", "dummy")
+    monkeypatch.setattr(httpx.AsyncClient, "post", mock_post, raising=False)
+
+    out = await chat._call_llm("CTX", "PROMPT")
+    assert out["text"] == "LLM summary text"
+
+
+# -------------------------------------------------------------------
+# 2. TEST _categorize_messages() — RELAY BRANCH (non-commander global)
+# -------------------------------------------------------------------
+@pytest.mark.asyncio
+async def test_categorize_relays():
+    class Dummy:
+        sender = SimpleNamespace(role=SimpleNamespace(name="logistician"))
+        message_text = "Relay message"
+        created_at = datetime.utcnow()
+        is_global = True
+        team_id = None
+
+    orders, relays, teams = chat._categorize_messages([Dummy()])
+    assert len(orders) == 0
+    assert len(relays) == 1
+    assert relays[0]["message_text"] == "Relay message"
+
+
+# -------------------------------------------------------------------
+# 3. TEST _build_context_for_llm() — ALL THREE SECTIONS
+# -------------------------------------------------------------------
+def test_build_context_full_sections():
+    orders = [{"created_at": "2025", "message_text": "O"}]
+    relays = [{"created_at": "2025", "message_text": "R"}]
+    team_actions = {"team1": [{"created_at": "2025", "message_text": "T"}]}
+
+    ctx = chat._build_context_for_llm(orders, relays, team_actions)
+
+    assert "COMMANDER ORDERS" in ctx
+    assert "LOGISTICIAN RELAYS" in ctx
+    assert "TEAM ACTIONS" in ctx
+    assert "O" in ctx
+    assert "R" in ctx
+    assert "T" in ctx
+
+
+# -------------------------------------------------------------------
+# 4. TEST get_chat_history() — INVALID TEAM ID → 403
+# -------------------------------------------------------------------
+@pytest.mark.asyncio
+async def test_history_invalid_team(async_db_session, async_create_disaster):
+    disaster = await async_create_disaster()
+
+    # Build isolated app using SAME DB session (PREVENT asyncpg crash)
+    test_app = FastAPI()
+    test_app.include_router(chat.router)
+
+    async def override_db():
+        yield async_db_session
+
+    test_app.dependency_overrides[get_db] = override_db
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://x") as ac:
+
+        resp = await ac.get(
+            f"/chat/{disaster.disaster_id}/history?team_id={uuid4()}"
+        )
+        assert resp.status_code == 403
+
+# -------------------------------------------------------------------
+# 5. TEST get_disaster_chat_summary() — SANITIZE FAKE TEAM IDs
+# -------------------------------------------------------------------
+@pytest.mark.asyncio
+async def test_summary_sanitizes_fake_team(async_db_session, async_create_user, async_create_disaster):
+    commander = await async_create_user(email="teamtest@example.com", role_name="commander")
+    disaster = await async_create_disaster()
+
+    # Fake team ID that does not exist in DB
+    msg = DisasterChatMessage(
+        disaster_id=disaster.disaster_id,
+        sender_user_id=commander.user_id,
+        message_text="Team should be sanitized",
+        is_global=False,
+        team_id=uuid4(),
+    )
+    async_db_session.add(msg)
+    await async_db_session.commit()
+
+    # Build isolated app with same DB session
+    test_app = FastAPI()
+    test_app.include_router(chat.router)
+
+    async def override_db():
+        yield async_db_session
+
+    test_app.dependency_overrides[get_db] = override_db
+
+    transport = ASGITransport(app=test_app)
+    async with AsyncClient(transport=transport, base_url="http://x") as ac:
+
+        resp = await ac.get(
+            f"/chat/{disaster.disaster_id}/summary?user_id={commander.user_id}"
+        )
+        assert resp.status_code == 200
+
+        # Ensure sanitized context does not break summary
+        data = resp.json()
+        assert "Team should be sanitized" in data["context"]
+        assert "summary" in data
+
