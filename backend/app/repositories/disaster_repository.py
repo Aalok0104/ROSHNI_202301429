@@ -147,8 +147,13 @@ class DisasterRepository:
             return None
         
         disaster_feat = self._to_geojson(
-            disaster.location, 
-            {"name": disaster.title, "status": disaster.status}
+            disaster.location,
+            {
+                "name": disaster.title,
+                "status": disaster.status,
+                "description": getattr(disaster, 'description', None),
+                "severity_level": getattr(disaster, 'severity_level', None),
+            }
         )
 
         disaster_shape = to_shape(disaster.location)
