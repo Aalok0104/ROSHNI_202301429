@@ -1,60 +1,74 @@
+// src/components/ChatBox.tsx
 import React, { useEffect, useRef, useState } from "react";
-import { useChat } from "../../context/ChatContext";
-import { useTheme } from "../../contexts/ThemeContext";
+import { useChat, type UIMessage } from "../../context/ChatContext";
 
 interface ChatBoxProps {
-  groupId: string;
-  sender: string;
+  type: "team" | "global";
+  teamId?: string | null;
+  currentUserId: string;
 }
 
-const ChatBox: React.FC<ChatBoxProps> = ({ groupId, sender }) => {
-  const { messages, sendChatMessage } = useChat();
-  const { theme } = useTheme();
+const ChatBox: React.FC<ChatBoxProps> = ({ type, teamId = null, currentUserId }) => {
+  const { teamMessages, globalMessages, sendChatMessage } = useChat();
+
   const [input, setInput] = useState("");
   const [recognizing, setRecognizing] = useState(false);
+  const [voiceEnabled, setVoiceEnabled] = useState(false);
   const recognitionRef = useRef<any | null>(null);
   const baseInputRef = useRef<string>("");
 
-  const groupMessages = messages.filter((m) => m.groupId === groupId);
+  const groupMessages: UIMessage[] =
+    type === "global" ? globalMessages : teamId ? teamMessages[teamId] || [] : [];
 
-  const handleSend = () => {
-    if (input.trim()) {
-      sendChatMessage(groupId, sender, input);
-      setInput("");
-    }
+  const speakMessage = (text: string) => {
+    if (!voiceEnabled) return;
+    const utter = new SpeechSynthesisUtterance(text);
+    utter.rate = 1;
+    utter.pitch = 1;
+    utter.volume = 1;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utter);
   };
+
+  const lastCount = useRef(0);
+  useEffect(() => {
+    if (!voiceEnabled) {
+      lastCount.current = groupMessages.length;
+      return;
+    }
+    if (groupMessages.length > lastCount.current) {
+      const m = groupMessages[groupMessages.length - 1];
+      if (m.sender_user_id !== currentUserId) {
+        speakMessage(`${m.sender} says ${m.text}`);
+      }
+    }
+    lastCount.current = groupMessages.length;
+  }, [groupMessages, voiceEnabled, currentUserId]);
 
   const initRecognition = () => {
     if (recognitionRef.current) return recognitionRef.current;
-    const SpeechRecognition =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) return null;
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) return null;
 
-    const recog = new SpeechRecognition();
+    const recog = new SR();
     recog.lang = "en-US";
     recog.interimResults = true;
-    recog.continuous = false;
 
     recog.onstart = () => {
       setRecognizing(true);
       baseInputRef.current = input;
     };
 
-    recog.onresult = (event: any) => {
-      let transcript = "";
-      for (let i = event.resultIndex; i < event.results.length; ++i) {
-        transcript += event.results[i][0].transcript;
+    recog.onresult = (e: any) => {
+      let t = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        t += e.results[i][0].transcript;
       }
-      setInput(baseInputRef.current + transcript);
+      setInput(baseInputRef.current + t);
     };
 
-    recog.onerror = () => {
-      setRecognizing(false);
-    };
-
-    recog.onend = () => {
-      setRecognizing(false);
-    };
+    recog.onerror = () => setRecognizing(false);
+    recog.onend = () => setRecognizing(false);
 
     recognitionRef.current = recog;
     return recog;
@@ -62,139 +76,130 @@ const ChatBox: React.FC<ChatBoxProps> = ({ groupId, sender }) => {
 
   const toggleListening = () => {
     const recog = initRecognition();
-    if (!recog) {
-      alert("Speech recognition is not supported in this browser.");
-      return;
-    }
-
-    if (recognizing) {
-      recog.stop();
-      setRecognizing(false);
-      return;
-    }
-
-    try {
-      recog.start();
-    } catch (err) {
-      console.warn("SpeechRecognition start error:", err);
-    }
+    if (!recog) return alert("Speech recognition unsupported.");
+    recognizing ? recog.stop() : recog.start();
   };
 
   useEffect(() => {
     return () => {
-      if (recognitionRef.current) {
-        try {
-          recognitionRef.current.stop?.();
-        } catch (_) { }
-        recognitionRef.current = null;
-      }
+      try { recognitionRef.current?.stop?.(); } catch {}
     };
   }, []);
 
-  const isLight = theme === 'light';
-  const bgColor = isLight ? '#ffffff' : 'var(--surface, #0b1323)';
-  const borderColor = isLight ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.12)';
-  const inputBg = isLight ? '#f8fafc' : 'rgba(11, 19, 35, 0.9)';
-  const inputBorder = isLight ? 'rgba(0, 0, 0, 0.15)' : 'rgba(255, 255, 255, 0.15)';
-  const textColor = isLight ? '#1e293b' : '#e2e8f0';
-  const sendButtonBg = isLight ? '#3b82f6' : '#00bbff';
-  const sendButtonColor = isLight ? '#ffffff' : '#01060f';
+  const handleSend = async () => {
+    if (!input.trim()) return;
+    await sendChatMessage({ type, text: input });
+    setInput("");
+  };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '0.5rem', backgroundColor: bgColor, borderRadius: '0.85rem', padding: '0.9rem', border: `1px solid ${borderColor}` }}>
-      <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem', padding: '0.45rem', minHeight: 0 }}>
-        {groupMessages.map((msg, i) => {
-          const isMine = msg.sender === sender;
-          const isCommander = (msg.sender || "").toLowerCase().includes("commander");
-          const msgBg = isCommander 
-            ? (isLight ? 'rgba(59, 130, 246, 0.15)' : 'rgba(0, 187, 255, 0.15)')
-            : isMine 
-            ? (isLight ? 'rgba(59, 130, 246, 0.25)' : 'rgba(0, 187, 255, 0.25)')
-            : (isLight ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.1)');
-          const msgBorder = isCommander ? (isLight ? '2px solid #3b82f6' : '2px solid #00bbff') : 'none';
-          const senderColor = isCommander ? (isLight ? '#3b82f6' : '#00bbff') : (isLight ? '#64748b' : '#94a3b8');
-
-          return (
-            <div
-              key={i}
-              style={{ display: 'flex', justifyContent: isMine ? 'flex-end' : 'flex-start', marginBottom: '0.25rem' }}
-            >
-              <div
-                style={{
-                  maxWidth: '85%',
-                  padding: '0.5rem 0.6rem',
-                  borderRadius: '0.6rem',
-                  wordBreak: 'break-word',
-                  backgroundColor: msgBg,
-                  borderLeft: msgBorder,
-                  color: textColor,
-                  boxShadow: isLight ? '0 1px 2px rgba(0, 0, 0, 0.1)' : '0 1px 4px rgba(0, 0, 0, 0.3)',
-                }}
-              >
-                <div style={{ fontSize: '0.95rem', fontWeight: '700', color: senderColor, marginBottom: '0.2rem', opacity: 0.95 }}>{msg.sender}</div>
-                <div style={{ fontSize: '1rem', color: textColor, lineHeight: '1.3' }}>{msg.text}</div>
+    <div style={{ 
+      display: "flex", 
+      flexDirection: "column", 
+      height: "100%", 
+      width: "100%",
+      minHeight: 0,
+      overflow: "hidden"
+    }}>
+      <div style={{ 
+        flex: 1, 
+        overflowY: "auto", 
+        marginBottom: "0.5rem", 
+        padding: "0.5rem",
+        minHeight: 0,
+        background: "rgba(0,0,0,0.2)",
+        borderRadius: "0.5rem"
+      }}>
+        {groupMessages.length === 0 ? (
+          <div style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.7)", padding: "0.5rem" }}>No messages yet.</div>
+        ) : (
+          groupMessages.map((msg, i) => {
+            const isMine = msg.sender_user_id === currentUserId;
+            return (
+              <div key={msg.id ?? i} style={{ 
+                margin: "0.5rem 0", 
+                display: "flex", 
+                justifyContent: isMine ? "flex-end" : "flex-start" 
+              }}>
+                <div style={{ 
+                  maxWidth: "75%", 
+                  padding: "0.5rem 0.75rem", 
+                  borderRadius: "0.75rem",
+                  background: isMine ? "#3b82f6" : "rgba(255,255,255,0.1)",
+                  color: "white"
+                }}>
+                  <div style={{ fontSize: "0.875rem", fontWeight: 600 }}>{msg.sender}</div>
+                  <div style={{ fontSize: "0.875rem", marginTop: "0.25rem" }}>{msg.text}</div>
+                  <div style={{ fontSize: "0.75rem", color: "rgba(255,255,255,0.6)", marginTop: "0.25rem" }}>
+                    {new Date(msg.timestamp).toLocaleString()}
+                  </div>
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })
+        )}
       </div>
 
-      <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'flex-end', flexShrink: 0 }}>
+      <div style={{ marginBottom: "0.5rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
+        <label style={{ display: "flex", alignItems: "center", gap: "0.25rem" }}>
+          <input type="checkbox" checked={voiceEnabled} onChange={() => setVoiceEnabled(!voiceEnabled)} />
+          <span style={{ fontSize: "0.875rem", color: "rgba(255,255,255,0.8)" }}>🔊 Read Messages</span>
+        </label>
+      </div>
+
+      <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexShrink: 0 }}>
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-          style={{
+          placeholder={type === "global" ? "Type a global message..." : "Type a team message..."}
+          style={{ 
             flex: 1,
             minWidth: 0,
-            padding: '0.6rem 0.8rem',
-            borderRadius: '0.5rem',
-            border: `1px solid ${inputBorder}`,
-            backgroundColor: inputBg,
-            color: textColor,
-            fontSize: '1rem',
+            padding: "0.5rem 0.75rem",
+            borderRadius: "0.5rem",
+            border: "1px solid rgba(255,255,255,0.2)",
+            background: "rgba(255,255,255,0.05)",
+            color: "white",
+            fontSize: "0.875rem"
           }}
-          placeholder="Message..."
+          className="chat-input-field"
         />
 
         <button
-          type="button"
-          aria-pressed={recognizing}
           onClick={toggleListening}
-          title={recognizing ? "Stop listening" : "Start speech input"}
-          style={{
-            padding: '0.45rem 0.6rem',
-            borderRadius: '0.45rem',
-            border: `1px solid ${inputBorder}`,
-            backgroundColor: recognizing ? '#ff0000' : (isLight ? 'rgba(59, 130, 246, 0.2)' : 'rgba(0, 187, 255, 0.2)'),
-            color: recognizing ? '#fff' : (isLight ? '#3b82f6' : '#00bbff'),
-            cursor: 'pointer',
-            fontWeight: '600',
-            transition: 'all 120ms ease',
-            fontSize: '0.85rem',
+          type="button"
+          style={{ 
             flexShrink: 0,
+            padding: "0.5rem 0.75rem",
+            borderRadius: "0.5rem",
+            border: "none",
+            cursor: "pointer",
+            background: recognizing ? "#ef4444" : "rgba(255,255,255,0.1)",
+            color: "white",
+            fontSize: "1.25rem"
           }}
         >
           {recognizing ? "🔴" : "🎤"}
         </button>
 
-        <button
-          onClick={handleSend}
-          style={{
-            padding: '0.45rem 0.9rem',
-            borderRadius: '0.45rem',
-            border: 'none',
-            backgroundColor: sendButtonBg,
-            color: sendButtonColor,
-            fontWeight: '700',
-            cursor: 'pointer',
-            transition: 'all 120ms ease',
-            fontSize: '0.9rem',
+        <button 
+          onClick={handleSend} 
+          type="button"
+          style={{ 
             flexShrink: 0,
-            whiteSpace: 'nowrap',
+            padding: "0.5rem 1rem",
+            borderRadius: "0.5rem",
+            border: "none",
+            cursor: "pointer",
+            background: "#3b82f6",
+            color: "white",
+            fontSize: "0.875rem",
+            fontWeight: 500,
+            transition: "background 0.2s"
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.boxShadow = isLight ? '0 6px 18px rgba(59, 130, 246, 0.45)' : '0 6px 18px rgba(0, 187, 255, 0.45)')}
-          onMouseLeave={(e) => (e.currentTarget.style.boxShadow = 'none')}
+          onMouseEnter={(e) => e.currentTarget.style.background = "#2563eb"}
+          onMouseLeave={(e) => e.currentTarget.style.background = "#3b82f6"}
         >
           Send
         </button>

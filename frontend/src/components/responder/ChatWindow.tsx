@@ -3,7 +3,7 @@ import ChatContainer from '../chat/ChatContainer';
 import { ChatProvider } from '../../context/ChatContext';
 
 const ChatWindow: FC = () => (
-  <div className="commander-chat-wrapper">
+  <div className="responder-chat-wrapper">
     <ChatProvider>
       <ChatContainer />
     </ChatProvider>

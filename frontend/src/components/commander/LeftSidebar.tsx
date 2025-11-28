@@ -5,22 +5,19 @@ import ChatWindow from './ChatWindow';
 import { jsPDF } from 'jspdf';
 
 type LeftSidebarProps = {
-  userId: string;
-  responders: string[];
   onGenerateReport?: () => void;
 };
 
 const DEFAULT_SUMMARY =
   'Key points from the conversation: water levels are rising near the bridge, Team Alpha is on-site evacuating residents.';
 
-const LeftSidebar: FC<LeftSidebarProps> = ({ userId, responders, onGenerateReport }) => {
-  const [groupSelectorSignal, setGroupSelectorSignal] = useState(0);
+const LeftSidebar: FC<LeftSidebarProps> = ({ onGenerateReport }) => {
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
   const [reportContent, setReportContent] = useState<string>(DEFAULT_SUMMARY);
   const editorRef = useRef<HTMLDivElement | null>(null);
 
   const handleCreateGroup = () => {
-    setGroupSelectorSignal((prev) => prev + 1);
+    // TODO: implement commander group creation flow
   };
 
   useEffect(() => {
@@ -50,7 +47,7 @@ const LeftSidebar: FC<LeftSidebarProps> = ({ userId, responders, onGenerateRepor
       <div className="live-feed">
         <h2 className="live-feed-title">Live Feed</h2>
         <AISummary summary={DEFAULT_SUMMARY} />
-        <ChatWindow userId={userId} responders={responders} groupSelectorSignal={groupSelectorSignal} />
+        <ChatWindow />
       </div>
 
       <button

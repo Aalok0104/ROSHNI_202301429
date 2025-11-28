@@ -155,6 +155,18 @@ async def unassign_responder_from_team(
         raise HTTPException(status_code=404, detail="Responder not found")
     return {"message": "Responder unassigned"}
 
+@responder_router.get("/me", response_model=ResponderResponse)
+async def get_my_responder_profile(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get current responder's profile including responder_type and team_id."""
+    repo = ResponderRepository(db)
+    profile = await repo.get_responder_detail(current_user.user_id)
+    if not profile:
+        raise HTTPException(status_code=404, detail="Responder profile not found")
+    return profile
+
 
 @responder_router.get("/me/team", response_model=TeamResponse)
 async def get_my_team(
@@ -174,3 +186,19 @@ async def get_my_team(
         "current_latitude": None,
         "current_longitude": None,
     }
+
+@responder_router.get("/me/team/members", response_model=List[ResponderResponse])
+async def get_my_team_members(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Get all members of the responder's team"""
+    repo = ResponderRepository(db)
+    team = await repo.get_responder_team(current_user.user_id)
+    if not team:
+        raise HTTPException(status_code=404, detail="No team assigned")
+    
+    # Get all responders in this team
+    filters = {"team_id": team.team_id}
+    members = await repo.get_all_responders(filters)
+    return members

@@ -15,19 +15,12 @@ type Props = {
 };
 
 const CommanderDashboard: FC<Props> = ({ user }) => {
+  // Preserve access to user; attach ID as data attribute for potential debugging.
+  const commanderUserId = user.user_id || user.email;
   const [tasks, setTasks] = useState<Task[]>([]);
   const [showAllTasks, setShowAllTasks] = useState(false);
   const [mapClickCallback, setMapClickCallback] = useState<((lat: number, lng: number) => void) | null>(null);
-  const userId = user.user_id || user.email || "commander-user";
-
-  const responders = [
-    "Responder-07",
-    "Responder-12",
-    "Responder-19",
-    "Medical Team",
-    "Supply Convoy",
-    "Recon Scout",
-  ];
+  // Removed separate userId/responders pass-through; LeftSidebar no longer consumes them.
 
   const getDisasterIdFromLocation = () => {
     if (typeof window === 'undefined') {
@@ -153,14 +146,14 @@ const CommanderDashboard: FC<Props> = ({ user }) => {
 
   return (
     <>
-      <div className="commander-main">
+      <div className="commander-main" data-user-id={commanderUserId}>
         <motion.div
           initial={{ x: -100, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           transition={{ duration: 0.8, ease: "easeOut" }}
           style={{ height: '100%', zIndex: 10 }}
         >
-          <LeftSidebar userId={userId} responders={responders} onGenerateReport={handleGenerateReport} />
+          <LeftSidebar onGenerateReport={handleGenerateReport} />
         </motion.div>
         <MapView
           tasks={tasks}

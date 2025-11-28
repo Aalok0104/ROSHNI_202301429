@@ -108,3 +108,25 @@ async def close_disaster(
     repo = DisasterRepository(db)
     await repo.close_disaster(disaster_id)
     return {"message": "Disaster resolved"}
+
+# --- F. Active Disaster for Current User (minimal helper) ---
+@router.get("/active-for-me")
+async def get_active_disaster_for_me(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Return first active/ongoing disaster relevant to the current user.
+    Uses existing repository filtering by role/user.
+    """
+    repo = DisasterRepository(db)
+    role_name = current_user.role.name if current_user.role else "civilian"
+    disasters = await repo.get_disasters(current_user.user_id, role_name)
+    # pick first active/ongoing if available, else first
+    chosen = None
+    for d in disasters:
+        if getattr(d, "status", None) in ("active", "ongoing"):
+            chosen = d
+            break
+    if not chosen and disasters:
+        chosen = disasters[0]
+    return {"disaster_id": str(chosen.disaster_id) if chosen else None}
