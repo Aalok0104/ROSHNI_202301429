@@ -42,14 +42,29 @@ const CommanderDashboard: FC<Props> = ({ user }) => {
     }
   };
 
+  const getCookie = (name: string) => {
+    if (typeof document === 'undefined') return null;
+    const m = document.cookie.match(new RegExp('(^|\\s)' + name + '=([^;]+)'));
+    return m ? decodeURIComponent(m[2]) : null;
+  };
+
+  const getEffectiveDisasterId = () => {
+    const urlId = getDisasterIdFromLocation();
+    if (urlId) return urlId;
+    const cookieId = getCookie('commander_disaster_id');
+    return cookieId;
+  };
+
   const handleGenerateReport = () => {
     console.log("Generate report clicked");
   };
 
   // handleAddTask was removed; use handleAddTaskSubmit for actual submission.
   const fetchTasks = useCallback(async () => {
-    const disasterId = getDisasterIdFromLocation();
+    const disasterId = getEffectiveDisasterId();
     if (!disasterId) {
+      // No disaster specified — clear tasks
+      setTasks([]);
       return;
     }
 
@@ -108,9 +123,9 @@ const CommanderDashboard: FC<Props> = ({ user }) => {
     // The backend may not expose this endpoint yet — this is where server wiring
     // should be added. We keep the UI optimistic regardless.
     try {
-      const disasterId = getDisasterIdFromLocation();
+      const disasterId = getEffectiveDisasterId();
       if (!disasterId) {
-        console.warn('No disasterId specified in URL; skipping backend task creation');
+        console.warn('No disasterId available in URL or commander cookie; skipping backend task creation');
         return;
       }
 

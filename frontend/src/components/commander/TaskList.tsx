@@ -40,7 +40,7 @@ const TaskList: FC<TaskListProps> = ({
 
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [teams, setTeams] = useState<{ teamId: string; name: string }[]>([]);
+  const [teams, setTeams] = useState<{ teamId: string; name: string; teamType?: string }[]>([]);
   const [teamLoading, setTeamLoading] = useState(false);
   const [teamError, setTeamError] = useState<string | null>(null);
   const [selectedTeamId, setSelectedTeamId] = useState('');
@@ -74,32 +74,80 @@ const TaskList: FC<TaskListProps> = ({
   const openAssignModal = async (task: Task) => {
     setSelectedTask(task);
     setIsAssignModalOpen(true);
+    // If the task is not pending, show the already-assigned team(s) in the
+    // modal (disabled). For pending tasks, fetch the available teams and
+    // filter them according to the task type each time the modal opens so
+    // lists don't interfere with each other.
+    if (task.status !== 'pending') {
+      setTeamError(null);
+      const assigned = (task.assignments || []).map((a) => ({
+        teamId: a.teamId,
+        name: a.teamName,
+        teamType: undefined,
+      }));
+      setTeams(assigned);
+      // Pre-select the first assigned team if present
+      setSelectedTeamId(assigned.length > 0 ? assigned[0].teamId : '');
+      return;
+    }
 
-    if (teams.length === 0 && !teamLoading) {
-      try {
-        setTeamLoading(true);
-        setTeamError(null);
-        const url = `${API_BASE_URL}/commander/teams?status=available`;
-        const response = await fetch(url, {
-          method: 'GET',
-          credentials: 'include',
-        });
+    // For pending tasks always refresh the team list (do not reuse previous
+    // `teams` array) so different task types don't affect each other's lists.
+    try {
+      setTeamLoading(true);
+      setTeamError(null);
+      setTeams([]);
+      setSelectedTeamId('');
+      const url = `${API_BASE_URL}/commander/teams?status=available`;
+      const response = await fetch(url, {
+        method: 'GET',
+        credentials: 'include',
+      });
 
-        if (!response.ok) {
-          return;
+      if (!response.ok) {
+        setTeamError('Unable to load teams');
+        return;
+      }
+
+      const data = await response.json();
+
+      // Helper: determine compatible team types for given task type
+      const compatibleFor = (tt: string) => {
+        switch (tt) {
+          case 'medic':
+            return ['medic', 'medical', 'mixed'];
+          case 'fire':
+            return ['fire', 'mixed'];
+          case 'police':
+            return ['police', 'mixed'];
+          default:
+            return null; // null => all teams allowed
         }
+      };
 
-        const data = await response.json();
-        const mappedTeams = (data || []).map((item: any) => ({
+      const allowed = compatibleFor(task.taskType);
+
+      const mappedTeams = (data || [])
+        .map((item: any) => ({
           teamId: item.team_id,
           name: item.name,
-        }));
-        setTeams(mappedTeams);
-      } catch (error) {
-        setTeamError('Unable to load teams');
-      } finally {
-        setTeamLoading(false);
+          teamType: (item.team_type || item.type || '').toString().toLowerCase(),
+        }))
+        .filter((t: any) => {
+          if (!allowed) return true;
+          // allowed contains lower-case values; teamType already lower-cased
+          return allowed.includes(t.teamType);
+        });
+
+      if (mappedTeams.length === 0) {
+        setTeamError('No compatible teams available');
       }
+
+      setTeams(mappedTeams);
+    } catch (error) {
+      setTeamError('Unable to load teams');
+    } finally {
+      setTeamLoading(false);
     }
   };
 
@@ -466,7 +514,7 @@ const TaskList: FC<TaskListProps> = ({
                   <select
                     value={selectedTeamId}
                     onChange={(e) => setSelectedTeamId(e.target.value)}
-                    disabled={teamLoading || teams.length === 0}
+                    disabled={teamLoading || teams.length === 0 || (selectedTask && selectedTask.status !== 'pending')}
                     style={{ width: '100%', marginTop: '0.25rem', padding: '0.5rem' }}
                   >
                     <option value="">Select a team</option>
@@ -492,14 +540,16 @@ const TaskList: FC<TaskListProps> = ({
                 >
                   {cancelling ? 'Cancelling…' : 'Cancel Task'}
                 </button>
-                <button
-                  type="button"
-                  className="commander-button emergency"
-                  onClick={handleAssignTeam}
-                  disabled={!selectedTeamId || assigning || cancelling}
-                >
-                  {assigning ? 'Assigning…' : 'Assign'}
-                </button>
+                {selectedTask && selectedTask.status === 'pending' && (
+                  <button
+                    type="button"
+                    className="commander-button emergency"
+                    onClick={handleAssignTeam}
+                    disabled={!selectedTeamId || assigning || cancelling}
+                  >
+                    {assigning ? 'Assigning…' : 'Assign'}
+                  </button>
+                )}
               </div>
             </div>
           </div>

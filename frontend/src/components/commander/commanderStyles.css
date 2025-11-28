@@ -175,6 +175,31 @@ body {
   gap: 1rem;
 }
 
+/* Ensure modals overlay Leaflet map panes which can have high z-index */
+.report-modal {
+  z-index: 999999 !important;
+}
+.report-modal__content {
+  position: relative;
+  z-index: 1000000 !important;
+}
+
+/* Push map elements to the background when modals are present. */
+.map-area,
+.map-canvas,
+.leaflet-container,
+.leaflet-pane,
+.leaflet-tile-pane,
+.leaflet-overlay-pane,
+.leaflet-shadow-pane,
+.leaflet-marker-pane,
+.leaflet-popup-pane,
+.map-controls,
+.map-locate,
+.leaflet-control {
+  z-index: 0 !important;
+}
+
 /* Inputs/Selects/Textareas in the modal should show a light-blue border by default */
 .report-modal__content label input,
 .report-modal__content label select,
@@ -196,6 +221,8 @@ body {
   appearance: textfield;
   -moz-appearance: textfield;
 }
+
+
 
 /* Commander dropdowns - dark mode with rounded corners */
 .commander-panel select {
