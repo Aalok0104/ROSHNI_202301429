@@ -68,14 +68,33 @@ async def list_disasters(
     
     return [format_disaster_response(d) for d in disasters]
 
-# --- C. Stats (Commander) ---
+# --- C. Stats (Commander + Responder) ---
 @router.get("/{disaster_id}/stats", response_model=DisasterStatsResponse)
 async def get_disaster_stats(
     disaster_id: UUID,
-    current_user: User = Depends(RoleChecker(["commander"])),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
+    """Return aggregate stats for a disaster.
+    Access policy:
+    - Commanders: allowed for any disaster
+    - Responders: allowed only for disasters they follow
+    - Others: forbidden
+    """
     repo = DisasterRepository(db)
+    role_name = current_user.role.name if current_user.role else "civilian"
+
+    if role_name == "commander":
+        pass
+    elif role_name == "responder":
+        # Verify responder follows the disaster
+        disasters = await repo.get_disasters(current_user.user_id, role_name)
+        allowed_ids = {d.disaster_id for d in disasters}
+        if disaster_id not in allowed_ids:
+            raise HTTPException(403, "Operation not permitted")
+    else:
+        raise HTTPException(403, "Operation not permitted")
+
     stats = await repo.get_stats(disaster_id)
     return stats
 
@@ -108,3 +127,25 @@ async def close_disaster(
     repo = DisasterRepository(db)
     await repo.close_disaster(disaster_id)
     return {"message": "Disaster resolved"}
+
+# --- F. Active Disaster for Current User (minimal helper) ---
+@router.get("/active-for-me")
+async def get_active_disaster_for_me(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Return first active/ongoing disaster relevant to the current user.
+    Uses existing repository filtering by role/user.
+    """
+    repo = DisasterRepository(db)
+    role_name = current_user.role.name if current_user.role else "civilian"
+    disasters = await repo.get_disasters(current_user.user_id, role_name)
+    # pick first active/ongoing if available, else first
+    chosen = None
+    for d in disasters:
+        if getattr(d, "status", None) in ("active", "ongoing"):
+            chosen = d
+            break
+    if not chosen and disasters:
+        chosen = disasters[0]
+    return {"disaster_id": str(chosen.disaster_id) if chosen else None}

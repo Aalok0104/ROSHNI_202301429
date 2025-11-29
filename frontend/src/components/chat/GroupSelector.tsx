@@ -1,6 +1,6 @@
 import type { FC } from "react";
 import { useState } from "react";
-import { sendMessage } from "../../services/websocket";
+import { sendTeamMessage } from "../../services/websocket";
 
 interface GroupSelectorProps {
   responders: string[];
@@ -19,11 +19,14 @@ const GroupSelector: FC<GroupSelectorProps> = ({ responders, onCreateGroup }) =>
   const handleCreate = () => {
     const groupId = "grp-" + Date.now();
     onCreateGroup(groupId, selected);
-    sendMessage({
-      type: "joinGroup",
-      groupId,
-      members: ["Commander1", ...selected],
-    });
+    // websocket helpers expect a plain string payload
+    sendTeamMessage(
+      JSON.stringify({
+        type: "joinGroup",
+        groupId,
+        members: ["Commander1", ...selected],
+      })
+    );
     setSelected([]);
   };
 

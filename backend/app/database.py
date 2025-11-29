@@ -14,7 +14,7 @@ load_environment()
 
 SQLALCHEMY_DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql://roshni:roshni@localhost:5432/roshni",
+    "postgresql://postgres:Bhaumik01@db:5432/roshni_db",
 )
 SQLALCHEMY_DATABASE_URL = os.getenv("TEST_DATABASE_URL", SQLALCHEMY_DATABASE_URL)
 
