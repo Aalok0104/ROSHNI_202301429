@@ -305,7 +305,7 @@ const DashboardView = ({ user, onLogout, loggingOut }: DashboardViewProps) => {
           </button>
 
           <div className="app-nav__actions">
-            <ProfileDropdown 
+            <ProfileDropdown
               displayName={displayName}
               role={activeRole}
               onEditProfile={handleEditProfile}
@@ -336,12 +336,12 @@ const DashboardView = ({ user, onLogout, loggingOut }: DashboardViewProps) => {
           </motion.div>
         </AnimatePresence>
       </main>
-      <EditProfileModal 
+      <EditProfileModal
         isOpen={showEditProfile}
         onClose={handleEditProfileClose}
         onSuccess={handleProfileUpdateSuccess}
       />
-      <LogoutConfirmModal 
+      <LogoutConfirmModal
         isOpen={showLogoutConfirm}
         onConfirm={handleLogoutConfirm}
         onCancel={handleLogoutCancel}

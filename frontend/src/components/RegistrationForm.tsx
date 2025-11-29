@@ -112,7 +112,7 @@ const RegistrationForm = ({ email, googleName, onSubmit, onCancel }: Registratio
         <form onSubmit={handleSubmit} className="registration-form">
           <div className="form-section">
             <h2>Personal Information</h2>
-            
+
             <div className="form-group">
               <label htmlFor="fullName">
                 Full Name
@@ -235,7 +235,7 @@ const RegistrationForm = ({ email, googleName, onSubmit, onCancel }: Registratio
 
           <div className="form-section">
             <h2>Emergency Contact (Optional)</h2>
-            
+
             <div className="form-group">
               <label htmlFor="emergencyContactName">
                 Contact Name
@@ -267,7 +267,7 @@ const RegistrationForm = ({ email, googleName, onSubmit, onCancel }: Registratio
 
           <div className="form-section">
             <h2>Medical Information (Optional)</h2>
-            
+
             <div className="form-row">
               <div className="form-group">
                 <label htmlFor="bloodGroup">

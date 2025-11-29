@@ -1,0 +1,50 @@
+@startuml
+skinparam componentStyle uml2
+
+package "Client Layer" {
+    component "Frontend Application" as Frontend
+}
+
+package "ROSHNI Backend System" {
+    component "Authentication\nManager" as Auth
+    component "Incident\nManagement" as Incidents
+    component "Disaster\nController" as Disasters
+    component "Responder\nCoordination" as Responders
+    component "AI/ML\nInference Service" as MLService
+    component "Notification\nSystem" as Notifications
+    
+    interface "Rest API" as API
+    interface "WebSocket" as WS
+}
+
+package "Infrastructure" {
+    component "PostgreSQL\n(PostGIS)" as DB
+    component "Google\nOAuth Provider" as Google
+}
+
+
+Frontend ..> API : HTTPS
+Frontend ..> WS : WSS
+
+API - Auth
+API - Incidents
+API - Disasters
+API - Responders
+
+WS - Notifications
+
+Auth ..> Google : Validates Token
+Auth ..> DB : Read/Write User Profile
+
+Incidents ..> DB : CRUD Incidents/Media
+Incidents ..> MLService : Triggers Analysis
+Incidents ..> Notifications : Broadcasts SOS
+
+MLService ..> DB : Updates Media Scores
+
+Disasters ..> Incidents : Aggregates
+Disasters ..> DB : Read Stats
+
+Responders ..> DB : Manage Teams
+
+@enduml

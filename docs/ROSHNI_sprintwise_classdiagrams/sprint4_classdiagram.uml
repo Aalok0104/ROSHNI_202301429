@@ -1,0 +1,57 @@
+@startuml
+class Disaster {
+  +UUID disaster_id
+  +UUID source_incident_id
+  +String title
+  +Text description
+  +Geometry location
+  +String status
+  +String disaster_type
+  +String severity_level
+}
+
+class MapSite {
+  +UUID site_id
+  +String name
+  +String site_type
+  +Geometry location
+  +Integer capacity
+  +String status
+}
+
+class DisasterChatMessage {
+  +UUID message_id
+  +UUID disaster_id
+  +UUID team_id
+  +UUID sender_user_id
+  +Text message_text
+  +Boolean is_global
+  +DateTime created_at
+}
+
+class DisasterRepository {
+  +convert_incident(incident_id, data)
+  +get_disasters(user_id, role_name)
+  +get_stats(disaster_id)
+  +get_map_data(disaster_id, include_teams)
+  +close_disaster(disaster_id)
+}
+
+class DisasterRouter {
+  +convert_incident_to_disaster(incident_id, payload, db)
+  +list_disasters(current_user, db)
+  +get_disaster_stats(disaster_id, current_user, db)
+  +get_disaster_map(disaster_id, current_user, db)
+}
+
+class ChatRouter {
+  +get_chat_history(disaster_id, scope, db)
+  +websocket_endpoint(websocket, disaster_id)
+  +get_disaster_chat_summary(disaster_id, db)
+}
+
+Disaster "1" -- "0..*" DisasterChatMessage : has >
+DisasterRouter ..> DisasterRepository : uses
+DisasterRepository ..> Disaster : manages
+DisasterRepository ..> MapSite : fetches
+@enduml
