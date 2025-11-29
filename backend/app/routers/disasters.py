@@ -68,14 +68,33 @@ async def list_disasters(
     
     return [format_disaster_response(d) for d in disasters]
 
-# --- C. Stats (Commander) ---
+# --- C. Stats (Commander + Responder) ---
 @router.get("/{disaster_id}/stats", response_model=DisasterStatsResponse)
 async def get_disaster_stats(
     disaster_id: UUID,
-    current_user: User = Depends(RoleChecker(["commander"])),
+    current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
+    """Return aggregate stats for a disaster.
+    Access policy:
+    - Commanders: allowed for any disaster
+    - Responders: allowed only for disasters they follow
+    - Others: forbidden
+    """
     repo = DisasterRepository(db)
+    role_name = current_user.role.name if current_user.role else "civilian"
+
+    if role_name == "commander":
+        pass
+    elif role_name == "responder":
+        # Verify responder follows the disaster
+        disasters = await repo.get_disasters(current_user.user_id, role_name)
+        allowed_ids = {d.disaster_id for d in disasters}
+        if disaster_id not in allowed_ids:
+            raise HTTPException(403, "Operation not permitted")
+    else:
+        raise HTTPException(403, "Operation not permitted")
+
     stats = await repo.get_stats(disaster_id)
     return stats
 

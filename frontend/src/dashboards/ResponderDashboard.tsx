@@ -190,7 +190,7 @@ const ResponderDashboard: FC<Props> = ({ user }) => {
           fontSize: '0.9rem',
           boxShadow: '0 4px 12px rgba(0,0,0,0.25)'
         }}>
-          <strong>Missing disasterId.</strong> Append <code>?disasterId=ac698de1-ad6c-435e-b3c2-b8343ed83463</code> to the URL to load tasks.
+            <strong>Missing disasterId.</strong> Attempting to fetch your active disaster…
         </div>
       )}
       {loading && (
