@@ -1,0 +1,69 @@
+@startuml
+!theme plain
+skinparam activity {
+  BackgroundColor #E6E6FA
+  BorderColor #4B0082
+  ArrowColor #4B0082
+}
+
+start
+:Import Libraries
+(os, numpy, tensorflow, cv2, etc.);
+
+:Define Directory Paths
+(Train, Validation, Test for Cyclone, Earthquake, Flood, Wildfire);
+
+:Check Dataset Balance
+(Count images in each category);
+
+if (Saved Model Exists?) then (Yes)
+    :Load Model from .h5 file;
+else (No)
+    partition "Build CNN Model" {
+        :Initialize Sequential Model;
+        :Add Input Layer (180x180x3);
+        :Add Conv2D (32 filters) + MaxPooling;
+        :Add Conv2D (64 filters) + MaxPooling;
+        :Add Conv2D (128 filters) + MaxPooling;
+        :Add Conv2D (128 filters) + MaxPooling;
+        :Add Conv2D (256 filters) + MaxPooling;
+        :Add Flatten Layer;
+        :Add Dropout (0.3);
+        :Add Dense (512, relu);
+        :Add Output Dense (4, softmax);
+    }
+    :Compile Model
+    (RMSprop, Categorical Crossentropy);
+endif
+
+partition "Data Preprocessing" {
+    :Configure Train ImageDataGenerator
+    (Rescale, Rotation, Shift, Shear, Zoom, Flip);
+    :Configure Test ImageDataGenerator
+    (Rescale only);
+    :Create Train Generator
+    (flow_from_directory);
+    :Create Validation Generator
+    (flow_from_directory);
+}
+
+:Define Callbacks
+(EarlyStopping, ModelCheckpoint);
+
+:Train Model
+(model.fit for 100 epochs);
+
+:Save Training History;
+
+partition "Evaluation & Testing" {
+    :Create Test Generator
+    (shuffle=False);
+    :Evaluate Model
+    (Get Loss & Accuracy);
+    :Print Results;
+    :Run Prediction Visualization
+    (Plot random test images with labels);
+}
+
+stop
+@enduml

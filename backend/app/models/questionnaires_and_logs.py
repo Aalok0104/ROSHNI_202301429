@@ -152,6 +152,7 @@ class IncidentMedia(Base):
     )
     file_type = Column(String(20), nullable=False)
     mime_type = Column(String(100))
+    CNNModelScore = Column(JSONB)
     storage_path = Column(String(1024), nullable=False)
     created_at = Column(DateTime(timezone=True), nullable=False, server_default=func.now())
 
