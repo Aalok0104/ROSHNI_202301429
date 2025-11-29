@@ -445,6 +445,16 @@ function App({ onBeginLogin = redirectTo }: AppProps = {}) {
         throw new Error(errorData.detail || 'Failed to complete onboarding');
       }
 
+      // Concatenate address fields into a single string
+      const addressParts = [
+        data.addressLine1,
+        data.addressLine2,
+        data.city,
+        data.state,
+        data.pincode
+      ].filter(part => part && part.trim() !== '');
+      const fullAddress = addressParts.length > 0 ? addressParts.join(', ') : null;
+
       // Step 2: Update general profile (name, address, emergency contacts)
       const profileResponse = await fetch(API_ENDPOINTS.updateProfile, {
         method: 'PUT',
@@ -454,7 +464,7 @@ function App({ onBeginLogin = redirectTo }: AppProps = {}) {
         credentials: 'include',
         body: JSON.stringify({
           full_name: data.fullName,
-          address: data.address || null,
+          address: fullAddress,
           emergency_contact_name: data.emergencyContactName || null,
           emergency_contact_phone: data.emergencyContactPhone || null,
         }),
@@ -465,8 +475,8 @@ function App({ onBeginLogin = redirectTo }: AppProps = {}) {
         throw new Error(errorData.detail || 'Failed to update profile');
       }
 
-      // Step 3: Update medical info if provided
-      if (data.medicalInfo) {
+      // Step 3: Update medical info if any medical data is provided
+      if (data.bloodGroup || data.knownAllergies || data.medicalInfo) {
         const medicalResponse = await fetch(API_ENDPOINTS.updateMedical, {
           method: 'PUT',
           headers: {
@@ -474,7 +484,9 @@ function App({ onBeginLogin = redirectTo }: AppProps = {}) {
           },
           credentials: 'include',
           body: JSON.stringify({
-            other_medical_notes: data.medicalInfo,
+            blood_group: data.bloodGroup || null,
+            known_allergies: data.knownAllergies || null,
+            other_medical_notes: data.medicalInfo || null,
           }),
         });
 

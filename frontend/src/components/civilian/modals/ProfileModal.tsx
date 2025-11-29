@@ -15,10 +15,16 @@ const ProfileModal: FC<ProfileModalProps> = ({ isOpen, onClose, user, onUpdate }
     name: '',
     email: user.email,
     phone: '',
-    address: '',
+    addressLine1: '',
+    addressLine2: '',
+    city: '',
+    state: '',
+    pincode: '',
     dateOfBirth: '',
     emergencyContactName: '',
     emergencyContact: '',
+    bloodGroup: '',
+    knownAllergies: '',
     medicalInfo: '',
   });
   const [loading, setLoading] = useState(false);
@@ -30,25 +36,29 @@ const ProfileModal: FC<ProfileModalProps> = ({ isOpen, onClose, user, onUpdate }
       // Fetch current profile data
       const fetchProfile = async () => {
         try {
-          const response = await axios.get(`${API_BASE_URL}/api/users/profile`, {
+          const response = await axios.get(`${API_BASE_URL}/users/me/profile`, {
             withCredentials: true
           });
-          // Handle medical_info which might be a JSON object
-          const medicalInfoText = response.data.medical_info 
-            ? (typeof response.data.medical_info === 'object' 
-                ? JSON.stringify(response.data.medical_info) 
-                : response.data.medical_info)
-            : '';
+          
+          // Parse address string into components (if it exists)
+          const addressStr = response.data.address || '';
+          const addressParts = addressStr.split(',').map((part: string) => part.trim());
           
           setFormData({
-            name: response.data.name || '',
+            name: response.data.full_name || '',
             email: response.data.email,
-            phone: response.data.phone || '',
-            address: response.data.address || '',
+            phone: response.data.phone_number || '',
+            addressLine1: addressParts[0] || '',
+            addressLine2: addressParts[1] || '',
+            city: addressParts[2] || '',
+            state: addressParts[3] || '',
+            pincode: addressParts[4] || '',
             dateOfBirth: response.data.date_of_birth || '',
             emergencyContactName: response.data.emergency_contact_name || '',
-            emergencyContact: response.data.emergency_contact || '',
-            medicalInfo: medicalInfoText,
+            emergencyContact: response.data.emergency_contact_phone || '',
+            bloodGroup: response.data.blood_group || '',
+            knownAllergies: response.data.known_allergies || '',
+            medicalInfo: '',
           });
         } catch (err: any) {
           console.error('Error fetching profile:', err);
@@ -66,15 +76,37 @@ const ProfileModal: FC<ProfileModalProps> = ({ isOpen, onClose, user, onUpdate }
     setMessage('');
 
     try {
+      // Concatenate address fields into a single string
+      const addressParts = [
+        formData.addressLine1,
+        formData.addressLine2,
+        formData.city,
+        formData.state,
+        formData.pincode
+      ].filter(part => part && part.trim() !== '');
+      const fullAddress = addressParts.length > 0 ? addressParts.join(', ') : null;
+
+      // Update general profile
       await axios.put(
-        `${API_BASE_URL}/api/users/profile`,
+        `${API_BASE_URL}/users/me/profile`,
         {
-          phone: formData.phone,
-          address: formData.address,
-          date_of_birth: formData.dateOfBirth,
-          emergency_contact_name: formData.emergencyContactName,
-          emergency_contact: formData.emergencyContact,
-          medical_info: formData.medicalInfo,
+          full_name: formData.name,
+          address: fullAddress,
+          emergency_contact_name: formData.emergencyContactName || null,
+          emergency_contact_phone: formData.emergencyContact || null,
+        },
+        {
+          withCredentials: true
+        }
+      );
+
+      // Update medical profile separately
+      await axios.put(
+        `${API_BASE_URL}/users/me/medical`,
+        {
+          blood_group: formData.bloodGroup || null,
+          known_allergies: formData.knownAllergies || null,
+          other_medical_notes: formData.medicalInfo || null,
         },
         {
           withCredentials: true
@@ -156,14 +188,66 @@ const ProfileModal: FC<ProfileModalProps> = ({ isOpen, onClose, user, onUpdate }
           </div>
 
           <div>
-            <label htmlFor="profile-address" className="block text-sm font-medium mb-2">Address</label>
-            <textarea
-              id="profile-address"
-              value={formData.address}
-              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-              rows={3}
-              className="w-full bg-gray-800/50 border border-gray-700 rounded-md px-4 py-2.5 text-sm focus:border-blue-500 focus:outline-none transition-colors resize-none"
-              placeholder="Enter your full address"
+            <label htmlFor="profile-address-line1" className="block text-sm font-medium mb-2">Address Line 1</label>
+            <input
+              id="profile-address-line1"
+              type="text"
+              value={formData.addressLine1}
+              onChange={(e) => setFormData({ ...formData, addressLine1: e.target.value })}
+              className="w-full bg-gray-800/50 border border-gray-700 rounded-md px-4 py-2.5 text-sm focus:border-blue-500 focus:outline-none transition-colors"
+              placeholder="House/Flat No., Building Name"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="profile-address-line2" className="block text-sm font-medium mb-2">Address Line 2</label>
+            <input
+              id="profile-address-line2"
+              type="text"
+              value={formData.addressLine2}
+              onChange={(e) => setFormData({ ...formData, addressLine2: e.target.value })}
+              className="w-full bg-gray-800/50 border border-gray-700 rounded-md px-4 py-2.5 text-sm focus:border-blue-500 focus:outline-none transition-colors"
+              placeholder="Street, Area, Locality"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="profile-city" className="block text-sm font-medium mb-2">City</label>
+              <input
+                id="profile-city"
+                type="text"
+                value={formData.city}
+                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                className="w-full bg-gray-800/50 border border-gray-700 rounded-md px-4 py-2.5 text-sm focus:border-blue-500 focus:outline-none transition-colors"
+                placeholder="City"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="profile-state" className="block text-sm font-medium mb-2">State</label>
+              <input
+                id="profile-state"
+                type="text"
+                value={formData.state}
+                onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                className="w-full bg-gray-800/50 border border-gray-700 rounded-md px-4 py-2.5 text-sm focus:border-blue-500 focus:outline-none transition-colors"
+                placeholder="State"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="profile-pincode" className="block text-sm font-medium mb-2">Pincode</label>
+            <input
+              id="profile-pincode"
+              type="text"
+              value={formData.pincode}
+              onChange={(e) => setFormData({ ...formData, pincode: e.target.value })}
+              className="w-full bg-gray-800/50 border border-gray-700 rounded-md px-4 py-2.5 text-sm focus:border-blue-500 focus:outline-none transition-colors"
+              placeholder="6-digit pincode"
+              pattern="[0-9]{6}"
+              maxLength={6}
             />
           </div>
 
@@ -209,14 +293,49 @@ const ProfileModal: FC<ProfileModalProps> = ({ isOpen, onClose, user, onUpdate }
 
           <div className="border-t border-gray-700 pt-4">
             <h3 className="text-base font-semibold mb-3">Medical Information</h3>
-            <label htmlFor="profile-medical" className="block text-sm font-medium mb-2">Medical Conditions, Allergies, Blood Type</label>
+            
+            <div className="grid grid-cols-2 gap-4 mb-4">
+              <div>
+                <label htmlFor="profile-blood-group" className="block text-sm font-medium mb-2">Blood Group</label>
+                <select
+                  id="profile-blood-group"
+                  value={formData.bloodGroup}
+                  onChange={(e) => setFormData({ ...formData, bloodGroup: e.target.value })}
+                  className="w-full bg-gray-800/50 border border-gray-700 rounded-md px-4 py-2.5 text-sm focus:border-blue-500 focus:outline-none transition-colors"
+                >
+                  <option value="">Select Blood Group</option>
+                  <option value="A+">A+</option>
+                  <option value="A-">A-</option>
+                  <option value="B+">B+</option>
+                  <option value="B-">B-</option>
+                  <option value="AB+">AB+</option>
+                  <option value="AB-">AB-</option>
+                  <option value="O+">O+</option>
+                  <option value="O-">O-</option>
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="profile-allergies" className="block text-sm font-medium mb-2">Known Allergies</label>
+                <input
+                  id="profile-allergies"
+                  type="text"
+                  value={formData.knownAllergies}
+                  onChange={(e) => setFormData({ ...formData, knownAllergies: e.target.value })}
+                  className="w-full bg-gray-800/50 border border-gray-700 rounded-md px-4 py-2.5 text-sm focus:border-blue-500 focus:outline-none transition-colors"
+                  placeholder="e.g., Penicillin, Peanuts"
+                />
+              </div>
+            </div>
+
+            <label htmlFor="profile-medical" className="block text-sm font-medium mb-2">Additional Medical Information</label>
             <textarea
               id="profile-medical"
               value={formData.medicalInfo}
               onChange={(e) => setFormData({ ...formData, medicalInfo: e.target.value })}
               rows={4}
               className="w-full bg-gray-800/50 border border-gray-700 rounded-md px-4 py-2.5 text-sm focus:border-blue-500 focus:outline-none transition-colors resize-none"
-              placeholder={formData.medicalInfo ? undefined : "Enter your Medical Information (e.g., Blood Type: O+, Allergies: Penicillin, Conditions: Diabetes)"}
+              placeholder="Chronic conditions, current medications, or other important medical details"
             />
             <p className="text-xs text-gray-500 mt-2">This information is kept confidential and used only in emergencies</p>
           </div>

@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import type { FC, RefObject } from 'react';
 import AISummary from './AISummary';
 import ChatWindow from './ChatWindow';
@@ -69,7 +70,7 @@ const LeftSidebar: FC<LeftSidebarProps> = ({ userId, responders, onGenerateRepor
         Generate Report
       </button>
 
-      {isReportModalOpen && (
+      {isReportModalOpen && createPortal(
         <div className="report-modal" role="dialog" aria-modal="true">
           <div className="report-modal__content">
             <header className="report-modal__header">
@@ -126,7 +127,7 @@ const LeftSidebar: FC<LeftSidebarProps> = ({ userId, responders, onGenerateRepor
             </div>
           </div>
         </div>
-      )}
+      , document.body)}
     </div>
   );
 };

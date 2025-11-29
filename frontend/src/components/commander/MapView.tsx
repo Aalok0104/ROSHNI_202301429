@@ -8,6 +8,7 @@ import markerRetina from 'leaflet/dist/images/marker-icon-2x.png';
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
 import markerShadow from 'leaflet/dist/images/marker-shadow.png';
 import type { Task, TaskType } from './TaskCard';
+import { API_BASE_URL } from '../../config';
 
 type MapViewProps = {
   className?: string;
@@ -19,7 +20,6 @@ type MapViewProps = {
 
 const INITIAL_POSITION: LatLngExpression = [22.543099, 114.057868];
 
-// Configure Leaflet's default marker so bundlers know where to find the assets
 const leafletIcon = L.icon({
   iconRetinaUrl: markerRetina,
   iconUrl: markerIcon,
@@ -31,7 +31,6 @@ const leafletIcon = L.icon({
 });
 L.Marker.prototype.options.icon = leafletIcon;
 
-// Task type color mapping
 const taskTypeColors: Record<TaskType, string> = {
   medic: '#22c55e', // green
   fire: '#dc2626', // vermilion/red
@@ -41,7 +40,7 @@ const taskTypeColors: Record<TaskType, string> = {
   search_rescue: '#9333ea', // purple
 };
 
-// Create a custom colored icon for tasks
+
 const createTaskIcon = (taskType: TaskType): L.DivIcon => {
   const color = taskTypeColors[taskType];
   return L.divIcon({
@@ -79,9 +78,38 @@ const MapView: FC<MapViewProps> = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [searching, setSearching] = useState(false);
   const [mapMessage, setMapMessage] = useState<string | null>(null);
-  const [center, setCenter] = useState<LatLngExpression>(INITIAL_POSITION);
-  const [markerPosition, setMarkerPosition] = useState<LatLngExpression>(INITIAL_POSITION);
-  const [markerLabel, setMarkerLabel] = useState('Shenzhen Command Center');
+  const [initialPosition, setInitialPosition] = useState<LatLngExpression>(INITIAL_POSITION);
+  const [center, setCenter] = useState<LatLngExpression>(initialPosition);
+  const [markerPosition, setMarkerPosition] = useState<LatLngExpression | null>(null);
+  const [markerLabel, setMarkerLabel] = useState<string | null>(null);
+  const [disasterPosition, setDisasterPosition] = useState<LatLngExpression | null>(null);
+  const [disasterLabel, setDisasterLabel] = useState<string | null>(null);
+  const [disasterMeta, setDisasterMeta] = useState<{ title?: string | null; description?: string | null; severity?: string | null; status?: string | null } | null>(null);
+
+  const disasterSeverityColors: Record<string, string> = {
+    low: '#16a34a', // green
+    medium: '#f59e0b', // yellow
+    high: '#ef4444', // red
+    critical: '#000000', // black
+  };
+
+  const createDisasterIcon = (severity?: string | null): L.DivIcon => {
+    const color = (severity && disasterSeverityColors[severity.toLowerCase()]) || '#6b7280';
+    // Use a triangle SVG (pointing up) for disaster marker. Anchor is bottom-center.
+    const svg = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="34" height="34" viewBox="0 0 24 24" fill="${color}" stroke="#ffffff" stroke-width="1">
+        <path d="M12 2 L22 20 L2 20 Z" />
+      </svg>
+    `;
+    return L.divIcon({
+      className: 'disaster-marker',
+      html: `<div style="width:34px;height:34px;display:flex;align-items:center;justify-content:center;">${svg}</div>`,
+      iconSize: [34, 34],
+      // anchor at bottom center so the triangle 'point' indicates location
+      iconAnchor: [17, 28],
+      popupAnchor: [0, -24],
+    });
+  };
 
   // Filter tasks based on showAllTasks
   const filteredTasks = showAllTasks
@@ -103,8 +131,33 @@ const MapView: FC<MapViewProps> = ({
 
     setSearching(true);
     setMapMessage(null);
-
+    const q = searchTerm.trim().toLowerCase();
+    // Local search: disaster title/description
     try {
+      if (disasterMeta && disasterPosition) {
+        const title = (disasterMeta.title || '').toLowerCase();
+        const desc = (disasterMeta.description || '').toLowerCase();
+        if (title.includes(q) || desc.includes(q)) {
+          flyTo(disasterPosition, 13);
+          setSearching(false);
+          return;
+        }
+      }
+
+      // Local search: tasks by description/title
+      const taskMatch = filteredTasks.find((t) => {
+        const txt = ((t.description || '') + ' ' + (t.taskType || '')).toLowerCase();
+        return txt.includes(q) || (t.taskId && t.taskId.toLowerCase().includes(q));
+      });
+      if (taskMatch && taskMatch.latitude != null && taskMatch.longitude != null) {
+        const coords: LatLngExpression = [taskMatch.latitude, taskMatch.longitude];
+        setCenter(coords);
+        flyTo(coords, 13);
+        setSearching(false);
+        return;
+      }
+
+      // Fallback to Nominatim geocoding
       const response = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchTerm.trim())}`
       );
@@ -152,16 +205,39 @@ const MapView: FC<MapViewProps> = ({
   };
 
   const resetView = () => {
-    setCenter(INITIAL_POSITION);
-    setMarkerPosition(INITIAL_POSITION);
-    setMarkerLabel('Shenzhen Command Center');
-    flyTo(INITIAL_POSITION, 12);
+    // Reset center to initialPosition (usually disaster initial position)
+    setCenter(initialPosition);
+    setMarkerLabel(null);
+    // Do NOT clear `disasterPosition` or `disasterMeta` so the disaster marker remains fixed
+    flyTo(initialPosition, 12);
     setMapMessage(null);
   };
 
   const registerMap = useCallback((mapInstance: LeafletMap) => {
     mapRef.current = mapInstance;
   }, []);
+
+  const getDisasterIdFromLocation = () => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const url = new URL(window.location.href);
+      return url.searchParams.get('disasterId');
+    } catch {
+      return null;
+    }
+  };
+
+  const getCookie = (name: string) => {
+    if (typeof document === 'undefined') return null;
+    const m = document.cookie.match(new RegExp('(^|\\s)' + name + '=([^;]+)'));
+    return m ? decodeURIComponent(m[2]) : null;
+  };
+
+  const getEffectiveDisasterId = () => {
+    const urlId = getDisasterIdFromLocation();
+    if (urlId) return urlId;
+    return getCookie('commander_disaster_id');
+  };
 
   // Handle map click listener changes
   useEffect(() => {
@@ -188,6 +264,47 @@ const MapView: FC<MapViewProps> = ({
       }, 150);
       return () => clearTimeout(timer);
     }
+  }, []);
+
+  // Fetch disaster map info and stats, then center the map on the disaster location
+  useEffect(() => {
+    const disasterId = getEffectiveDisasterId();
+    if (!disasterId) return;
+
+    let mounted = true;
+    (async () => {
+      try {
+        // Fetch map info
+        const res = await fetch(`${API_BASE_URL}/disasters/${encodeURIComponent(disasterId)}/map`, { credentials: 'include' });
+        if (!res.ok) return;
+        const data = await res.json();
+        const feature = data?.disaster_location;
+        if (!feature || !feature.geometry || !mounted) return;
+        const coords = feature.geometry.coordinates; // [lon, lat]
+        if (!Array.isArray(coords) || coords.length < 2) return;
+        const latlng: LatLngExpression = [coords[1], coords[0]];
+        setInitialPosition(latlng);
+        setCenter(latlng);
+        setDisasterPosition(latlng);
+        const label = feature.properties?.title || feature.properties?.name || 'Disaster location';
+        // Get description, severity, and status directly from map endpoint
+        const description = feature.properties?.description || feature.properties?.text_body || null;
+        const severity = feature.properties?.severity_level || feature.properties?.severity || null;
+        const status = feature.properties?.status || null;
+
+        setDisasterLabel(label);
+        setDisasterMeta({ title: label, description, severity, status });
+        // If map already registered, fly to location
+        if (mapRef.current) {
+          try { mapRef.current.flyTo(latlng, 12, { duration: 0.8 }); } catch { }
+          mapRef.current?.invalidateSize();
+        }
+      } catch (err) {
+        // ignore
+      }
+    })();
+
+    return () => { mounted = false; };
   }, []);
 
   // Fix map rendering when container size changes
@@ -241,9 +358,37 @@ const MapView: FC<MapViewProps> = ({
           url={tileUrl}
           detectRetina
         />
-        <Marker position={markerPosition}>
-          <Popup>{markerLabel}</Popup>
-        </Marker>
+        {disasterPosition && (
+          <Marker position={disasterPosition} icon={createDisasterIcon(disasterMeta?.severity ?? null)}>
+            <Popup>
+              <div>
+                <strong>{disasterMeta?.title ?? disasterLabel ?? 'Disaster location'}</strong>
+                {disasterMeta?.description && (
+                  <>
+                    <br />
+                    <small>{disasterMeta.description}</small>
+                  </>
+                )}
+                {disasterMeta?.severity && (
+                  <>
+                    <br />
+                    <small>Severity Level: {disasterMeta.severity}</small>
+                  </>
+                )}
+              </div>
+            </Popup>
+          </Marker>
+        )}
+
+        {markerPosition && (
+          <Marker position={markerPosition}>
+            <Popup>
+              <div>
+                <strong>{markerLabel ?? 'Location'}</strong>
+              </div>
+            </Popup>
+          </Marker>
+        )}
         {filteredTasks.map((task) => (
           <Marker
             key={task.taskId}
