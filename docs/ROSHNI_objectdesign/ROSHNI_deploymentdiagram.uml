@@ -1,0 +1,46 @@
+@startuml
+skinparam deploymentdiagram uml2
+
+left to right direction
+
+node "Client Device" {
+    artifact "Web Browser" as Browser
+}
+
+cloud "Vercel Platform" {
+    component "Frontend Application" as Frontend
+}
+
+cloud "Microsoft Azure" {
+    node "Azure App Service" {
+        component "FastAPI App\n(Python)" as Backend
+    }
+    
+    database "Azure Database\nfor PostgreSQL" as DB
+    
+    storage "Azure Blob Storage" {
+        folder "Uploads\n(Images/Video)" as Storage
+    }
+}
+
+cloud "Hugging Face" {
+    component "Inference API\n(Hosted Models)" as HF
+}
+
+cloud "External Services" {
+    component "Google Identity\nPlatform" as GAuth
+}
+
+
+Browser -- Frontend : HTTPS
+Browser -- Backend : API (HTTPS)
+
+
+Backend -- DB : TCP/SSL
+Backend -- Storage : Azure SDK / HTTPS
+
+
+Backend -- HF : API (Inference)
+Backend -- GAuth : HTTPS 
+
+@enduml

@@ -1,0 +1,47 @@
+@startuml
+skinparam packageStyle rectangle
+
+package "ROSHNI Application" {
+
+    package "Presentation Layer (Routers)" {
+        class "AuthRouter"
+        class "IncidentsRouter"
+        class "DisastersRouter"
+        class "RespondersRouter"
+        class "ChatRouter"
+    }
+
+    package "Business Logic Layer (Services)" {
+        class "InferenceService"
+        class "WebSocketManager"
+        class "NewsScraper"
+    }
+
+    package "Data Access Layer (Repositories)" {
+        class "UserRepository"
+        class "IncidentRepository"
+        class "DisasterRepository"
+        class "ResponderRepository"
+    }
+
+    package "Data Persistence Layer (Models)" {
+        class "UserModels"
+        class "IncidentModels"
+        class "DisasterModels"
+        class "GeoSpatialTypes"
+    }
+}
+
+package "External Libraries" {
+    class "FastAPI"
+    class "SQLAlchemy"
+    class "TensorFlow/Keras"
+}
+
+
+"Presentation Layer (Routers)" ..> "Business Logic Layer (Services)" : Uses
+"Presentation Layer (Routers)" ..> "Data Access Layer (Repositories)" : Uses
+"Business Logic Layer (Services)" ..> "Data Persistence Layer (Models)" : Manipulates
+"Data Access Layer (Repositories)" ..> "Data Persistence Layer (Models)" : CRUD
+"Data Persistence Layer (Models)" ..> "External Libraries" : Inherits
+@enduml
