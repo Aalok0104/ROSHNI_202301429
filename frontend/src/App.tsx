@@ -19,6 +19,8 @@ import { AnimatePresence, motion } from 'framer-motion';
 import LogoutConfirmModal from './components/LogoutConfirmModal';
 import ProfileDropdown from './components/ProfileDropdown';
 import EditProfileModal from './components/EditProfileModal';
+import NewsInputModal from './components/commander/NewsInputModal';
+import NewsAnalysisPanel from './components/commander/NewsAnalysisPanel';
 
 type AppProps = {
   onBeginLogin?: (url: string) => void;
@@ -129,7 +131,16 @@ const DashboardView = ({ user, onLogout, loggingOut }: DashboardViewProps) => {
   useEffect(() => {
     fetchProfile();
   }, []);
-  const [commanderView, setCommanderView] = useState<'dashboard' | 'home' | 'logs' | 'teams' | 'disasters'>(() => {
+
+  // News modal state and navigation
+  const [showNewsModal, setShowNewsModal] = useState(false);
+  const [newsParams, setNewsParams] = useState<{ stateId: number; city: string; keyword?: string } | null>(null);
+
+  const handleNavigateToNews = (stateId: number, cityName: string, keyword?: string) => {
+    setNewsParams({ stateId, city: cityName, keyword });
+    setCommanderView('news');
+  };
+  const [commanderView, setCommanderView] = useState<'dashboard' | 'home' | 'logs' | 'teams' | 'disasters' | 'news'>(() => {
     try {
       if (typeof window === 'undefined') return 'dashboard';
       const params = new URLSearchParams(window.location.search);
@@ -138,6 +149,7 @@ const DashboardView = ({ user, onLogout, loggingOut }: DashboardViewProps) => {
       if (v === 'home') return 'home';
       if (v === 'logs') return 'logs';
       if (v === 'teams') return 'teams';
+      if (v === 'news') return 'news';
       return 'dashboard';
     } catch {
       return 'dashboard';
@@ -163,6 +175,7 @@ const DashboardView = ({ user, onLogout, loggingOut }: DashboardViewProps) => {
       else if (v === 'logs') setCommanderView('logs');
       else if (v === 'disasters') setCommanderView('disasters');
       else if (v === 'teams') setCommanderView('teams');
+      else if (v === 'news') setCommanderView('news');
       else setCommanderView('dashboard');
     };
 
@@ -176,6 +189,7 @@ const DashboardView = ({ user, onLogout, loggingOut }: DashboardViewProps) => {
       if (commanderView === 'home') return <CommanderHome />;
       if (commanderView === 'logs') return <CommanderLogs />;
       if (commanderView === 'teams') return <CommanderTeams />;
+      if (commanderView === 'news') return <NewsAnalysisPanel predefinedParams={newsParams} />;
       return <ActiveDashboard user={user} />;
     }
 
@@ -226,6 +240,13 @@ const DashboardView = ({ user, onLogout, loggingOut }: DashboardViewProps) => {
                 onClick={() => setCommanderView('logs')}
               >
                 View Logs
+              </button>
+              <button
+                type="button"
+                className={`app-nav__link ${commanderView === 'news' ? 'active' : ''}`}
+                onClick={() => setShowNewsModal(true)}
+              >
+                Analyze News
               </button>
             </nav>
           )}
@@ -324,6 +345,11 @@ const DashboardView = ({ user, onLogout, loggingOut }: DashboardViewProps) => {
         isOpen={showLogoutConfirm}
         onConfirm={handleLogoutConfirm}
         onCancel={handleLogoutCancel}
+      />
+      <NewsInputModal
+        isOpen={showNewsModal}
+        onClose={() => setShowNewsModal(false)}
+        onNavigateToNews={handleNavigateToNews}
       />
     </div>
   );

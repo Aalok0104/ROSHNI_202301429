@@ -3,11 +3,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from contextlib import asynccontextmanager
 
+from app.models import news_models
 from app.config import settings
 from app.database import engine, Base, AsyncSessionLocal
 from app.routers import auth
 from app.models.user_family_models import Role  # Import Role for seeding
-from app.routers import auth, users, responders, incidents, disasters, chat, surveys, reports, logs, tasks
+from app.routers import auth, users, responders, incidents, disasters, chat, surveys, reports, logs, tasks, disaster_news
 
 # --- Lifecycle: Seed Roles on Startup ---
 @asynccontextmanager
@@ -73,6 +74,7 @@ app.include_router(surveys.router)
 app.include_router(reports.router)
 app.include_router(logs.router)
 app.include_router(tasks.router)
+app.include_router(disaster_news.router)
 
 @app.get("/")
 def root():
