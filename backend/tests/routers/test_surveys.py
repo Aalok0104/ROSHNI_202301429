@@ -1,7 +1,7 @@
 import pytest
 from types import SimpleNamespace
 from uuid import uuid4
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from app.models.questionnaires_and_logs import QuestionTemplate
 from app.models.questionnaires_and_logs import DisasterQuestionState
@@ -188,3 +188,83 @@ async def test_submit_answer_returns_404_when_missing(async_db_session, async_cr
             db=async_db_session,
         )
     assert "404" in str(exc.value)
+
+
+@pytest.mark.asyncio
+async def test_get_pending_survey_respects_cooldown_threshold(async_db_session, async_create_user, async_create_disaster):
+    user = await async_create_user()
+    disaster = await async_create_disaster()
+
+    tmpl = QuestionTemplate(
+        key="cooldown2",
+        question_text="cooldown?",
+        answer_type="text",
+        is_active=True,
+    )
+    async_db_session.add(tmpl)
+    await async_db_session.commit()
+
+    state = DisasterQuestionState(
+        disaster_id=disaster.disaster_id,
+        question_id=tmpl.question_id,
+        last_answer_value="yes",
+        last_answered_at=datetime.utcnow() - timedelta(hours=2),
+        last_answered_by_user_id=user.user_id,
+    )
+    async_db_session.add(state)
+    await async_db_session.commit()
+
+    result = await surveys_router.get_pending_survey(
+        disaster_id=disaster.disaster_id,
+        current_user=_civilian_stub(user.user_id),
+        db=async_db_session,
+    )
+    assert result is not None
+
+
+@pytest.mark.asyncio
+async def test_submit_answer_handles_non_numeric_conversion(async_db_session, async_create_user, async_create_disaster):
+    user = await async_create_user()
+    disaster = await async_create_disaster()
+
+    tmpl = QuestionTemplate(
+        key="deaths_seen",
+        question_text="How many?",
+        answer_type="text",
+        is_active=True,
+    )
+    async_db_session.add(tmpl)
+    await async_db_session.commit()
+
+    payload = SurveyAnswerRequest(disaster_id=disaster.disaster_id, answer_value="not-a-number")
+    log_id = await surveys_router.submit_answer(
+        question_id=tmpl.question_id,
+        payload=payload,
+        current_user=_civilian_stub(user.user_id),
+        db=async_db_session,
+    )
+    assert log_id.log_id is not None
+
+
+@pytest.mark.asyncio
+async def test_submit_answer_handles_non_numeric_injuries(async_db_session, async_create_user, async_create_disaster):
+    user = await async_create_user()
+    disaster = await async_create_disaster()
+
+    tmpl = QuestionTemplate(
+        key="injuries_seen",
+        question_text="How many injuries?",
+        answer_type="text",
+        is_active=True,
+    )
+    async_db_session.add(tmpl)
+    await async_db_session.commit()
+
+    payload = SurveyAnswerRequest(disaster_id=disaster.disaster_id, answer_value="unknown")
+    log_id = await surveys_router.submit_answer(
+        question_id=tmpl.question_id,
+        payload=payload,
+        current_user=_civilian_stub(user.user_id),
+        db=async_db_session,
+    )
+    assert log_id.log_id is not None

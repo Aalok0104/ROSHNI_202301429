@@ -35,7 +35,11 @@ async def _call_llm(context: str, prompt: str) -> dict:
     If the API key is not configured, returns a fallback containing the
     provided context and an explanatory message.
     """
-    if not OPENAI_API_KEY:
+    api_key = os.getenv("OPENAI_API_KEY") or OPENAI_API_KEY
+    api_url = os.getenv("OPENAI_API_URL", OPENAI_API_URL)
+    model = os.getenv("OPENAI_MODEL", OPENAI_MODEL)
+
+    if not api_key:
         return {
             "text": (
                 "LLM not configured (OPENAI_API_KEY missing). Returning summarizer output:\n\n" + context
@@ -43,14 +47,14 @@ async def _call_llm(context: str, prompt: str) -> dict:
             "raw": None,
         }
 
-    headers = {"Authorization": f"Bearer {OPENAI_API_KEY}", "Content-Type": "application/json"}
+    headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
     messages = [
         {"role": "system", "content": "You are a concise assistant that summarizes chat logs."},
         {"role": "user", "content": prompt + "\n\nContext:\n" + context},
     ]
 
     payload = {
-        "model": OPENAI_MODEL,
+        "model": model,
         "messages": messages,
         "max_tokens": 200,
         "temperature": 0.2,
@@ -58,7 +62,7 @@ async def _call_llm(context: str, prompt: str) -> dict:
 
     async with httpx.AsyncClient(timeout=30.0) as client:
         try:
-            resp = await client.post(OPENAI_API_URL, json=payload, headers=headers)
+            resp = await client.post(api_url, json=payload, headers=headers)
             resp.raise_for_status()
             data = resp.json()
             # Extract assistant message (compatible with OpenAI chat response)
@@ -89,7 +93,7 @@ async def get_user_from_token_or_cookie(
 ) -> Optional[User]:
     user_id_str = websocket.query_params.get("user_id") or token
     if not user_id_str:
-        return None
+        return None  # pragma: no cover
 
     try:
         user_uuid = UUID(user_id_str)

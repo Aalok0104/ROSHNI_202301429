@@ -31,8 +31,8 @@ class AsyncSessionAdapter:
     async def rollback(self):
         self._session.rollback()
 
-    async def refresh(self, instance):
-        self._session.refresh(instance)
+    async def refresh(self, *args, **kwargs):
+        self._session.refresh(*args, **kwargs)
 
     async def get(self, model, pk):
         return self._session.get(model, pk)

@@ -37,11 +37,8 @@ class AsyncSessionAdapter:
     async def commit(self):
         self._session.commit()
 
-    async def refresh(self, instance):
-        self._session.refresh(instance)
-
-    async def get(self, model, pk):
-        return self._session.get(model, pk)
+    async def refresh(self, *args, **kwargs):
+        self._session.refresh(*args, **kwargs)
 
 
 def _seed_role_and_user(db_session, role_id=900):

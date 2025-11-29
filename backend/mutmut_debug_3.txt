@@ -1,0 +1,962 @@
+⠋ Generating mutantsapp/routers/users.py
+app/repositories/user_repository.py
+app/services/websocket_manager.py
+app/main.py
+app/routers/__init__.py
+app/routers/responders.py
+app/models/responder_management.py
+app/models/questionnaires_and_logs.py
+app/models/draft_reports.py
+app/schemas/surveys.py
+app/schemas/chat.py
+app/schemas/logs.py
+app/services/__init__.py
+app/services/news_selection.py
+app/routers/tasks.py
+app/models/__init__.py
+app/models/test_init.py
+app/routers/disaster_news.py
+app/repositories/incident_repository.py
+app/database.py
+app/routers/chat.py
+app/config.py
+app/routers/disasters.py
+app/repositories/disaster_repository.py
+app/dependencies.py
+app/repositories/responder_repository.py
+app/__init__.py
+app/routers/surveys.py
+app/routers/logs.py
+app/repositories/task_repository.py
+app/routers/auth.py
+app/routers/incidents.py
+app/models/mapping_and_tracking.py
+app/models/responder_models.py
+app/models/user_family_models.py
+app/schemas/tasks.py
+app/schemas/disasters.py
+app/schemas/responders.py
+app/schemas/reports.py
+app/ml/__init__.py
+app/ml/news_classifier.py
+app/env.py
+app/routers/reports.py
+app/models/disaster_management.py
+app/models/news_models.py
+app/schemas/users.py
+app/schemas/incidents.py
+app/services/news_scraper.py
+     also copying tests
+     also copying test
+     also copying setup.cfg
+     also copying pyproject.toml
+     also copying test_debug.py
+     also copying test_real_api.py
+     also copying test_integration.py
+
+    done in 6519ms
+⠙ Running stats     python -m pytest  -vv -x -q tests --rootdir=.
+============================= test session starts ==============================
+platform darwin -- Python 3.12.12, pytest-8.4.2, pluggy-1.6.0 -- /Users/parshv/miniconda3/envs/ROSHNI/bin/python3.12
+cachedir: .pytest_cache
+rootdir: /Users/parshv/Dev/ROSHNI/backend/mutants
+configfile: ../pytest.ini
+plugins: cov-6.0.0, asyncio-1.2.0, anyio-4.10.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 298 items
+
+tests/dependencies/test_dependencies.py::test_get_current_user_returns_user_when_session_valid PASSED [  0%]
+tests/dependencies/test_dependencies.py::test_get_current_user_requires_session_token PASSED [  0%]
+tests/dependencies/test_dependencies.py::test_get_current_user_clears_stale_session PASSED [  1%]
+tests/dependencies/test_dependencies.py::test_role_checker_rejects_missing_role PASSED [  1%]
+tests/dependencies/test_dependencies.py::test_role_checker_rejects_unlisted_role PASSED [  1%]
+tests/models/test_disaster_management.py::test_incident_create_and_geometry PASSED [  2%]
+tests/models/test_disaster_management.py::test_incident_invalid_status_check PASSED [  2%]
+tests/models/test_disaster_management.py::test_disaster_create_with_affected_area PASSED [  2%]
+tests/models/test_disaster_management.py::test_disaster_status_and_severity_checks PASSED [  3%]
+tests/models/test_disaster_management.py::test_disaster_task_create_and_default_status_priority PASSED [  3%]
+tests/models/test_disaster_management.py::test_disaster_task_status_and_priority_checks PASSED [  3%]
+tests/models/test_disaster_management.py::test_disaster_task_assignment_primary_key_and_check PASSED [  4%]
+tests/models/test_draft_reports.py::test_disaster_report_draft_basic_and_defaults PASSED [  4%]
+tests/models/test_draft_reports.py::test_disaster_report_draft_status_check_and_unique_version PASSED [  4%]
+tests/models/test_mapping_and_tracking.py::test_map_site_basic_and_checks PASSED [  5%]
+tests/models/test_mapping_and_tracking.py::test_map_site_invalid_type_and_status_checks PASSED [  5%]
+tests/models/test_mapping_and_tracking.py::test_user_location_log_basic PASSED [  5%]
+tests/models/test_model_reprs.py::test_news_model_reprs PASSED           [  6%]
+tests/models/test_model_reprs.py::test_other_model_reprs PASSED          [  6%]
+tests/models/test_questionnaires_and_logs.py::test_disaster_follower_cascade PASSED [  6%]
+tests/models/test_questionnaires_and_logs.py::test_question_template_basic_and_answer_type_check PASSED [  7%]
+tests/models/test_questionnaires_and_logs.py::test_question_template_unique_key PASSED [  7%]
+tests/models/test_questionnaires_and_logs.py::test_disaster_question_state_composite_pk PASSED [  7%]
+tests/models/test_questionnaires_and_logs.py::test_disaster_log_checks_and_media_relationship PASSED [  8%]
+tests/models/test_questionnaires_and_logs.py::test_disaster_media_file_type_check PASSED [  8%]
+tests/models/test_questionnaires_and_logs.py::test_disaster_chat_message_basic PASSED [  8%]
+tests/models/test_questionnaires_and_logs.py::test_incident_media_relationship PASSED [  9%]
+tests/models/test_questionnaires_and_logs.py::test_incident_media_file_type_validation PASSED [  9%]
+tests/models/test_relationships_integration.py::test_incident_to_disaster_source_incident_relationship PASSED [  9%]
+tests/models/test_relationships_integration.py::test_disaster_has_tasks_and_logs PASSED [ 10%]
+tests/models/test_responder_management.py::test_team_basic_create_and_checks PASSED [ 10%]
+tests/models/test_responder_management.py::test_team_invalid_type_violates_check PASSED [ 10%]
+tests/models/test_responder_management.py::test_team_invalid_status_violates_check PASSED [ 11%]
+tests/models/test_responder_management.py::test_responder_profile_basic_create_and_checks PASSED [ 11%]
+tests/models/test_responder_management.py::test_responder_profile_invalid_type_and_status_checks PASSED [ 11%]
+tests/models/test_responder_management.py::test_team_responder_relationship_collection PASSED [ 12%]
+tests/models/test_user_family_models.py::test_role_basic_create_and_repr PASSED [ 12%]
+tests/models/test_user_family_models.py::test_role_name_unique_constraint PASSED [ 12%]
+tests/models/test_user_family_models.py::test_user_create_with_defaults_and_relationships PASSED [ 13%]
+tests/models/test_user_family_models.py::test_user_email_and_phone_unique_constraints PASSED [ 13%]
+tests/models/test_user_family_models.py::test_user_geometry_roundtrip PASSED [ 13%]
+tests/models/test_user_family_models.py::test_user_profile_one_to_one PASSED [ 14%]
+tests/models/test_user_family_models.py::test_user_medical_profile_one_to_one_and_defaults PASSED [ 14%]
+tests/models/test_user_family_models.py::test_cascade_delete_user_profile_and_medical PASSED [ 14%]
+tests/repositories/test_disaster_repository.py::test_to_geojson_returns_feature PASSED [ 15%]
+tests/repositories/test_disaster_repository.py::test_to_geojson_handles_missing_or_invalid_geometry PASSED [ 15%]
+tests/repositories/test_disaster_repository.py::test_convert_incident_creates_disaster_and_followers PASSED [ 15%]
+tests/repositories/test_disaster_repository.py::test_convert_incident_returns_none_when_missing PASSED [ 16%]
+tests/repositories/test_disaster_repository.py::test_convert_incident_skips_already_converted PASSED [ 16%]
+tests/repositories/test_disaster_repository.py::test_convert_incident_defaults_type_to_other PASSED [ 16%]
+tests/repositories/test_disaster_repository.py::test_get_disasters_filters_by_role PASSED [ 17%]
+tests/repositories/test_disaster_repository.py::test_get_disasters_excludes_resolved_status PASSED [ 17%]
+tests/repositories/test_disaster_repository.py::test_get_stats_aggregates_logs PASSED [ 17%]
+tests/repositories/test_disaster_repository.py::test_get_stats_returns_zero_when_no_logs PASSED [ 18%]
+tests/repositories/test_disaster_repository.py::test_get_map_data_includes_sites_and_teams PASSED [ 18%]
+tests/repositories/test_disaster_repository.py::test_get_map_data_missing_returns_none PASSED [ 18%]
+tests/repositories/test_disaster_repository.py::test_close_disaster_updates_status PASSED [ 19%]
+tests/repositories/test_incident_repository.py::test_find_duplicate_incident_detects_recent_match PASSED [ 19%]
+tests/repositories/test_incident_repository.py::test_find_duplicate_incident_includes_boundary_records PASSED [ 19%]
+tests/repositories/test_incident_repository.py::test_find_duplicate_incident_ignores_old_records PASSED [ 20%]
+tests/repositories/test_incident_repository.py::test_find_duplicate_incident_checks_radius PASSED [ 20%]
+tests/repositories/test_incident_repository.py::test_find_duplicate_incident_requires_matching_type PASSED [ 20%]
+tests/repositories/test_incident_repository.py::test_create_incident_applies_sos_defaults PASSED [ 21%]
+tests/repositories/test_incident_repository.py::test_create_incident_uses_payload_values_for_regular_reports PASSED [ 21%]
+tests/repositories/test_incident_repository.py::test_add_media_links_files PASSED [ 21%]
+tests/repositories/test_incident_repository.py::test_get_all_open_incidents_returns_only_active PASSED [ 22%]
+tests/repositories/test_incident_repository.py::test_discard_incident_marks_status PASSED [ 22%]
+tests/repositories/test_incident_repository.py::test_convert_to_disaster_creates_log_and_followers PASSED [ 22%]
+tests/repositories/test_incident_repository.py::test_convert_to_disaster_second_call_is_idempotent PASSED [ 23%]
+tests/repositories/test_incident_repository.py::test_convert_to_disaster_missing_returns_none PASSED [ 23%]
+tests/repositories/test_incident_repository.py::test_convert_to_disaster_uses_incident_type_when_not_provided PASSED [ 23%]
+tests/repositories/test_incident_repository.py::test_get_incidents_for_user_returns_owned_records PASSED [ 24%]
+tests/repositories/test_incident_repository.py::test_delete_incident_removes_record PASSED [ 24%]
+tests/repositories/test_incident_repository.py::test_delete_incident_returns_none_when_missing PASSED [ 24%]
+tests/repositories/test_incident_repository.py::test_get_incident_loads_media PASSED [ 25%]
+tests/repositories/test_incident_repository.py::test_update_incident_updates_fields PASSED [ 25%]
+tests/repositories/test_incident_repository.py::test_update_incident_handles_missing_and_no_changes PASSED [ 25%]
+tests/repositories/test_responder_repository.py::test_create_and_list_teams_with_filters PASSED [ 26%]
+tests/repositories/test_responder_repository.py::test_create_responder_inserts_all_entities PASSED [ 26%]
+tests/repositories/test_responder_repository.py::test_create_responder_links_team PASSED [ 26%]
+tests/repositories/test_responder_repository.py::test_get_all_responders_applies_filters PASSED [ 27%]
+tests/repositories/test_responder_repository.py::test_get_all_responders_filters_by_type_without_team_filter PASSED [ 27%]
+tests/repositories/test_responder_repository.py::test_update_responder_sets_team_join_timestamp PASSED [ 27%]
+tests/repositories/test_responder_repository.py::test_update_responder_returns_none_when_no_updates PASSED [ 28%]
+tests/repositories/test_responder_repository.py::test_get_responder_detail_returns_none_for_missing PASSED [ 28%]
+tests/repositories/test_responder_repository.py::test_get_responder_detail_populates_fields PASSED [ 28%]
+tests/repositories/test_responder_repository.py::test_delete_team_unassigns_members PASSED [ 29%]
+tests/repositories/test_responder_repository.py::test_delete_responder_removes_user PASSED [ 29%]
+tests/repositories/test_responder_repository.py::test_delete_responder_returns_none_for_missing PASSED [ 29%]
+tests/repositories/test_responder_repository.py::test_assign_responder_to_team_updates_membership PASSED [ 30%]
+tests/repositories/test_responder_repository.py::test_update_responder_clears_team_joined_at PASSED [ 30%]
+tests/repositories/test_responder_repository.py::test_get_responder_team_returns_team PASSED [ 30%]
+tests/repositories/test_task_repository.py::test_create_task_persists_geometry PASSED [ 31%]
+tests/repositories/test_task_repository.py::test_get_tasks_returns_assignments PASSED [ 31%]
+tests/repositories/test_task_repository.py::test_get_tasks_filters_by_priority PASSED [ 31%]
+tests/repositories/test_task_repository.py::test_get_tasks_filters_by_status PASSED [ 32%]
+tests/repositories/test_task_repository.py::test_assign_team_updates_statuses PASSED [ 32%]
+tests/repositories/test_task_repository.py::test_update_assignment_status_manages_team_and_task_completion PASSED [ 32%]
+tests/repositories/test_task_repository.py::test_get_user_team_id_returns_identifier PASSED [ 33%]
+tests/repositories/test_task_repository.py::test_update_task_status_executes_override PASSED [ 33%]
+tests/repositories/test_task_repository.py::test_delete_task_removes_and_logs PASSED [ 33%]
+tests/repositories/test_task_repository.py::test_update_assignment_status_handles_cancelled_release PASSED [ 34%]
+tests/repositories/test_task_repository.py::test_get_tasks_filters_by_team PASSED [ 34%]
+tests/repositories/test_task_repository.py::test_delete_task_returns_none_when_missing PASSED [ 34%]
+tests/repositories/test_user_repository.py::test_get_by_email_returns_user PASSED [ 35%]
+tests/repositories/test_user_repository.py::test_get_by_id_loads_profile PASSED [ 35%]
+tests/repositories/test_user_repository.py::test_create_civilian_persists_user_and_profile PASSED [ 35%]
+tests/repositories/test_user_repository.py::test_update_provider_id_updates_existing_user PASSED [ 36%]
+tests/repositories/test_user_repository.py::test_complete_onboarding_creates_medical_profile PASSED [ 36%]
+tests/repositories/test_user_repository.py::test_complete_onboarding_retries_on_code_collision PASSED [ 36%]
+tests/repositories/test_user_repository.py::test_update_user_profile_ignores_none_values PASSED [ 37%]
+tests/repositories/test_user_repository.py::test_delete_user_returns_none_when_missing PASSED [ 37%]
+tests/repositories/test_user_repository.py::test_delete_user_removes_record PASSED [ 37%]
+tests/repositories/test_user_repository.py::test_update_phone_number_updates_user PASSED [ 38%]
+tests/repositories/test_user_repository.py::test_create_and_list_commanders PASSED [ 38%]
+tests/repositories/test_user_repository.py::test_update_medical_profile_ignores_none_values PASSED [ 38%]
+tests/repositories/test_user_repository.py::test_update_location_sets_geometry PASSED [ 39%]
+tests/repositories/test_user_repository.py::test_get_user_by_medical_code_returns_user PASSED [ 39%]
+tests/routers/test_auth_router.py::test_login_redirects_to_google PASSED [ 39%]
+tests/routers/test_auth_router.py::test_auth_callback_links_existing_user PASSED [ 40%]
+tests/routers/test_auth_router.py::test_auth_callback_creates_new_user PASSED [ 40%]
+tests/routers/test_auth_router.py::test_auth_callback_handles_oauth_errors PASSED [ 40%]
+tests/routers/test_auth_router.py::test_auth_callback_userinfo_fetch_failure PASSED [ 41%]
+tests/routers/test_auth_router.py::test_logout_clears_session PASSED     [ 41%]
+tests/routers/test_auth_router.py::test_get_current_user_requires_auth PASSED [ 41%]
+tests/routers/test_auth_router.py::test_get_current_user_handles_missing_user PASSED [ 42%]
+tests/routers/test_auth_router.py::test_get_current_user_returns_profile_info PASSED [ 42%]
+tests/routers/test_auth_router.py::test_auth_callback_rejects_missing_email PASSED [ 42%]
+tests/routers/test_auth_router.py::test_auth_callback_rejects_missing_sub PASSED [ 43%]
+tests/routers/test_auth_router.py::test_auth_callback_handles_db_error PASSED [ 43%]
+tests/routers/test_auth_router.py::test_auth_callback_handles_generic_error PASSED [ 43%]
+tests/routers/test_auth_router.py::test_auth_callback_raises_when_no_user_created PASSED [ 44%]
+tests/routers/test_auth_router.py::test_auth_callback_defaults_role_on_error PASSED [ 44%]
+tests/routers/test_chat.py::test_connection_manager_room_keys PASSED     [ 44%]
+tests/routers/test_chat.py::test_history_team_and_global PASSED          [ 45%]
+tests/routers/test_chat.py::test_websocket_connection_rejected_without_user PASSED [ 45%]
+tests/routers/test_chat.py::test_get_user_from_token_or_cookie_handles_branches PASSED [ 45%]
+tests/routers/test_chat.py::test_update_message_404_and_forbidden PASSED [ 46%]
+tests/routers/test_chat.py::test_chat_history_formats_sender_details PASSED [ 46%]
+tests/routers/test_chat.py::test_update_and_delete_message_permissions PASSED [ 46%]
+tests/routers/test_chat.py::test_chat_summary_access_control PASSED      [ 47%]
+tests/routers/test_chat.py::test_chat_summary_content PASSED             [ 47%]
+tests/routers/test_chat.py::test_llm_call_success PASSED                 [ 47%]
+tests/routers/test_chat.py::test_categorize_relays PASSED                [ 48%]
+tests/routers/test_chat.py::test_build_context_full_sections PASSED      [ 48%]
+tests/routers/test_chat.py::test_history_invalid_team PASSED             [ 48%]
+tests/routers/test_chat.py::test_summary_sanitizes_fake_team PASSED      [ 49%]
+tests/routers/test_chat.py::test_llm_call_missing_key_returns_fallback PASSED [ 49%]
+tests/routers/test_chat.py::test_llm_call_parsing_fallback PASSED        [ 50%]
+tests/routers/test_chat.py::test_llm_call_handles_exception PASSED       [ 50%]
+tests/routers/test_chat.py::test_get_user_from_token_or_cookie_bad_uuid PASSED [ 50%]
+tests/routers/test_chat.py::test_get_disaster_chat_summary_guard_paths PASSED [ 51%]
+tests/routers/test_chat.py::test_get_user_from_token_or_cookie_missing_token PASSED [ 51%]
+tests/routers/test_chat.py::test_update_and_delete_message_paths PASSED  [ 51%]
+tests/routers/test_chat.py::test_get_user_from_token_or_cookie_handles_repo_error PASSED [ 52%]
+tests/routers/test_chat.py::test_get_chat_history_global_and_forbidden PASSED [ 52%]
+tests/routers/test_chat.py::test_delete_message_forbidden PASSED         [ 52%]
+tests/routers/test_disaster_news_router_extra.py::test_analyze_disaster_news_success PASSED [ 53%]
+tests/routers/test_disaster_news_router_extra.py::test_analyze_disaster_news_no_newspapers PASSED [ 53%]
+tests/routers/test_disaster_news_router_extra.py::test_analyze_disaster_news_scraper_failure PASSED [ 53%]
+tests/routers/test_disaster_news_router_extra.py::test_analyze_disaster_news_handles_empty_articles PASSED [ 54%]
+tests/routers/test_disaster_news_router_extra.py::test_analyze_disaster_news_unexpected_error PASSED [ 54%]
+tests/routers/test_disaster_news_router_extra.py::test_disaster_news_lookup_endpoints PASSED [ 54%]
+tests/routers/test_disasters_router.py::test_convert_endpoint_returns_error_when_missing PASSED [ 55%]
+tests/routers/test_disasters_router.py::test_convert_endpoint_formats_response PASSED [ 55%]
+tests/routers/test_disasters_router.py::test_convert_endpoint_handles_missing_geometry PASSED [ 55%]
+tests/routers/test_disasters_router.py::test_list_disasters_returns_payload PASSED [ 56%]
+tests/routers/test_disasters_router.py::test_stats_endpoint_proxies_repository PASSED [ 56%]
+tests/routers/test_disasters_router.py::test_map_endpoint_returns_404_when_missing PASSED [ 56%]
+tests/routers/test_disasters_router.py::test_map_endpoint_returns_payload PASSED [ 57%]
+tests/routers/test_disasters_router.py::test_close_disaster_calls_repository PASSED [ 57%]
+tests/routers/test_disasters_router.py::test_stats_endpoint_rejects_unauthorized_role PASSED [ 57%]
+tests/routers/test_disasters_router.py::test_stats_endpoint_allows_responder PASSED [ 58%]
+tests/routers/test_disasters_router.py::test_active_disaster_for_me_returns_first PASSED [ 58%]
+tests/routers/test_disasters_router.py::test_stats_endpoint_blocks_responder_not_following PASSED [ 58%]
+tests/routers/test_disasters_router.py::test_active_disaster_for_me_falls_back_to_first PASSED [ 59%]
+tests/routers/test_format_helpers.py::test_format_incident_response_builds_media_urls PASSED [ 59%]
+tests/routers/test_format_helpers.py::test_format_incident_response_handles_missing_geometry PASSED [ 59%]
+tests/routers/test_format_helpers.py::test_format_disaster_response_handles_missing_geometry PASSED [ 60%]
+tests/routers/test_format_helpers.py::test_format_disaster_response_extracts_coordinates PASSED [ 60%]
+tests/routers/test_format_helpers.py::test_format_task_response_includes_assignments PASSED [ 60%]
+tests/routers/test_format_helpers.py::test_format_task_response_uses_unknown_team_when_missing PASSED [ 61%]
+tests/routers/test_incidents_router.py::test_create_incident_returns_duplicate_when_found PASSED [ 61%]
+tests/routers/test_incidents_router.py::test_create_incident_handles_missing_geometry PASSED [ 61%]
+tests/routers/test_incidents_router.py::test_create_incident_invokes_repository_on_new_report PASSED [ 62%]
+tests/routers/test_incidents_router.py::test_upload_media_rejects_invalid_type PASSED [ 62%]
+tests/routers/test_incidents_router.py::test_upload_media_invokes_repository[image/jpeg-image] PASSED [ 62%]
+tests/routers/test_incidents_router.py::test_upload_media_invokes_repository[audio/wav-audio] PASSED [ 63%]
+tests/routers/test_incidents_router.py::test_upload_media_invokes_repository[video/mp4-video] PASSED [ 63%]
+tests/routers/test_incidents_router.py::test_get_incidents_returns_formatted_payload PASSED [ 63%]
+tests/routers/test_incidents_router.py::test_update_status_discard_branch PASSED [ 64%]
+tests/routers/test_incidents_router.py::test_update_status_discard_not_found PASSED [ 64%]
+tests/routers/test_incidents_router.py::test_update_status_converts_incident PASSED [ 64%]
+tests/routers/test_incidents_router.py::test_update_status_convert_returns_404_when_missing PASSED [ 65%]
+tests/routers/test_incidents_router.py::test_update_status_no_action_branch PASSED [ 65%]
+tests/routers/test_incidents_router.py::test_format_incident_response_handles_string_time PASSED [ 65%]
+tests/routers/test_incidents_router.py::test_create_incident_handles_repository_errors PASSED [ 66%]
+tests/routers/test_incidents_router.py::test_get_my_incidents_returns_only_user_records PASSED [ 66%]
+tests/routers/test_incidents_router.py::test_delete_incident_blocks_non_owner PASSED [ 66%]
+tests/routers/test_incidents_router.py::test_delete_incident_allows_owner PASSED [ 67%]
+tests/routers/test_incidents_router.py::test_delete_incident_allows_commander PASSED [ 67%]
+tests/routers/test_incidents_router.py::test_update_incident_allows_commander PASSED [ 67%]
+tests/routers/test_incidents_router.py::test_update_incident_returns_404_when_missing PASSED [ 68%]
+tests/routers/test_incidents_router.py::test_delete_incident_returns_404_when_missing PASSED [ 68%]
+tests/routers/test_logs.py::test_create_and_get_log PASSED               [ 68%]
+tests/routers/test_logs.py::test_update_and_delete_log PASSED            [ 69%]
+tests/routers/test_logs.py::test_log_routes_return_404s PASSED           [ 69%]
+tests/routers/test_logs.py::test_log_endpoints_404_with_stub_db PASSED   [ 69%]
+tests/routers/test_logs.py::test_log_endpoints_success_with_stub_db PASSED [ 70%]
+tests/routers/test_reports.py::test_generate_report_draft PASSED         [ 70%]
+tests/routers/test_reports.py::test_list_reports PASSED                  [ 70%]
+tests/routers/test_reports.py::test_update_report PASSED                 [ 71%]
+tests/routers/test_reports.py::test_export_pdf PASSED                    [ 71%]
+tests/routers/test_reports.py::test_get_report_returns_404_for_missing PASSED [ 71%]
+tests/routers/test_reports.py::test_update_report_returns_404_for_missing PASSED [ 72%]
+tests/routers/test_reports.py::test_export_pdf_returns_404_for_missing PASSED [ 72%]
+tests/routers/test_reports.py::test_delete_report_removes_record PASSED  [ 72%]
+tests/routers/test_reports.py::test_delete_report_returns_404_for_missing PASSED [ 73%]
+tests/routers/test_reports.py::test_get_report_success PASSED            [ 73%]
+tests/routers/test_responders_router.py::test_create_team_returns_defaults PASSED [ 73%]
+tests/routers/test_responders_router.py::test_list_teams_proxies_repository PASSED [ 74%]
+tests/routers/test_responders_router.py::test_create_responder_rejects_duplicate_email PASSED [ 74%]
+tests/routers/test_responders_router.py::test_create_responder_handles_exception PASSED [ 74%]
+tests/routers/test_responders_router.py::test_create_responder_returns_payload PASSED [ 75%]
+tests/routers/test_responders_router.py::test_list_responders_passes_filters PASSED [ 75%]
+tests/routers/test_responders_router.py::test_update_responder_returns_404_when_missing PASSED [ 75%]
+tests/routers/test_responders_router.py::test_update_responder_returns_payload PASSED [ 76%]
+tests/routers/test_responders_router.py::test_delete_responder_returns_404_when_missing PASSED [ 76%]
+tests/routers/test_responders_router.py::test_delete_responder_accepts_commanders PASSED [ 76%]
+tests/routers/test_responders_router.py::test_delete_team_unassigns_members PASSED [ 77%]
+tests/routers/test_responders_router.py::test_delete_team_returns_404_when_missing PASSED [ 77%]
+tests/routers/test_responders_router.py::test_assign_responder_to_team_returns_payload PASSED [ 77%]
+tests/routers/test_responders_router.py::test_assign_responder_to_team_handles_missing PASSED [ 78%]
+tests/routers/test_responders_router.py::test_unassign_responder_from_team PASSED [ 78%]
+tests/routers/test_responders_router.py::test_unassign_responder_not_found PASSED [ 78%]
+tests/routers/test_responders_router.py::test_get_my_team_returns_team PASSED [ 79%]
+tests/routers/test_responders_router.py::test_get_my_team_returns_404 PASSED [ 79%]
+tests/routers/test_responders_router.py::test_get_my_responder_profile_404 PASSED [ 79%]
+tests/routers/test_responders_router.py::test_get_my_team_members_404 PASSED [ 80%]
+tests/routers/test_responders_router.py::test_get_my_responder_profile_success PASSED [ 80%]
+tests/routers/test_responders_router.py::test_get_my_team_members_success PASSED [ 80%]
+tests/routers/test_surveys.py::test_get_pending_survey_no_templates PASSED [ 81%]
+tests/routers/test_surveys.py::test_get_pending_survey_with_template PASSED [ 81%]
+tests/routers/test_surveys.py::test_submit_answer_creates_log PASSED     [ 81%]
+tests/routers/test_surveys.py::test_get_pending_survey_returns_state_without_timestamp PASSED [ 82%]
+tests/routers/test_surveys.py::test_submit_answer_updates_existing_state_and_injuries PASSED [ 82%]
+tests/routers/test_surveys.py::test_get_pending_survey_respects_cooldown PASSED [ 82%]
+tests/routers/test_surveys.py::test_submit_answer_returns_404_when_missing PASSED [ 83%]
+tests/routers/test_surveys.py::test_get_pending_survey_respects_cooldown_threshold PASSED [ 83%]
+tests/routers/test_surveys.py::test_submit_answer_handles_non_numeric_conversion PASSED [ 83%]
+tests/routers/test_surveys.py::test_submit_answer_handles_non_numeric_injuries PASSED [ 84%]
+tests/routers/test_tasks_router.py::test_create_task_returns_response PASSED [ 84%]
+tests/routers/test_tasks_router.py::test_list_tasks_formats_assignments PASSED [ 84%]
+tests/routers/test_tasks_router.py::test_assign_team_handles_duplicates PASSED [ 85%]
+tests/routers/test_tasks_router.py::test_update_assignment_status_checks_team_membership PASSED [ 85%]
+tests/routers/test_tasks_router.py::test_update_assignment_status_allows_responder_with_matching_team PASSED [ 85%]
+tests/routers/test_tasks_router.py::test_update_assignment_status_allows_commander PASSED [ 86%]
+tests/routers/test_tasks_router.py::test_update_task_status_invokes_repository PASSED [ 86%]
+tests/routers/test_tasks_router.py::test_list_tasks_rejects_unauthorized PASSED [ 86%]
+tests/routers/test_tasks_router.py::test_list_tasks_filters_to_responder_team PASSED [ 87%]
+tests/routers/test_tasks_router.py::test_list_tasks_returns_empty_for_responder_without_team PASSED [ 87%]
+tests/routers/test_tasks_router.py::test_delete_task_endpoint_handles_missing PASSED [ 87%]
+tests/routers/test_tasks_router.py::test_delete_task_endpoint_deletes PASSED [ 88%]
+tests/routers/test_users_router.py::test_complete_onboarding_calls_repository PASSED [ 88%]
+tests/routers/test_users_router.py::test_get_my_profile_returns_combined_view PASSED [ 88%]
+tests/routers/test_users_router.py::test_update_profile_sends_payload_to_repository PASSED [ 89%]
+tests/routers/test_users_router.py::test_update_medical_profile_sends_payload PASSED [ 89%]
+tests/routers/test_users_router.py::test_update_location_records_coordinates PASSED [ 89%]
+tests/routers/test_users_router.py::test_access_medical_data_requires_responder_role PASSED [ 90%]
+tests/routers/test_users_router.py::test_access_medical_data_returns_sensitive_fields_when_allowed PASSED [ 90%]
+tests/routers/test_users_router.py::test_access_medical_data_respects_granular_consent PASSED [ 90%]
+tests/routers/test_users_router.py::test_access_medical_data_allows_phone_with_flag PASSED [ 91%]
+tests/routers/test_users_router.py::test_update_commander_returns_404_when_missing PASSED [ 91%]
+tests/routers/test_users_router.py::test_delete_commander_returns_404_when_missing PASSED [ 91%]
+tests/routers/test_users_router.py::test_access_medical_data_returns_404_for_missing_user PASSED [ 92%]
+tests/routers/test_users_router.py::test_delete_my_account_invokes_repository PASSED [ 92%]
+tests/routers/test_users_router.py::test_delete_my_account_handles_missing PASSED [ 92%]
+tests/routers/test_users_router.py::test_create_commander_endpoint_returns_payload PASSED [ 93%]
+tests/routers/test_users_router.py::test_list_commanders_endpoint_returns_items PASSED [ 93%]
+tests/routers/test_users_router.py::test_update_commander_endpoint_updates_profile PASSED [ 93%]
+tests/routers/test_users_router.py::test_delete_commander_endpoint_removes_user PASSED [ 94%]
+tests/services/test_news_selection.py::test_build_prioritized_newspaper_dicts_orders_local_then_national PASSED [ 94%]
+tests/services/test_news_selection.py::test_build_prioritized_newspaper_dicts_handles_empty_lists PASSED [ 94%]
+tests/test_debug_path.py::test_print_app_path PASSED                     [ 95%]
+tests/utils/test_database_helpers.py::test_non_postgres_url_preserves_driver PASSED [ 95%]
+tests/utils/test_database_helpers.py::test_postgres_url_upgraded_to_async PASSED [ 95%]
+tests/utils/test_database_helpers.py::test_ensure_postgres_extensions_noop_for_other_dialects PASSED [ 96%]
+tests/utils/test_database_helpers.py::test_get_db_yields_session PASSED  [ 96%]
+tests/utils/test_env_loader.py::test_load_if_exists_invokes_dotenv PASSED [ 96%]
+tests/utils/test_env_loader.py::test_load_environment_priority PASSED    [ 97%]
+tests/utils/test_env_loader.py::test_load_environment_only_runs_once PASSED [ 97%]
+tests/utils/test_env_loader.py::test_load_environment_deduplicates_directories PASSED [ 97%]
+tests/utils/test_env_loader.py::test_load_directory_none_noop PASSED     [ 98%]
+tests/utils/test_main_module.py::test_main_app_initializes PASSED        [ 98%]
+tests/utils/test_main_module.py::test_main_lifespan_and_root_endpoint PASSED [ 98%]
+tests/utils/test_mutation_smoke.py::test_model_repr_invocation PASSED    [ 99%]
+tests/utils/test_mutation_smoke.py::test_database_extension_guard PASSED [ 99%]
+tests/utils/test_mutation_smoke.py::test_database_extension_logs_on_failure PASSED [100%]
+
+=============================== warnings summary ===============================
+app/routers/auth.py:52
+  /Users/parshv/Dev/ROSHNI/backend/mutants/app/routers/auth.py:52: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class UserSessionResponse(BaseModel):
+
+app/schemas/users.py:79
+  /Users/parshv/Dev/ROSHNI/backend/mutants/app/schemas/users.py:79: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class UserProfileResponse(BaseModel):
+
+app/schemas/users.py:109
+  /Users/parshv/Dev/ROSHNI/backend/mutants/app/schemas/users.py:109: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class CommanderResponse(BaseModel):
+
+app/schemas/responders.py:44
+  /Users/parshv/Dev/ROSHNI/backend/mutants/app/schemas/responders.py:44: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class TeamResponse(BaseModel):
+
+app/schemas/responders.py:73
+  /Users/parshv/Dev/ROSHNI/backend/mutants/app/schemas/responders.py:73: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class ResponderResponse(BaseModel):
+
+app/schemas/incidents.py:61
+  /Users/parshv/Dev/ROSHNI/backend/mutants/app/schemas/incidents.py:61: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class IncidentResponse(BaseModel):
+
+app/schemas/disasters.py:45
+  /Users/parshv/Dev/ROSHNI/backend/mutants/app/schemas/disasters.py:45: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class DisasterPublicResponse(BaseModel):
+
+app/routers/chat.py:6979
+  /Users/parshv/Dev/ROSHNI/backend/mutants/app/routers/chat.py:6979: DeprecationWarning: `regex` has been deprecated, please use `pattern` instead
+    scope: str = Query("team", regex="^(team|global)$"),
+
+app/schemas/logs.py:67
+  /Users/parshv/Dev/ROSHNI/backend/mutants/app/schemas/logs.py:67: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class LogResponse(BaseModel):
+
+app/schemas/tasks.py:56
+  /Users/parshv/Dev/ROSHNI/backend/mutants/app/schemas/tasks.py:56: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class TaskAssignmentResponse(BaseModel):
+
+app/schemas/tasks.py:66
+  /Users/parshv/Dev/ROSHNI/backend/mutants/app/schemas/tasks.py:66: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class TaskResponse(BaseModel):
+
+tests/models/test_disaster_management.py::test_disaster_task_assignment_primary_key_and_check
+  /Users/parshv/Dev/ROSHNI/backend/tests/models/test_disaster_management.py:228: SAWarning: New instance <DisasterTaskAssignment at 0x16b21f680> with identity key (<class 'app.models.disaster_management.DisasterTaskAssignment'>, (UUID('7a6e5d3e-68cf-465e-bae8-95d01e06bd52'), UUID('5e3cefc2-bc47-4544-96a9-a13eac82b5c4')), None) conflicts with persistent instance <DisasterTaskAssignment at 0x16b21f470>
+    db_session.commit()
+
+tests/repositories/test_disaster_repository.py::test_convert_incident_creates_disaster_and_followers
+tests/repositories/test_disaster_repository.py::test_convert_incident_defaults_type_to_other
+  /Users/parshv/Dev/ROSHNI/backend/mutants/app/repositories/disaster_repository.py:315: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    created_at=datetime.utcnow()
+
+tests/repositories/test_disaster_repository.py::test_close_disaster_updates_status
+  /Users/parshv/Dev/ROSHNI/backend/mutants/app/repositories/disaster_repository.py:13479: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    disaster.resolved_at = datetime.utcnow()
+
+tests/repositories/test_incident_repository.py::test_find_duplicate_incident_detects_recent_match
+  /Users/parshv/Dev/ROSHNI/backend/tests/repositories/test_incident_repository.py:61: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    now = datetime.utcnow()
+
+tests/repositories/test_incident_repository.py::test_find_duplicate_incident_detects_recent_match
+tests/repositories/test_incident_repository.py::test_find_duplicate_incident_ignores_old_records
+tests/repositories/test_incident_repository.py::test_find_duplicate_incident_checks_radius
+tests/repositories/test_incident_repository.py::test_find_duplicate_incident_requires_matching_type
+  /Users/parshv/Dev/ROSHNI/backend/mutants/app/repositories/incident_repository.py:79: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    time_threshold = datetime.utcnow() - timedelta(minutes=time_window_minutes)
+
+tests/repositories/test_incident_repository.py::test_find_duplicate_incident_ignores_old_records
+  /Users/parshv/Dev/ROSHNI/backend/tests/repositories/test_incident_repository.py:114: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    reported_at=datetime.utcnow() - timedelta(hours=5),
+
+tests/repositories/test_incident_repository.py::test_find_duplicate_incident_checks_radius
+  /Users/parshv/Dev/ROSHNI/backend/tests/repositories/test_incident_repository.py:136: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    reported_at=datetime.utcnow(),
+
+tests/repositories/test_incident_repository.py::test_find_duplicate_incident_requires_matching_type
+  /Users/parshv/Dev/ROSHNI/backend/tests/repositories/test_incident_repository.py:155: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    reported_at=datetime.utcnow(),
+
+tests/repositories/test_incident_repository.py::test_convert_to_disaster_creates_log_and_followers
+tests/repositories/test_incident_repository.py::test_convert_to_disaster_second_call_is_idempotent
+tests/repositories/test_incident_repository.py::test_convert_to_disaster_uses_incident_type_when_not_provided
+  /Users/parshv/Dev/ROSHNI/backend/mutants/app/repositories/incident_repository.py:3548: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    created_at=datetime.utcnow()
+
+tests/repositories/test_task_repository.py::test_update_assignment_status_manages_team_and_task_completion
+  /Users/parshv/Dev/ROSHNI/backend/tests/repositories/test_task_repository.py:235: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    eta=datetime.utcnow() + timedelta(hours=1),
+
+tests/routers/test_chat.py: 8 warnings
+tests/routers/test_logs.py: 3 warnings
+tests/routers/test_reports.py: 5 warnings
+tests/routers/test_surveys.py: 10 warnings
+  /Users/parshv/Dev/ROSHNI/backend/tests/conftest.py:216: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    reported_at=datetime.utcnow(),
+
+tests/routers/test_chat.py::test_categorize_relays
+  /Users/parshv/Dev/ROSHNI/backend/tests/routers/test_chat.py:384: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    created_at = datetime.utcnow()
+
+tests/routers/test_chat.py::test_get_disaster_chat_summary_guard_paths
+  /Users/parshv/Dev/ROSHNI/backend/tests/routers/test_chat.py:561: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    created_at=datetime.utcnow(),
+
+tests/routers/test_chat.py::test_update_and_delete_message_paths
+  /Users/parshv/Dev/ROSHNI/backend/tests/routers/test_chat.py:588: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    self.created_at = datetime.utcnow()
+
+tests/routers/test_chat.py::test_delete_message_forbidden
+  /Users/parshv/Dev/ROSHNI/backend/tests/routers/test_chat.py:660: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    self.created_at = datetime.utcnow()
+
+tests/routers/test_disasters_router.py::test_convert_endpoint_returns_error_when_missing
+tests/routers/test_disasters_router.py::test_convert_endpoint_formats_response
+tests/routers/test_disasters_router.py::test_convert_endpoint_handles_missing_geometry
+  /Users/parshv/Dev/ROSHNI/backend/mutants/app/routers/disasters.py:523: PydanticDeprecatedSince20: The `dict` method is deprecated; use `model_dump` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    disaster = await repo.convert_incident(incident_id, payload.dict())
+
+tests/routers/test_format_helpers.py::test_format_incident_response_builds_media_urls
+  /Users/parshv/Dev/ROSHNI/backend/tests/routers/test_format_helpers.py:29: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    reported_at=datetime.utcnow(),
+
+tests/routers/test_format_helpers.py::test_format_incident_response_handles_missing_geometry
+  /Users/parshv/Dev/ROSHNI/backend/tests/routers/test_format_helpers.py:48: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    reported_at=datetime.utcnow(),
+
+tests/routers/test_format_helpers.py::test_format_task_response_includes_assignments
+  /Users/parshv/Dev/ROSHNI/backend/tests/routers/test_format_helpers.py:108: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    created_at=datetime.utcnow(),
+
+tests/routers/test_format_helpers.py::test_format_task_response_uses_unknown_team_when_missing
+  /Users/parshv/Dev/ROSHNI/backend/tests/routers/test_format_helpers.py:133: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    created_at=datetime.utcnow(),
+
+tests/routers/test_incidents_router.py: 10 warnings
+  /Users/parshv/Dev/ROSHNI/backend/tests/routers/test_incidents_router.py:39: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    reported_at=datetime.utcnow(),
+
+tests/routers/test_reports.py::test_generate_report_draft
+  /Users/parshv/Dev/ROSHNI/backend/mutants/app/routers/reports.py:97: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    generated_at=datetime.utcnow(),
+
+tests/routers/test_responders_router.py::test_create_team_returns_defaults
+  /Users/parshv/Dev/ROSHNI/backend/mutants/app/routers/responders.py:67: PydanticDeprecatedSince20: The `dict` method is deprecated; use `model_dump` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    new_team = await repo.create_team(payload.dict())
+
+tests/routers/test_responders_router.py::test_create_responder_handles_exception
+tests/routers/test_responders_router.py::test_create_responder_returns_payload
+  /Users/parshv/Dev/ROSHNI/backend/mutants/app/routers/responders.py:107: PydanticDeprecatedSince20: The `dict` method is deprecated; use `model_dump` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    new_responder = await repo.create_responder(payload.dict())
+
+tests/routers/test_responders_router.py::test_update_responder_returns_404_when_missing
+tests/routers/test_responders_router.py::test_update_responder_returns_payload
+  /Users/parshv/Dev/ROSHNI/backend/mutants/app/routers/responders.py:135: PydanticDeprecatedSince20: The `dict` method is deprecated; use `model_dump` instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    updated = await repo.update_responder(user_id, payload.dict())
+
+tests/routers/test_surveys.py::test_get_pending_survey_with_template
+tests/routers/test_surveys.py::test_get_pending_survey_returns_state_without_timestamp
+tests/routers/test_surveys.py::test_get_pending_survey_respects_cooldown
+tests/routers/test_surveys.py::test_get_pending_survey_respects_cooldown_threshold
+  /Users/parshv/Dev/ROSHNI/backend/mutants/app/routers/surveys.py:82: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    now = datetime.utcnow() # Using utcnow as per existing code style, though deprecated
+
+tests/routers/test_surveys.py::test_submit_answer_creates_log
+tests/routers/test_surveys.py::test_submit_answer_updates_existing_state_and_injuries
+tests/routers/test_surveys.py::test_submit_answer_handles_non_numeric_conversion
+tests/routers/test_surveys.py::test_submit_answer_handles_non_numeric_injuries
+  /Users/parshv/Dev/ROSHNI/backend/mutants/app/routers/surveys.py:138: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    now = datetime.utcnow()
+
+tests/routers/test_surveys.py::test_get_pending_survey_respects_cooldown
+  /Users/parshv/Dev/ROSHNI/backend/tests/routers/test_surveys.py:163: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    last_answered_at=datetime.utcnow(),
+
+tests/routers/test_surveys.py::test_get_pending_survey_respects_cooldown_threshold
+  /Users/parshv/Dev/ROSHNI/backend/tests/routers/test_surveys.py:211: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    last_answered_at=datetime.utcnow() - timedelta(hours=2),
+
+tests/routers/test_tasks_router.py::test_create_task_returns_response
+  /Users/parshv/Dev/ROSHNI/backend/tests/routers/test_tasks_router.py:44: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    created_at=datetime.utcnow(),
+
+tests/routers/test_tasks_router.py::test_list_tasks_formats_assignments
+  /Users/parshv/Dev/ROSHNI/backend/tests/routers/test_tasks_router.py:139: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    created_at=datetime.utcnow(),
+
+tests/routers/test_tasks_router.py::test_list_tasks_filters_to_responder_team
+  /Users/parshv/Dev/ROSHNI/backend/tests/routers/test_tasks_router.py:219: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    created_at=datetime.utcnow(),
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+====================== 298 passed, 93 warnings in 27.03s =======================
+    exit code 0
+
+    done
+⠹ Running clean testspython -m pytest  -vv -x -q tests --rootdir=.
+============================= test session starts ==============================
+platform darwin -- Python 3.12.12, pytest-8.4.2, pluggy-1.6.0 -- /Users/parshv/miniconda3/envs/ROSHNI/bin/python3.12
+cachedir: .pytest_cache
+rootdir: /Users/parshv/Dev/ROSHNI/backend/mutants
+configfile: ../pytest.ini
+plugins: cov-6.0.0, asyncio-1.2.0, anyio-4.10.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 298 items
+
+tests/dependencies/test_dependencies.py::test_get_current_user_returns_user_when_session_valid PASSED [  0%]
+tests/dependencies/test_dependencies.py::test_get_current_user_requires_session_token PASSED [  0%]
+tests/dependencies/test_dependencies.py::test_get_current_user_clears_stale_session PASSED [  1%]
+tests/dependencies/test_dependencies.py::test_role_checker_rejects_missing_role PASSED [  1%]
+tests/dependencies/test_dependencies.py::test_role_checker_rejects_unlisted_role PASSED [  1%]
+tests/models/test_disaster_management.py::test_incident_create_and_geometry PASSED [  2%]
+tests/models/test_disaster_management.py::test_incident_invalid_status_check PASSED [  2%]
+tests/models/test_disaster_management.py::test_disaster_create_with_affected_area PASSED [  2%]
+tests/models/test_disaster_management.py::test_disaster_status_and_severity_checks PASSED [  3%]
+tests/models/test_disaster_management.py::test_disaster_task_create_and_default_status_priority PASSED [  3%]
+tests/models/test_disaster_management.py::test_disaster_task_status_and_priority_checks PASSED [  3%]
+tests/models/test_disaster_management.py::test_disaster_task_assignment_primary_key_and_check PASSED [  4%]
+tests/models/test_draft_reports.py::test_disaster_report_draft_basic_and_defaults PASSED [  4%]
+tests/models/test_draft_reports.py::test_disaster_report_draft_status_check_and_unique_version PASSED [  4%]
+tests/models/test_mapping_and_tracking.py::test_map_site_basic_and_checks PASSED [  5%]
+tests/models/test_mapping_and_tracking.py::test_map_site_invalid_type_and_status_checks PASSED [  5%]
+tests/models/test_mapping_and_tracking.py::test_user_location_log_basic PASSED [  5%]
+tests/models/test_model_reprs.py::test_news_model_reprs PASSED           [  6%]
+tests/models/test_model_reprs.py::test_other_model_reprs PASSED          [  6%]
+tests/models/test_questionnaires_and_logs.py::test_disaster_follower_cascade PASSED [  6%]
+tests/models/test_questionnaires_and_logs.py::test_question_template_basic_and_answer_type_check PASSED [  7%]
+tests/models/test_questionnaires_and_logs.py::test_question_template_unique_key PASSED [  7%]
+tests/models/test_questionnaires_and_logs.py::test_disaster_question_state_composite_pk PASSED [  7%]
+tests/models/test_questionnaires_and_logs.py::test_disaster_log_checks_and_media_relationship PASSED [  8%]
+tests/models/test_questionnaires_and_logs.py::test_disaster_media_file_type_check PASSED [  8%]
+tests/models/test_questionnaires_and_logs.py::test_disaster_chat_message_basic PASSED [  8%]
+tests/models/test_questionnaires_and_logs.py::test_incident_media_relationship PASSED [  9%]
+tests/models/test_questionnaires_and_logs.py::test_incident_media_file_type_validation PASSED [  9%]
+tests/models/test_relationships_integration.py::test_incident_to_disaster_source_incident_relationship PASSED [  9%]
+tests/models/test_relationships_integration.py::test_disaster_has_tasks_and_logs PASSED [ 10%]
+tests/models/test_responder_management.py::test_team_basic_create_and_checks PASSED [ 10%]
+tests/models/test_responder_management.py::test_team_invalid_type_violates_check PASSED [ 10%]
+tests/models/test_responder_management.py::test_team_invalid_status_violates_check PASSED [ 11%]
+tests/models/test_responder_management.py::test_responder_profile_basic_create_and_checks PASSED [ 11%]
+tests/models/test_responder_management.py::test_responder_profile_invalid_type_and_status_checks PASSED [ 11%]
+tests/models/test_responder_management.py::test_team_responder_relationship_collection PASSED [ 12%]
+tests/models/test_user_family_models.py::test_role_basic_create_and_repr PASSED [ 12%]
+tests/models/test_user_family_models.py::test_role_name_unique_constraint PASSED [ 12%]
+tests/models/test_user_family_models.py::test_user_create_with_defaults_and_relationships PASSED [ 13%]
+tests/models/test_user_family_models.py::test_user_email_and_phone_unique_constraints PASSED [ 13%]
+tests/models/test_user_family_models.py::test_user_geometry_roundtrip PASSED [ 13%]
+tests/models/test_user_family_models.py::test_user_profile_one_to_one PASSED [ 14%]
+tests/models/test_user_family_models.py::test_user_medical_profile_one_to_one_and_defaults PASSED [ 14%]
+tests/models/test_user_family_models.py::test_cascade_delete_user_profile_and_medical PASSED [ 14%]
+tests/repositories/test_disaster_repository.py::test_to_geojson_returns_feature PASSED [ 15%]
+tests/repositories/test_disaster_repository.py::test_to_geojson_handles_missing_or_invalid_geometry PASSED [ 15%]
+tests/repositories/test_disaster_repository.py::test_convert_incident_creates_disaster_and_followers PASSED [ 15%]
+tests/repositories/test_disaster_repository.py::test_convert_incident_returns_none_when_missing PASSED [ 16%]
+tests/repositories/test_disaster_repository.py::test_convert_incident_skips_already_converted PASSED [ 16%]
+tests/repositories/test_disaster_repository.py::test_convert_incident_defaults_type_to_other PASSED [ 16%]
+tests/repositories/test_disaster_repository.py::test_get_disasters_filters_by_role PASSED [ 17%]
+tests/repositories/test_disaster_repository.py::test_get_disasters_excludes_resolved_status PASSED [ 17%]
+tests/repositories/test_disaster_repository.py::test_get_stats_aggregates_logs PASSED [ 17%]
+tests/repositories/test_disaster_repository.py::test_get_stats_returns_zero_when_no_logs PASSED [ 18%]
+tests/repositories/test_disaster_repository.py::test_get_map_data_includes_sites_and_teams PASSED [ 18%]
+tests/repositories/test_disaster_repository.py::test_get_map_data_missing_returns_none PASSED [ 18%]
+tests/repositories/test_disaster_repository.py::test_close_disaster_updates_status PASSED [ 19%]
+tests/repositories/test_incident_repository.py::test_find_duplicate_incident_detects_recent_match PASSED [ 19%]
+tests/repositories/test_incident_repository.py::test_find_duplicate_incident_includes_boundary_records PASSED [ 19%]
+tests/repositories/test_incident_repository.py::test_find_duplicate_incident_ignores_old_records PASSED [ 20%]
+tests/repositories/test_incident_repository.py::test_find_duplicate_incident_checks_radius PASSED [ 20%]
+tests/repositories/test_incident_repository.py::test_find_duplicate_incident_requires_matching_type PASSED [ 20%]
+tests/repositories/test_incident_repository.py::test_create_incident_applies_sos_defaults PASSED [ 21%]
+tests/repositories/test_incident_repository.py::test_create_incident_uses_payload_values_for_regular_reports PASSED [ 21%]
+tests/repositories/test_incident_repository.py::test_add_media_links_files PASSED [ 21%]
+tests/repositories/test_incident_repository.py::test_get_all_open_incidents_returns_only_active PASSED [ 22%]
+tests/repositories/test_incident_repository.py::test_discard_incident_marks_status PASSED [ 22%]
+tests/repositories/test_incident_repository.py::test_convert_to_disaster_creates_log_and_followers PASSED [ 22%]
+tests/repositories/test_incident_repository.py::test_convert_to_disaster_second_call_is_idempotent PASSED [ 23%]
+tests/repositories/test_incident_repository.py::test_convert_to_disaster_missing_returns_none PASSED [ 23%]
+tests/repositories/test_incident_repository.py::test_convert_to_disaster_uses_incident_type_when_not_provided PASSED [ 23%]
+tests/repositories/test_incident_repository.py::test_get_incidents_for_user_returns_owned_records PASSED [ 24%]
+tests/repositories/test_incident_repository.py::test_delete_incident_removes_record PASSED [ 24%]
+tests/repositories/test_incident_repository.py::test_delete_incident_returns_none_when_missing PASSED [ 24%]
+tests/repositories/test_incident_repository.py::test_get_incident_loads_media PASSED [ 25%]
+tests/repositories/test_incident_repository.py::test_update_incident_updates_fields PASSED [ 25%]
+tests/repositories/test_incident_repository.py::test_update_incident_handles_missing_and_no_changes PASSED [ 25%]
+tests/repositories/test_responder_repository.py::test_create_and_list_teams_with_filters PASSED [ 26%]
+tests/repositories/test_responder_repository.py::test_create_responder_inserts_all_entities PASSED [ 26%]
+tests/repositories/test_responder_repository.py::test_create_responder_links_team PASSED [ 26%]
+tests/repositories/test_responder_repository.py::test_get_all_responders_applies_filters PASSED [ 27%]
+tests/repositories/test_responder_repository.py::test_get_all_responders_filters_by_type_without_team_filter PASSED [ 27%]
+tests/repositories/test_responder_repository.py::test_update_responder_sets_team_join_timestamp PASSED [ 27%]
+tests/repositories/test_responder_repository.py::test_update_responder_returns_none_when_no_updates PASSED [ 28%]
+tests/repositories/test_responder_repository.py::test_get_responder_detail_returns_none_for_missing PASSED [ 28%]
+tests/repositories/test_responder_repository.py::test_get_responder_detail_populates_fields PASSED [ 28%]
+tests/repositories/test_responder_repository.py::test_delete_team_unassigns_members PASSED [ 29%]
+tests/repositories/test_responder_repository.py::test_delete_responder_removes_user PASSED [ 29%]
+tests/repositories/test_responder_repository.py::test_delete_responder_returns_none_for_missing PASSED [ 29%]
+tests/repositories/test_responder_repository.py::test_assign_responder_to_team_updates_membership PASSED [ 30%]
+tests/repositories/test_responder_repository.py::test_update_responder_clears_team_joined_at PASSED [ 30%]
+tests/repositories/test_responder_repository.py::test_get_responder_team_returns_team PASSED [ 30%]
+tests/repositories/test_task_repository.py::test_create_task_persists_geometry PASSED [ 31%]
+tests/repositories/test_task_repository.py::test_get_tasks_returns_assignments PASSED [ 31%]
+tests/repositories/test_task_repository.py::test_get_tasks_filters_by_priority PASSED [ 31%]
+tests/repositories/test_task_repository.py::test_get_tasks_filters_by_status PASSED [ 32%]
+tests/repositories/test_task_repository.py::test_assign_team_updates_statuses PASSED [ 32%]
+tests/repositories/test_task_repository.py::test_update_assignment_status_manages_team_and_task_completion PASSED [ 32%]
+tests/repositories/test_task_repository.py::test_get_user_team_id_returns_identifier PASSED [ 33%]
+tests/repositories/test_task_repository.py::test_update_task_status_executes_override PASSED [ 33%]
+tests/repositories/test_task_repository.py::test_delete_task_removes_and_logs PASSED [ 33%]
+tests/repositories/test_task_repository.py::test_update_assignment_status_handles_cancelled_release PASSED [ 34%]
+tests/repositories/test_task_repository.py::test_get_tasks_filters_by_team PASSED [ 34%]
+tests/repositories/test_task_repository.py::test_delete_task_returns_none_when_missing PASSED [ 34%]
+tests/repositories/test_user_repository.py::test_get_by_email_returns_user PASSED [ 35%]
+tests/repositories/test_user_repository.py::test_get_by_id_loads_profile PASSED [ 35%]
+tests/repositories/test_user_repository.py::test_create_civilian_persists_user_and_profile PASSED [ 35%]
+tests/repositories/test_user_repository.py::test_update_provider_id_updates_existing_user PASSED [ 36%]
+tests/repositories/test_user_repository.py::test_complete_onboarding_creates_medical_profile PASSED [ 36%]
+tests/repositories/test_user_repository.py::test_complete_onboarding_retries_on_code_collision PASSED [ 36%]
+tests/repositories/test_user_repository.py::test_update_user_profile_ignores_none_values PASSED [ 37%]
+tests/repositories/test_user_repository.py::test_delete_user_returns_none_when_missing PASSED [ 37%]
+tests/repositories/test_user_repository.py::test_delete_user_removes_record PASSED [ 37%]
+tests/repositories/test_user_repository.py::test_update_phone_number_updates_user PASSED [ 38%]
+tests/repositories/test_user_repository.py::test_create_and_list_commanders PASSED [ 38%]
+tests/repositories/test_user_repository.py::test_update_medical_profile_ignores_none_values PASSED [ 38%]
+tests/repositories/test_user_repository.py::test_update_location_sets_geometry PASSED [ 39%]
+tests/repositories/test_user_repository.py::test_get_user_by_medical_code_returns_user PASSED [ 39%]
+tests/routers/test_auth_router.py::test_login_redirects_to_google PASSED [ 39%]
+tests/routers/test_auth_router.py::test_auth_callback_links_existing_user PASSED [ 40%]
+tests/routers/test_auth_router.py::test_auth_callback_creates_new_user PASSED [ 40%]
+tests/routers/test_auth_router.py::test_auth_callback_handles_oauth_errors PASSED [ 40%]
+tests/routers/test_auth_router.py::test_auth_callback_userinfo_fetch_failure PASSED [ 41%]
+tests/routers/test_auth_router.py::test_logout_clears_session PASSED     [ 41%]
+tests/routers/test_auth_router.py::test_get_current_user_requires_auth PASSED [ 41%]
+tests/routers/test_auth_router.py::test_get_current_user_handles_missing_user PASSED [ 42%]
+tests/routers/test_auth_router.py::test_get_current_user_returns_profile_info PASSED [ 42%]
+tests/routers/test_auth_router.py::test_auth_callback_rejects_missing_email PASSED [ 42%]
+tests/routers/test_auth_router.py::test_auth_callback_rejects_missing_sub PASSED [ 43%]
+tests/routers/test_auth_router.py::test_auth_callback_handles_db_error PASSED [ 43%]
+tests/routers/test_auth_router.py::test_auth_callback_handles_generic_error PASSED [ 43%]
+tests/routers/test_auth_router.py::test_auth_callback_raises_when_no_user_created PASSED [ 44%]
+tests/routers/test_auth_router.py::test_auth_callback_defaults_role_on_error PASSED [ 44%]
+tests/routers/test_chat.py::test_connection_manager_room_keys PASSED     [ 44%]
+tests/routers/test_chat.py::test_history_team_and_global FAILED          [ 45%]
+
+=================================== FAILURES ===================================
+_________________________ test_history_team_and_global _________________________
+
+async_client = <httpx.AsyncClient object at 0x14f2a81d0>
+async_db_session = <sqlalchemy.ext.asyncio.session.AsyncSession object at 0x14f2a80e0>
+async_create_user = <function async_create_user.<locals>._create_user at 0x14f293920>
+async_create_disaster = <function async_create_disaster.<locals>._create_disaster at 0x14f2937e0>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x14f2a8260>
+
+    @pytest.mark.asyncio
+    async def test_history_team_and_global(async_client, async_db_session, async_create_user, async_create_disaster, monkeypatch):
+        # Create users
+        responder = await async_create_user(email="responder@example.com", role_name="responder")
+        commander = await async_create_user(email="commander@example.com", role_name="commander")
+    
+        # Create disaster
+        disaster = await async_create_disaster()
+    
+        msg = DisasterChatMessage(
+            disaster_id=disaster.disaster_id,
+            sender_user_id=commander.user_id,
+            message_text="Test History Message",
+        )
+        async_db_session.add(msg)
+        await async_db_session.commit()
+    
+        async def fake_teams_for_disaster(_db, _disaster_id):
+            return []
+    
+        monkeypatch.setattr(chat, "_teams_for_disaster", fake_teams_for_disaster)
+    
+        # Test Endpoint
+>       response = await async_client.get(f"/chat/{disaster.disaster_id}/history")
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+../tests/routers/test_chat.py:122: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+../../../../miniconda3/envs/ROSHNI/lib/python3.12/site-packages/httpx/_client.py:1768: in get
+    return await self.request(
+../../../../miniconda3/envs/ROSHNI/lib/python3.12/site-packages/httpx/_client.py:1540: in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../miniconda3/envs/ROSHNI/lib/python3.12/site-packages/httpx/_client.py:1629: in send
+    response = await self._send_handling_auth(
+../../../../miniconda3/envs/ROSHNI/lib/python3.12/site-packages/httpx/_client.py:1657: in _send_handling_auth
+    response = await self._send_handling_redirects(
+../../../../miniconda3/envs/ROSHNI/lib/python3.12/site-packages/httpx/_client.py:1694: in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../miniconda3/envs/ROSHNI/lib/python3.12/site-packages/httpx/_client.py:1730: in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../miniconda3/envs/ROSHNI/lib/python3.12/site-packages/httpx/_transports/asgi.py:170: in handle_async_request
+    await self.app(scope, receive, send)
+../../../../miniconda3/envs/ROSHNI/lib/python3.12/site-packages/fastapi/applications.py:1082: in __call__
+    await super().__call__(scope, receive, send)
+../../../../miniconda3/envs/ROSHNI/lib/python3.12/site-packages/starlette/applications.py:113: in __call__
+    await self.middleware_stack(scope, receive, send)
+../../../../miniconda3/envs/ROSHNI/lib/python3.12/site-packages/starlette/middleware/errors.py:186: in __call__
+    raise exc
+../../../../miniconda3/envs/ROSHNI/lib/python3.12/site-packages/starlette/middleware/errors.py:164: in __call__
+    await self.app(scope, receive, _send)
+../../../../miniconda3/envs/ROSHNI/lib/python3.12/site-packages/starlette/middleware/sessions.py:85: in __call__
+    await self.app(scope, receive, send_wrapper)
+../../../../miniconda3/envs/ROSHNI/lib/python3.12/site-packages/starlette/middleware/cors.py:85: in __call__
+    await self.app(scope, receive, send)
+../../../../miniconda3/envs/ROSHNI/lib/python3.12/site-packages/starlette/middleware/exceptions.py:63: in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+../../../../miniconda3/envs/ROSHNI/lib/python3.12/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+../../../../miniconda3/envs/ROSHNI/lib/python3.12/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+../../../../miniconda3/envs/ROSHNI/lib/python3.12/site-packages/starlette/routing.py:716: in __call__
+    await self.middleware_stack(scope, receive, send)
+../../../../miniconda3/envs/ROSHNI/lib/python3.12/site-packages/starlette/routing.py:736: in app
+    await route.handle(scope, receive, send)
+../../../../miniconda3/envs/ROSHNI/lib/python3.12/site-packages/starlette/routing.py:290: in handle
+    await self.app(scope, receive, send)
+../../../../miniconda3/envs/ROSHNI/lib/python3.12/site-packages/starlette/routing.py:78: in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+../../../../miniconda3/envs/ROSHNI/lib/python3.12/site-packages/starlette/_exception_handler.py:53: in wrapped_app
+    raise exc
+../../../../miniconda3/envs/ROSHNI/lib/python3.12/site-packages/starlette/_exception_handler.py:42: in wrapped_app
+    await app(scope, receive, sender)
+../../../../miniconda3/envs/ROSHNI/lib/python3.12/site-packages/starlette/routing.py:75: in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+../../../../miniconda3/envs/ROSHNI/lib/python3.12/site-packages/fastapi/routing.py:308: in app
+    raw_response = await run_endpoint_function(
+../../../../miniconda3/envs/ROSHNI/lib/python3.12/site-packages/fastapi/routing.py:219: in run_endpoint_function
+    return await dependant.call(**values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app/routers/chat.py:7034: in get_chat_history
+    result = await db.execute(stmt)
+             ^^^^^^^^^^^^^^^^^^^^^^
+../../../../miniconda3/envs/ROSHNI/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/session.py:463: in execute
+    result = await greenlet_spawn(
+../../../../miniconda3/envs/ROSHNI/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py:201: in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../miniconda3/envs/ROSHNI/lib/python3.12/site-packages/sqlalchemy/orm/session.py:2365: in execute
+    return self._execute_internal(
+../../../../miniconda3/envs/ROSHNI/lib/python3.12/site-packages/sqlalchemy/orm/session.py:2241: in _execute_internal
+    conn = self._connection_for_bind(bind)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../miniconda3/envs/ROSHNI/lib/python3.12/site-packages/sqlalchemy/orm/session.py:2110: in _connection_for_bind
+    return trans._connection_for_bind(engine, execution_options)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+<string>:2: in _connection_for_bind
+    ???
+../../../../miniconda3/envs/ROSHNI/lib/python3.12/site-packages/sqlalchemy/orm/state_changes.py:137: in _go
+    ret_value = fn(self, *arg, **kw)
+                ^^^^^^^^^^^^^^^^^^^^
+../../../../miniconda3/envs/ROSHNI/lib/python3.12/site-packages/sqlalchemy/orm/session.py:1189: in _connection_for_bind
+    conn = bind.connect()
+           ^^^^^^^^^^^^^^
+../../../../miniconda3/envs/ROSHNI/lib/python3.12/site-packages/sqlalchemy/engine/base.py:3277: in connect
+    return self._connection_cls(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../miniconda3/envs/ROSHNI/lib/python3.12/site-packages/sqlalchemy/engine/base.py:143: in __init__
+    self._dbapi_connection = engine.raw_connection()
+                             ^^^^^^^^^^^^^^^^^^^^^^^
+../../../../miniconda3/envs/ROSHNI/lib/python3.12/site-packages/sqlalchemy/engine/base.py:3301: in raw_connection
+    return self.pool.connect()
+           ^^^^^^^^^^^^^^^^^^^
+../../../../miniconda3/envs/ROSHNI/lib/python3.12/site-packages/sqlalchemy/pool/base.py:447: in connect
+    return _ConnectionFairy._checkout(self)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../miniconda3/envs/ROSHNI/lib/python3.12/site-packages/sqlalchemy/pool/base.py:1363: in _checkout
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+../../../../miniconda3/envs/ROSHNI/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py:224: in __exit__
+    raise exc_value.with_traceback(exc_tb)
+../../../../miniconda3/envs/ROSHNI/lib/python3.12/site-packages/sqlalchemy/pool/base.py:1301: in _checkout
+    result = pool._dialect._do_ping_w_event(
+../../../../miniconda3/envs/ROSHNI/lib/python3.12/site-packages/sqlalchemy/engine/default.py:728: in _do_ping_w_event
+    return self.do_ping(dbapi_connection)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../miniconda3/envs/ROSHNI/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:1169: in do_ping
+    dbapi_connection.ping()
+../../../../miniconda3/envs/ROSHNI/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:813: in ping
+    self._handle_exception(error)
+../../../../miniconda3/envs/ROSHNI/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:794: in _handle_exception
+    raise error
+../../../../miniconda3/envs/ROSHNI/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:811: in ping
+    _ = self.await_(self._async_ping())
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../miniconda3/envs/ROSHNI/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py:132: in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../../../miniconda3/envs/ROSHNI/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py:196: in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+../../../../miniconda3/envs/ROSHNI/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py:820: in _async_ping
+    await tr.start()
+../../../../miniconda3/envs/ROSHNI/lib/python3.12/site-packages/asyncpg/transaction.py:146: in start
+    await self._connection.execute(query)
+../../../../miniconda3/envs/ROSHNI/lib/python3.12/site-packages/asyncpg/connection.py:349: in execute
+    result = await self._protocol.query(query, timeout)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+>   ???
+E   RuntimeError: Task <Task pending name='Task-1261' coro=<test_history_team_and_global() running at /Users/parshv/Dev/ROSHNI/backend/tests/routers/test_chat.py:122> cb=[_run_until_complete_cb() at /Users/parshv/miniconda3/envs/ROSHNI/lib/python3.12/asyncio/base_events.py:181]> got Future <Future pending cb=[BaseProtocol._on_waiter_completed()]> attached to a different loop
+
+asyncpg/protocol/protocol.pyx:375: RuntimeError
+------------------------------ Captured log call -------------------------------
+ERROR    sqlalchemy.pool.impl.AsyncAdaptedQueuePool:base.py:376 Exception terminating connection <AdaptedConnection <asyncpg.connection.Connection object at 0x14f55a990>>
+Traceback (most recent call last):
+  File "/Users/parshv/miniconda3/envs/ROSHNI/lib/python3.12/site-packages/sqlalchemy/pool/base.py", line 372, in _close_connection
+    self._dialect.do_terminate(connection)
+  File "/Users/parshv/miniconda3/envs/ROSHNI/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 1136, in do_terminate
+    dbapi_connection.terminate()
+  File "/Users/parshv/miniconda3/envs/ROSHNI/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 907, in terminate
+    self.await_(asyncio.shield(self._connection.close(timeout=2)))
+  File "/Users/parshv/miniconda3/envs/ROSHNI/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 132, in await_only
+    return current.parent.switch(awaitable)  # type: ignore[no-any-return,attr-defined] # noqa: E501
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/parshv/miniconda3/envs/ROSHNI/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 196, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "/Users/parshv/miniconda3/envs/ROSHNI/lib/python3.12/site-packages/asyncpg/connection.py", line 1504, in close
+    await self._protocol.close(timeout)
+  File "asyncpg/protocol/protocol.pyx", line 627, in close
+  File "asyncpg/protocol/protocol.pyx", line 660, in asyncpg.protocol.protocol.BaseProtocol._request_cancel
+  File "/Users/parshv/miniconda3/envs/ROSHNI/lib/python3.12/site-packages/asyncpg/connection.py", line 1673, in _cancel_current_command
+    self._cancellations.add(self._loop.create_task(self._cancel(waiter)))
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/parshv/miniconda3/envs/ROSHNI/lib/python3.12/asyncio/base_events.py", line 455, in create_task
+    self._check_closed()
+  File "/Users/parshv/miniconda3/envs/ROSHNI/lib/python3.12/asyncio/base_events.py", line 545, in _check_closed
+    raise RuntimeError('Event loop is closed')
+RuntimeError: Event loop is closed
+=============================== warnings summary ===============================
+tests/models/test_disaster_management.py::test_disaster_task_assignment_primary_key_and_check
+  /Users/parshv/Dev/ROSHNI/backend/tests/models/test_disaster_management.py:228: SAWarning: New instance <DisasterTaskAssignment at 0x14e25f680> with identity key (<class 'app.models.disaster_management.DisasterTaskAssignment'>, (UUID('46fef2cc-aa82-4604-b2be-6f6faa13ebde'), UUID('14ae8211-50a6-4ef2-9010-1a7acbb70dc7')), None) conflicts with persistent instance <DisasterTaskAssignment at 0x14e25d520>
+    db_session.commit()
+
+tests/repositories/test_disaster_repository.py::test_convert_incident_creates_disaster_and_followers
+tests/repositories/test_disaster_repository.py::test_convert_incident_defaults_type_to_other
+  /Users/parshv/Dev/ROSHNI/backend/mutants/app/repositories/disaster_repository.py:315: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    created_at=datetime.utcnow()
+
+tests/repositories/test_disaster_repository.py::test_close_disaster_updates_status
+  /Users/parshv/Dev/ROSHNI/backend/mutants/app/repositories/disaster_repository.py:13479: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    disaster.resolved_at = datetime.utcnow()
+
+tests/repositories/test_incident_repository.py::test_find_duplicate_incident_detects_recent_match
+  /Users/parshv/Dev/ROSHNI/backend/tests/repositories/test_incident_repository.py:61: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    now = datetime.utcnow()
+
+tests/repositories/test_incident_repository.py::test_find_duplicate_incident_detects_recent_match
+tests/repositories/test_incident_repository.py::test_find_duplicate_incident_ignores_old_records
+tests/repositories/test_incident_repository.py::test_find_duplicate_incident_checks_radius
+tests/repositories/test_incident_repository.py::test_find_duplicate_incident_requires_matching_type
+  /Users/parshv/Dev/ROSHNI/backend/mutants/app/repositories/incident_repository.py:79: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    time_threshold = datetime.utcnow() - timedelta(minutes=time_window_minutes)
+
+tests/repositories/test_incident_repository.py::test_find_duplicate_incident_ignores_old_records
+  /Users/parshv/Dev/ROSHNI/backend/tests/repositories/test_incident_repository.py:114: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    reported_at=datetime.utcnow() - timedelta(hours=5),
+
+tests/repositories/test_incident_repository.py::test_find_duplicate_incident_checks_radius
+  /Users/parshv/Dev/ROSHNI/backend/tests/repositories/test_incident_repository.py:136: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    reported_at=datetime.utcnow(),
+
+tests/repositories/test_incident_repository.py::test_find_duplicate_incident_requires_matching_type
+  /Users/parshv/Dev/ROSHNI/backend/tests/repositories/test_incident_repository.py:155: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    reported_at=datetime.utcnow(),
+
+tests/repositories/test_incident_repository.py::test_convert_to_disaster_creates_log_and_followers
+tests/repositories/test_incident_repository.py::test_convert_to_disaster_second_call_is_idempotent
+tests/repositories/test_incident_repository.py::test_convert_to_disaster_uses_incident_type_when_not_provided
+  /Users/parshv/Dev/ROSHNI/backend/mutants/app/repositories/incident_repository.py:3548: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    created_at=datetime.utcnow()
+
+tests/repositories/test_task_repository.py::test_update_assignment_status_manages_team_and_task_completion
+  /Users/parshv/Dev/ROSHNI/backend/tests/repositories/test_task_repository.py:235: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    eta=datetime.utcnow() + timedelta(hours=1),
+
+tests/routers/test_chat.py::test_history_team_and_global
+  /Users/parshv/Dev/ROSHNI/backend/tests/conftest.py:216: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    reported_at=datetime.utcnow(),
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/routers/test_chat.py::test_history_team_and_global - RuntimeErro...
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+================= 1 failed, 134 passed, 17 warnings in 14.75s ==================
+    exit code 1
+Failed to run clean test
+
+sys:1: RuntimeWarning: coroutine 'Connection._cancel' was never awaited

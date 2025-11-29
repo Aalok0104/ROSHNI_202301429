@@ -97,7 +97,7 @@ async def test_connection_manager_room_keys():
     assert str(disaster_id) not in manager.active_connections
 
 @pytest.mark.asyncio
-async def test_history_team_and_global(async_client, async_db_session, async_create_user, async_create_disaster):
+async def test_history_team_and_global(async_client, async_db_session, async_create_user, async_create_disaster, monkeypatch):
     # Create users
     responder = await async_create_user(email="responder@example.com", role_name="responder")
     commander = await async_create_user(email="commander@example.com", role_name="commander")
@@ -112,6 +112,11 @@ async def test_history_team_and_global(async_client, async_db_session, async_cre
     )
     async_db_session.add(msg)
     await async_db_session.commit()
+
+    async def fake_teams_for_disaster(_db, _disaster_id):
+        return []
+
+    monkeypatch.setattr(chat, "_teams_for_disaster", fake_teams_for_disaster)
 
     # Test Endpoint
     response = await async_client.get(f"/chat/{disaster.disaster_id}/history")
@@ -469,3 +474,199 @@ async def test_summary_sanitizes_fake_team(async_db_session, async_create_user, 
         assert "Team should be sanitized" in data["context"]
         assert "summary" in data
 
+
+# -------------------------------------------------------------------
+# Extra coverage for LLM helpers and guards
+# -------------------------------------------------------------------
+@pytest.mark.asyncio
+async def test_llm_call_missing_key_returns_fallback(monkeypatch):
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    out = await chat._call_llm("CTX", "PROMPT")
+    assert "LLM not configured" in out["text"]
+
+
+@pytest.mark.asyncio
+async def test_llm_call_parsing_fallback(monkeypatch):
+    async def mock_post(self, url, json, headers):
+        class Resp:
+            def raise_for_status(self): pass
+            def json(self):
+                # Missing message key to trigger fallback branch
+                return {"choices": [{"other": "value"}]}
+        return Resp()
+
+    monkeypatch.setenv("OPENAI_API_KEY", "dummy")
+    monkeypatch.setattr(httpx.AsyncClient, "post", mock_post, raising=False)
+    out = await chat._call_llm("CTX", "PROMPT")
+    assert out["text"].strip() == "[{'other': 'value'}]"
+
+
+@pytest.mark.asyncio
+async def test_llm_call_handles_exception(monkeypatch):
+    async def mock_post(self, url, json, headers):
+        raise RuntimeError("boom")
+
+    monkeypatch.setenv("OPENAI_API_KEY", "dummy")
+    monkeypatch.setattr(httpx.AsyncClient, "post", mock_post, raising=False)
+    out = await chat._call_llm("CTX", "PROMPT")
+    assert "LLM request failed" in out["text"]
+
+
+@pytest.mark.asyncio
+async def test_get_user_from_token_or_cookie_bad_uuid():
+    ws = SimpleNamespace(query_params={"user_id": "not-a-uuid"})
+    assert await chat.get_user_from_token_or_cookie(ws) is None
+
+
+@pytest.mark.asyncio
+async def test_get_disaster_chat_summary_guard_paths(monkeypatch):
+    class DummyResult:
+        def __init__(self, rows):
+            self._rows = rows
+        def scalars(self):
+            return self
+        def all(self):
+            return self._rows
+        def scalar_one_or_none(self):
+            return self._rows[0] if self._rows else None
+        def __iter__(self):
+            return iter(self._rows)
+
+    class DummySession:
+        def __init__(self, responses):
+            self._responses = responses
+            self._idx = 0
+        async def execute(self, _stmt):
+            res = self._responses[self._idx]
+            self._idx += 1
+            return res
+
+    # Missing user_id -> 401
+    with pytest.raises(Exception):
+        await chat.get_disaster_chat_summary(disaster_id=uuid4(), db=DummySession([]), user_id=None)
+
+    # Unauthorized role -> 403
+    bad_user = SimpleNamespace(user_id=uuid4(), role=SimpleNamespace(name="civilian"))
+    bad_session = DummySession([DummyResult([bad_user])])
+    with pytest.raises(Exception):
+        await chat.get_disaster_chat_summary(disaster_id=uuid4(), db=bad_session, user_id=bad_user.user_id)
+
+    # Authorized path with team cleanup and LLM call
+    authorized_user = SimpleNamespace(user_id=uuid4(), role=SimpleNamespace(name="commander"))
+    msg = SimpleNamespace(
+        team_id=uuid4(),
+        is_global=True,
+        sender=SimpleNamespace(role=SimpleNamespace(name="responder")),
+        message_text="Team relay",
+        created_at=datetime.utcnow(),
+    )
+    ok_session = DummySession([
+        DummyResult([authorized_user]),
+        DummyResult([msg]),
+        DummyResult([]),
+    ])
+    result = await chat.get_disaster_chat_summary(disaster_id=uuid4(), db=ok_session, user_id=authorized_user.user_id)
+    assert "summary" in result
+
+
+@pytest.mark.asyncio
+async def test_get_user_from_token_or_cookie_missing_token():
+    ws = SimpleNamespace(query_params={})
+    assert await chat.get_user_from_token_or_cookie(ws) is None
+
+
+@pytest.mark.asyncio
+async def test_update_and_delete_message_paths(monkeypatch):
+    from datetime import datetime
+
+    class StubMessage:
+        def __init__(self):
+            self.message_id = uuid4()
+            self.disaster_id = uuid4()
+            self.sender_user_id = uuid4()
+            self.message_text = "old"
+            self.created_at = datetime.utcnow()
+
+    class StubDB:
+        def __init__(self, message=None):
+            self.message = message
+            self.deleted = False
+        async def get(self, *_args, **_kwargs):
+            return self.message
+        async def commit(self):
+            return None
+        async def refresh(self, *_args, **_kwargs):
+            return None
+        async def delete(self, msg):
+            self.deleted = True
+
+    commander = SimpleNamespace(user_id=uuid4(), role=SimpleNamespace(name="commander"), profile=None, email="cmd@example.com")
+
+    # Not found update/delete
+    missing_db = StubDB(message=None)
+    with pytest.raises(Exception):
+        await chat.update_message(uuid4(), message_text="new", current_user=commander, db=missing_db)
+    with pytest.raises(Exception):
+        await chat.delete_message(uuid4(), current_user=commander, db=missing_db)
+
+    # Happy path
+    msg = StubMessage()
+    ok_db = StubDB(message=msg)
+    updated = await chat.update_message(msg.message_id, message_text="new text", current_user=commander, db=ok_db)
+    assert updated.message_text == "new text"
+    deleted = await chat.delete_message(msg.message_id, current_user=commander, db=ok_db)
+    assert deleted["message"] == "Message deleted"
+
+
+@pytest.mark.asyncio
+async def test_get_user_from_token_or_cookie_handles_repo_error(monkeypatch):
+    class BadRepo:
+        def __init__(self, *_args, **_kwargs): pass
+        async def get_by_id(self, *_args, **_kwargs):
+            raise RuntimeError("boom")
+    monkeypatch.setattr(chat, "UserRepository", BadRepo)
+    ws = SimpleNamespace(query_params={"user_id": str(uuid4())})
+    assert await chat.get_user_from_token_or_cookie(ws, db=None) is None
+
+
+@pytest.mark.asyncio
+async def test_get_chat_history_global_and_forbidden(monkeypatch):
+    class DummyResult:
+        def __init__(self, rows):
+            self._rows = rows
+        def scalars(self):
+            return self
+        def all(self):
+            return self._rows
+    class DummySession:
+        async def execute(self, _stmt):
+            return DummyResult([])
+    # Forbidden team_id not in teams
+    with pytest.raises(Exception):
+        await chat.get_chat_history(disaster_id=uuid4(), scope="team", team_id=uuid4(), db=DummySession())
+    # Global branch executes without error
+    messages = await chat.get_chat_history(disaster_id=uuid4(), scope="global", db=DummySession())
+    assert messages == []
+
+
+@pytest.mark.asyncio
+async def test_delete_message_forbidden(monkeypatch):
+    class StubMessage:
+        def __init__(self):
+            self.message_id = uuid4()
+            self.disaster_id = uuid4()
+            self.sender_user_id = uuid4()
+            self.message_text = "text"
+            self.created_at = datetime.utcnow()
+
+    class StubDB:
+        def __init__(self, message):
+            self.message = message
+        async def get(self, *_args, **_kwargs):
+            return self.message
+
+    user = SimpleNamespace(user_id=uuid4(), role=SimpleNamespace(name="responder"), profile=None, email=None)
+    message = StubMessage()
+    db = StubDB(message)
+    with pytest.raises(Exception):
+        await chat.delete_message(message.message_id, current_user=user, db=db)
