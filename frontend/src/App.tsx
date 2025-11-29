@@ -132,23 +132,15 @@ const DashboardView = ({ user, onLogout, loggingOut }: DashboardViewProps) => {
     fetchProfile();
   }, []);
 
-  // Auto-append disasterId to URL if missing (team-specific; via existing disasters router)
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (!params.has('disasterId') && (activeRole === 'responder' || activeRole === 'commander')) {
-      fetch(`${API_BASE_URL}/disasters/active-for-me`, { credentials: 'include' })
-        .then(res => res.ok ? res.json() : { disaster_id: null })
-        .then(({ disaster_id }) => {
-          if (disaster_id) {
-            const newParams = new URLSearchParams(window.location.search);
-            newParams.set('disasterId', disaster_id);
-            window.history.replaceState(null, '', `/?${newParams.toString()}${window.location.hash}`);
-          }
-        })
-        .catch(err => console.error('Failed to fetch active disaster:', err));
-    }
-  }, [activeRole]);
-  const [commanderView, setCommanderView] = useState<'dashboard' | 'home' | 'logs' | 'teams' | 'disasters'>(() => {
+  // News modal state and navigation
+  const [showNewsModal, setShowNewsModal] = useState(false);
+  const [newsParams, setNewsParams] = useState<{ stateId: number; city: string; keyword?: string } | null>(null);
+
+  const handleNavigateToNews = (stateId: number, cityName: string, keyword?: string) => {
+    setNewsParams({ stateId, city: cityName, keyword });
+    setCommanderView('news');
+  };
+  const [commanderView, setCommanderView] = useState<'dashboard' | 'home' | 'logs' | 'teams' | 'disasters' | 'news'>(() => {
     try {
       if (typeof window === 'undefined') return 'dashboard';
       const params = new URLSearchParams(window.location.search);
@@ -168,12 +160,7 @@ const DashboardView = ({ user, onLogout, loggingOut }: DashboardViewProps) => {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
-    // Preserve existing disasterId when updating commanderView
-    const existingDisasterId = params.get('disasterId');
     params.set('commanderView', commanderView);
-    if (existingDisasterId) {
-      params.set('disasterId', existingDisasterId);
-    }
     const newUrl = `/?${params.toString()}${window.location.hash}`;
     window.history.replaceState(null, '', newUrl);
   }, [commanderView]);
