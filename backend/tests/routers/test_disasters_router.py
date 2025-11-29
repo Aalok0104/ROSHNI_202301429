@@ -174,3 +174,80 @@ async def test_close_disaster_calls_repository(client, stub_repository):
     response = await client.patch(f"/disasters/{disaster_id}/close")
     assert response.status_code == 200
     assert stub_repository.closed_id == disaster_id
+
+
+@pytest.mark.asyncio
+async def test_stats_endpoint_rejects_unauthorized_role(monkeypatch, disasters_app):
+    async def _responder_user():
+        return SimpleNamespace(user_id=uuid4(), role=SimpleNamespace(name="civilian"))
+    disasters_app.dependency_overrides[disasters.get_current_user] = _responder_user
+    transport = ASGITransport(app=disasters_app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as client:
+        resp = await client.get(f"/disasters/{uuid4()}/stats")
+        assert resp.status_code == 403
+
+
+@pytest.mark.asyncio
+async def test_stats_endpoint_allows_responder(monkeypatch):
+    allowed_disaster = _make_disaster("Followed")
+    user = SimpleNamespace(user_id=uuid4(), role=SimpleNamespace(name="responder"))
+    class Repo:
+        def __init__(self, *_args, **_kwargs): pass
+        async def get_disasters(self, *_args, **_kwargs):
+            return [allowed_disaster]
+        async def get_stats(self, _id):
+            return {"ok": True}
+
+    monkeypatch.setattr(disasters, "DisasterRepository", lambda db: Repo())
+    result = await disasters.get_disaster_stats(
+        disaster_id=allowed_disaster.disaster_id,
+        current_user=user,
+        db=object(),
+    )
+    assert result["ok"] is True
+
+
+@pytest.mark.asyncio
+async def test_active_disaster_for_me_returns_first(monkeypatch):
+    active = _make_disaster("Active")
+    ongoing = _make_disaster("Ongoing")
+    ongoing.status = "ongoing"
+
+    class Repo:
+        async def get_disasters(self, *_args, **_kwargs):
+            return [active, ongoing]
+
+    user = SimpleNamespace(user_id=uuid4(), role=SimpleNamespace(name="responder"))
+
+    monkeypatch.setattr(disasters, "DisasterRepository", lambda db: Repo())
+    resp = await disasters.get_active_disaster_for_me(current_user=user, db=object())
+    assert resp["disaster_id"] is not None
+
+
+@pytest.mark.asyncio
+async def test_stats_endpoint_blocks_responder_not_following(monkeypatch):
+    user = SimpleNamespace(user_id=uuid4(), role=SimpleNamespace(name="responder"))
+
+    class Repo:
+        def __init__(self, *_args, **_kwargs): pass
+        async def get_disasters(self, *_args, **_kwargs):
+            return []  # no allowed disasters
+
+    monkeypatch.setattr(disasters, "DisasterRepository", lambda db: Repo())
+    with pytest.raises(Exception):
+        await disasters.get_disaster_stats(disaster_id=uuid4(), current_user=user, db=object())
+
+
+@pytest.mark.asyncio
+async def test_active_disaster_for_me_falls_back_to_first(monkeypatch):
+    user = SimpleNamespace(user_id=uuid4(), role=SimpleNamespace(name="responder"))
+    d1 = _make_disaster("Closed")
+    d1.status = "closed"
+
+    class Repo:
+        async def get_disasters(self, *_args, **_kwargs):
+            return [d1]
+
+    monkeypatch.setattr(disasters, "DisasterRepository", lambda db: Repo())
+    resp = await disasters.get_active_disaster_for_me(current_user=user, db=object())
+    assert resp["disaster_id"] == str(d1.disaster_id)

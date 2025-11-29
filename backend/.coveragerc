@@ -1,0 +1,13 @@
+[run]
+source = app
+omit =
+    app/services/news_scraper.py
+    app/ml/news_classifier.py
+    app/models/test_init.py
+    app/models/__init__.py
+    test_debug.py
+    test_integration.py
+    test_real_api.py
+
+[report]
+show_missing = True

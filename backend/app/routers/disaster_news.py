@@ -16,7 +16,6 @@ from app.models.news_models import NewsState, NewsCity, Newspaper, NewsAnalysisL
 from app.dependencies import RoleChecker, get_current_user
 from app.services.news_scraper import fetch_all_news
 from app.services.news_selection import build_prioritized_newspaper_dicts
-from app.ML.news_classifier import DisasterNewsClassifier
 from app.models.user_family_models import User
 
 logger = logging.getLogger(__name__)
@@ -134,55 +133,26 @@ async def analyze_disaster_news(
                 message="No disaster-related news articles found for the selected location"
             )
 
-        # Predictions
+        # Predictions (CNN classifier removed; fallback only)
         prediction_results = []
-        ml_failed = False
-        try:
-            logger.info(f"Starting ML prediction for {len(articles)} articles...")
-            classifier = DisasterNewsClassifier()
-            logger.info("Classifier instance created, preparing texts...")
-            texts = [f"{a['title']} {a.get('description','')}" for a in articles]
-            logger.info(f"Calling predict() with {len(texts)} texts...")
-            preds = classifier.predict(texts)
-            logger.info(f"Predictions received: {len(preds)} results")
-            for article, pred in zip(articles, preds):
-                prediction_results.append({
-                    'source': article.get('newspaper_name', 'IMD'),
-                    'title': article['title'],
-                    'description': article.get('description', ''),
-                    'link': article.get('link', ''),
-                    'published': article.get('published') or 'Unknown',
-                    'prediction': pred['prediction'],
-                    'confidence': pred['confidence'],
-                    'disaster_keyword': article.get('disaster_keyword'),
-                    'priority_score': article.get('priority_score')
-                })
-            logger.info(f"ML prediction completed successfully: {len(prediction_results)} articles classified")
-        except Exception as ml_error:
-            logger.error(f"!!! ML PREDICTION FAILED !!!")
-            logger.error(f"Error type: {type(ml_error).__name__}")
-            logger.error(f"Error message: {str(ml_error)}", exc_info=True)
-            ml_failed = True
-            for article in articles:
-                prediction_results.append({
-                    'source': article.get('newspaper_name', 'IMD'),
-                    'title': article['title'],
-                    'description': article.get('description', ''),
-                    'link': article.get('link', ''),
-                    'published': article.get('published') or 'Unknown',
-                    'prediction': 'UNAVAILABLE',
-                    'confidence': None,
-                    'disaster_keyword': article.get('disaster_keyword'),
-                    'priority_score': article.get('priority_score')
-                })
+        for article in articles:
+            prediction_results.append({
+                'source': article.get('newspaper_name', 'IMD'),
+                'title': article['title'],
+                'description': article.get('description', ''),
+                'link': article.get('link', ''),
+                'published': article.get('published') or 'Unknown',
+                'prediction': 'UNAVAILABLE',
+                'confidence': None,
+                'disaster_keyword': article.get('disaster_keyword'),
+                'priority_score': article.get('priority_score')
+            })
 
         fake_count = sum(1 for r in prediction_results if r['prediction'] == 'FAKE')
         real_count = sum(1 for r in prediction_results if r['prediction'] == 'REAL')
         unavailable_count = sum(1 for r in prediction_results if r['prediction'] == 'UNAVAILABLE')
 
-        message = "Analysis completed successfully"
-        if ml_failed:
-            message += " (ML prediction unavailable)"
+        message = "Analysis completed successfully (ML prediction unavailable; classifier removed)"
 
         return NewsAnalysisResponse(
             success=True,

@@ -32,8 +32,8 @@ class AsyncSessionAdapter:
     async def commit(self):
         self._session.commit()
 
-    async def refresh(self, instance):
-        self._session.refresh(instance)
+    async def refresh(self, *args, **kwargs):
+        self._session.refresh(*args, **kwargs)
 
 
 def _make_point(x=77.2, y=12.1):

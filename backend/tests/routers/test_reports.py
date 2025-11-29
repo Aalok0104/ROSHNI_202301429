@@ -167,3 +167,17 @@ async def test_delete_report_returns_404_for_missing(async_db_session, async_cre
             db=async_db_session,
         )
     assert "404" in str(exc.value)
+
+
+@pytest.mark.asyncio
+async def test_get_report_success():
+    report = SimpleNamespace(report_id=uuid4())
+    class StubResult:
+        def scalar_one_or_none(self):
+            return report
+    class StubDB:
+        async def execute(self, _stmt):
+            return StubResult()
+    commander = SimpleNamespace(user_id=uuid4(), role=SimpleNamespace(name="commander"))
+    result = await reports_router.get_report(report_id=report.report_id, current_user=commander, db=StubDB())
+    assert result == report

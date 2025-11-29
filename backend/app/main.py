@@ -3,21 +3,21 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 from contextlib import asynccontextmanager
 
+from app import models
 from app.models import news_models
 from app.config import settings
-from app.database import engine, Base, AsyncSessionLocal
-from app.routers import auth
+from app.database import AsyncSessionLocal, engine
 from app.models.user_family_models import Role  # Import Role for seeding
 from app.routers import auth, users, responders, incidents, disasters, chat, surveys, reports, logs, tasks, disaster_news
 
 # --- Lifecycle: Seed Roles on Startup ---
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # 1. Create Tables (Dev only - use Alembic in Prod)
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-    
-    # 2. Seed Roles
+    # Ensure schema exists via models init hook (testing-only path).
+    if hasattr(models, "_ensure_models_assigned"):
+        await models._ensure_models_assigned()
+
+    # Seed Roles
     async with AsyncSessionLocal() as session:
         from sqlalchemy import select
         result = await session.execute(select(Role))
