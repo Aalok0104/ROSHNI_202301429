@@ -23,6 +23,10 @@ __pycache__/
 .pytest_cache/
 *.db
 
+# Uploaded Files
+backend/app/static/uploads/incidents/*
+!backend/app/static/uploads/incidents/.gitkeep
+
 # Docker
 *.dockerignore
 

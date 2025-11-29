@@ -61,38 +61,47 @@ async def create_incident(
     """
     Unified Endpoint: SOS (no fields) OR Report (fields).
     """
-    repo = IncidentRepository(db)
+    try:
+        repo = IncidentRepository(db)
 
-    # 1. Check Duplicates
-    check_type = payload.incident_type if payload.incident_type else "sos"
-    duplicate = await repo.find_duplicate_incident(
-        lat=payload.latitude,
-        lon=payload.longitude,
-        incident_type=check_type
-    )
+        # 1. Check Duplicates
+        check_type = payload.incident_type if payload.incident_type else "sos"
+        duplicate = await repo.find_duplicate_incident(
+            lat=payload.latitude,
+            lon=payload.longitude,
+            incident_type=check_type
+        )
 
-    if duplicate:
-        return format_incident_response(duplicate)
+        if duplicate:
+            return format_incident_response(duplicate)
 
-    # 2. Create
-    is_sos = (payload.title is None)
-    new_incident = await repo.create_incident(
-        user_id=current_user.user_id, 
-        data=payload,
-        is_sos=is_sos
-    )
+        # 2. Create
+        is_sos = (payload.title is None)
+        new_incident = await repo.create_incident(
+            user_id=current_user.user_id, 
+            data=payload,
+            is_sos=is_sos
+        )
 
-    # 3. Trigger SOS Logic
-    if is_sos or payload.incident_type == 'sos':
-        # Phase 4: WebSocket broadcast to Commanders
-        pass
+        # 3. Trigger SOS Logic
+        if is_sos or payload.incident_type == 'sos':
+            # Phase 4: WebSocket broadcast to Commanders
+            pass
 
-    return format_incident_response(new_incident)
+        return format_incident_response(new_incident)
+    except Exception as e:
+        import traceback
+        print(f"❌ Error creating incident: {str(e)}")
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Failed to create incident: {str(e)}")
 
+
+from app.services.inference_service import run_inference_and_update_db
 
 @router.post("/{incident_id}/media")
 async def upload_media(
     incident_id: UUID,
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
@@ -125,6 +134,9 @@ async def upload_media(
             "storage_path": file_path
         }
     )
+
+    if file_type == "image":
+        background_tasks.add_task(run_inference_and_update_db, media_entry.media_id)
 
     return {
         "media_id": media_entry.media_id,

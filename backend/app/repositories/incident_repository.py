@@ -73,8 +73,9 @@ class IncidentRepository:
             status='open'
         )
         self.db.add(new_incident)
+        await self.db.flush()  # Flush to get ID before commit
         await self.db.commit()
-        await self.db.refresh(new_incident)
+        await self.db.refresh(new_incident, ['media_items'])  # Refresh with relationships
         return new_incident
 
     async def get_all_open_incidents(self) -> list[Incident]:

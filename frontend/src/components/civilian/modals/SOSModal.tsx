@@ -48,6 +48,7 @@ const SOSModal: FC<SOSModalProps> = ({ isOpen, onClose, onSuccess }) => {
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
   const [cooldownRemaining, setCooldownRemaining] = useState(0);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
@@ -83,25 +84,30 @@ const SOSModal: FC<SOSModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     
+    // Clear previous messages
+    setMessage('');
+    setError('');
+    
     // Check cooldown
     if (cooldownRemaining > 0) {
-      alert(`Please wait ${cooldownRemaining} seconds before submitting another report.`);
+      setError(`Please wait ${cooldownRemaining} seconds before submitting another report.`);
       return;
     }
     
     if (!formData.disasterType || !formData.description) {
-      alert('Please fill in all required fields: Type of Disaster and Description');
+      setError('Please fill in all required fields: Type of Disaster and Description');
       return;
     }
 
     // Check if we need to get location
     if (formData.latitude === null || formData.longitude === null) {
-      alert('Please provide a location by clicking "Use Current" button or entering coordinates manually');
+      setError('Please provide a location by clicking "Use Current" button or entering coordinates manually');
       return;
     }
 
     try {
       setLoading(true);
+      setError('');
 
       // Convert disaster type to incident_type format
       const incidentType = formData.disasterType.toLowerCase().replace(/ /g, '_').replace(/\//g, '_');
@@ -117,17 +123,63 @@ const SOSModal: FC<SOSModalProps> = ({ isOpen, onClose, onSuccess }) => {
 
       console.log('Submitting incident:', incidentPayload);
 
-      const response = await fetch(`${API_BASE_URL}/incidents`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(incidentPayload)
-      });
+      // Add retry logic for the first request
+      let response;
+      let retryCount = 0;
+      const maxRetries = 2;
+
+      while (retryCount <= maxRetries) {
+        try {
+          response = await fetch(`${API_BASE_URL}/incidents`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify(incidentPayload)
+          });
+
+          // If successful or client error (4xx), break the loop
+          if (response.ok || (response.status >= 400 && response.status < 500)) {
+            break;
+          }
+
+          // If server error (5xx) and not last retry, wait and retry
+          if (retryCount < maxRetries) {
+            console.warn(`Request failed with status ${response.status}, retrying... (${retryCount + 1}/${maxRetries})`);
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retry
+            retryCount++;
+          } else {
+            break;
+          }
+        } catch (fetchError) {
+          // Network error, retry if not last attempt
+          if (retryCount < maxRetries) {
+            console.warn(`Network error, retrying... (${retryCount + 1}/${maxRetries})`, fetchError);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            retryCount++;
+          } else {
+            throw fetchError;
+          }
+        }
+      }
+
+      if (!response) {
+        throw new Error('Failed to connect to server after multiple attempts');
+      }
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ detail: 'Unknown error' }));
+        const contentType = response.headers.get('content-type');
+        let errorData;
+        
+        if (contentType && contentType.includes('application/json')) {
+          errorData = await response.json();
+        } else {
+          const errorText = await response.text();
+          console.error('Non-JSON error response:', errorText);
+          errorData = { detail: `Server error: ${response.status} - ${errorText.substring(0, 100)}` };
+        }
+        
         console.error('API Error:', errorData);
         throw new Error(errorData.detail || `Server error: ${response.status}`);
       }
@@ -202,7 +254,8 @@ const SOSModal: FC<SOSModalProps> = ({ isOpen, onClose, onSuccess }) => {
       }, 1500);
     } catch (error) {
       console.error('Error submitting report:', error);
-      alert('Failed to submit emergency report. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to submit emergency report. Please try again.';
+      setError(errorMessage);
       setLoading(false);
     }
   };
@@ -304,6 +357,25 @@ const SOSModal: FC<SOSModalProps> = ({ isOpen, onClose, onSuccess }) => {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-5 text-gray-900">
+          {/* Success Message */}
+          {message && (
+            <div className="p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg flex items-start gap-2">
+              <span className="text-xl">✓</span>
+              <p>{message}</p>
+            </div>
+          )}
+
+          {/* Error Message */}
+          {error && (
+            <div className="p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg flex items-start gap-2">
+              <span className="text-xl">⚠</span>
+              <div>
+                <p className="font-semibold">Error</p>
+                <p className="text-sm">{error}</p>
+              </div>
+            </div>
+          )}
+
           {/* Type of Disaster */}
           <div>
             <label className="block text-sm font-medium mb-2">

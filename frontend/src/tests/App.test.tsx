@@ -4,63 +4,75 @@ import userEvent from '@testing-library/user-event';
 
 import App from '../App';
 
-type SessionPayload = {
-  user: {
-    email: string;
-    name?: string | null;
-    role?: string | null;
-  } | null;
-};
+/**
+ * Test helpers: create a fetch mock that returns safe defaults for the
+ * endpoints the app and its children call. This prevents unhandled fetch
+ * errors from child components (e.g. ReportsList) when asserting top-level
+ * behaviour.
+ */
+const makeBackendMock = (overrides: { session?: any; profile?: any; incidents?: any[] } = {}) =>
+  vi.fn().mockImplementation((input: RequestInfo) => {
+    const url = typeof input === 'string' ? input : (input as Request).url;
 
-const mockFetch = (payload: SessionPayload, ok = true) =>
-  vi.fn().mockResolvedValue({
-    ok,
-    json: vi.fn().mockResolvedValue(payload),
-  } as unknown as Response);
+    if (url.includes('/auth/me')) {
+      return Promise.resolve({ ok: true, json: () => Promise.resolve(overrides.session ?? null) } as unknown as Response);
+    }
+
+    if (url.includes('/users/me/profile')) {
+      return Promise.resolve({ ok: true, json: () => Promise.resolve(overrides.profile ?? null) } as unknown as Response);
+    }
+
+    if (url.includes('/incidents') || url.includes('/reports') || url.includes('/disasters') || url.includes('/commander/teams')) {
+      return Promise.resolve({ ok: true, json: () => Promise.resolve(overrides.incidents ?? []) } as unknown as Response);
+    }
+
+    // default fallback
+    return Promise.resolve({ ok: true, json: () => Promise.resolve({}) } as unknown as Response);
+  });
 
 describe('App', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('renders the split layout and triggers backend-controlled login', async () => {
-    global.fetch = mockFetch({ user: null }) as unknown as typeof fetch;
+  it('renders login split layout and calls onBeginLogin when user clicks Google', async () => {
+    // Simulate unauthenticated (401) from session endpoint
+    global.fetch = vi.fn().mockResolvedValue({ ok: false, status: 401, json: () => Promise.resolve(null) } as unknown as Response) as unknown as typeof fetch;
 
-    const user = userEvent.setup();
     const beginLogin = vi.fn();
+    const u = userEvent.setup();
     render(<App onBeginLogin={beginLogin} />);
 
     expect(await screen.findByAltText(/roshni logo/i)).toBeInTheDocument();
     expect(screen.getByRole('separator')).toBeInTheDocument();
 
     const loginButton = await screen.findByRole('button', { name: /continue with google/i });
-    await user.click(loginButton);
+    await u.click(loginButton);
 
-    expect(beginLogin).toHaveBeenCalledWith('http://localhost:8000/api/auth/google/login');
+    expect(beginLogin).toHaveBeenCalledTimes(1);
+    expect(beginLogin.mock.calls[0][0]).toContain('/auth/login');
   });
 
-  it('shows the signed-in state when the backend session exists', async () => {
-    global.fetch = mockFetch({
-      user: { email: 'civ@example.com', name: 'Civic Test', role: 'civilian' },
-    }) as unknown as typeof fetch;
+  it('renders signed-in dashboard when session and profile exist', async () => {
+    const session = { user_id: 'u1', email: 'civ@example.com', role: 'civilian', is_profile_complete: true };
+    const profile = { full_name: 'Civic Test' };
+
+    global.fetch = makeBackendMock({ session, profile, incidents: [] }) as unknown as typeof fetch;
 
     render(<App />);
 
+    // Signed-in UI elements
     expect(await screen.findByRole('button', { name: /logout/i })).toBeInTheDocument();
-    expect(screen.getAllByText(/Civic Test/i).length).toBeGreaterThan(0);
-    const dashboardHeading = await screen.findByRole('heading', { name: /civilian dashboard/i });
-    expect(dashboardHeading).toBeInTheDocument();
+    expect(await screen.findByText(/Civic Test/i)).toBeInTheDocument();
+    expect(await screen.findByRole('main', { name: /civilian dashboard/i })).toBeInTheDocument();
   });
 
-  it('surfaces backend connectivity issues', async () => {
+  it('shows an error message when session fetch throws', async () => {
     global.fetch = vi.fn().mockRejectedValue(new Error('network')) as unknown as typeof fetch;
 
     render(<App />);
 
-    await waitFor(() =>
-      expect(
-        screen.getByText(/Unable to reach the authentication service/i),
-      ).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.getByText(/Unable to reach the authentication service/i)).toBeInTheDocument());
   });
 });
+

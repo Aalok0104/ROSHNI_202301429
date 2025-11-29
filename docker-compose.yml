@@ -39,6 +39,8 @@ services:
       - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
     ports:
       - "8000:8000"
+    volumes:
+      - ./backend/app/static/uploads:/app/app/static/uploads  # Persist uploads
 
   frontend:
     build:
