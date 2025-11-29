@@ -1,0 +1,84 @@
+@startuml
+!theme plain
+skinparam activity {
+  BackgroundColor #FFFACD
+  BorderColor #B8860B
+  ArrowColor #B8860B
+}
+
+title BERT NLP Model Workflow
+
+start
+
+partition "Initialization" {
+    :Import Libraries
+    (TensorFlow, Keras, Pandas, etc.);
+    :Load GloVe & FastText Embeddings;
+    :Load Train & Test Data
+    (read_csv);
+}
+
+partition "Data Cleaning & Preprocessing" {
+    :Analyze Missing Values;
+    :Fill Missing Keywords/Locations;
+    :Clean Text Data
+    (Lowercase, remove URLs, HTML tags,
+    expand contractions, remove typos);
+    :Relabel Mislabeled Tweets
+    (Fix duplicates with conflicting labels);
+}
+
+partition "BERT Tokenization" {
+    :Initialize BERT Tokenizer
+    (from TF Hub layer);
+    :Tokenize Text
+    (Convert to Word IDs, Masks, Segment IDs);
+    :Truncate/Pad Sequences
+    (Max Seq Length = 160);
+}
+
+if (BERT Layer Loaded?) then (Yes)
+    :Build BERT Model Architecture;
+else (No)
+    :Download Pretrained BERT;
+    :Build BERT Model Architecture;
+endif
+
+partition "Model Architecture" {
+    :Input Layers
+    (Word IDs, Masks, Segment IDs);
+    :BERT Layer
+    (Pretrained Encoder);
+    :Extract [CLS] Token;
+    :Dense Output Layer
+    (Sigmoid Activation);
+}
+
+:Compile Model
+(SGD Optimizer, Binary Crossentropy);
+
+partition "Training & Evaluation" {
+    :Stratified K-Fold Split
+    (K=2);
+    
+    while (For Each Fold)
+        :Train Model
+        (model.fit with callbacks);
+        :Calculate Fold Metrics
+        (Precision, Recall, F1);
+    endwhile
+
+    :Train Final Model on Full Data;
+}
+
+partition "Prediction & Submission" {
+    :Predict on Test Set;
+    :Round Probabilities
+    (Threshold = 0.5);
+    :Calculate Final Metrics
+    (Accuracy, Precision, Classification Report);
+    :Create Submission CSV;
+}
+
+stop
+@enduml

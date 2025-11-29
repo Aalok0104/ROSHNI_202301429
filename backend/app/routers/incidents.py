@@ -96,9 +96,12 @@ async def create_incident(
         raise HTTPException(status_code=500, detail=f"Failed to create incident: {str(e)}")
 
 
+from app.services.inference_service import run_inference_and_update_db
+
 @router.post("/{incident_id}/media")
 async def upload_media(
     incident_id: UUID,
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
@@ -131,6 +134,9 @@ async def upload_media(
             "storage_path": file_path
         }
     )
+
+    if file_type == "image":
+        background_tasks.add_task(run_inference_and_update_db, media_entry.media_id)
 
     return {
         "media_id": media_entry.media_id,

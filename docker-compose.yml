@@ -40,7 +40,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-    - ./backend/app/static/uploads:/app/app/static/uploads  # Persist uploads
+      - ./backend/app/static/uploads:/app/app/static/uploads  # Persist uploads
 
   frontend:
     build:

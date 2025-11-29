@@ -45,3 +45,6 @@ uvicorn==0.36.0
 mutmut
 shapely
 unittest-xml-reporting
+numpy==1.26.4
+pillow==11.0.0
+tensorflow>=2.16.0
