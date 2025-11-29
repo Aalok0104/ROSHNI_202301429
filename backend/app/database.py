@@ -44,7 +44,11 @@ async def ensure_postgres_extensions() -> None:
 
 
 AsyncSessionLocal = sessionmaker(
-    bind=engine, class_=AsyncSession, autocommit=False, autoflush=False
+    bind=engine,
+    class_=AsyncSession,
+    autocommit=False,
+    autoflush=False,
+    expire_on_commit=False,
 )
 
 Base = declarative_base()
