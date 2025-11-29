@@ -1,0 +1,61 @@
+⠋ Generating mutantsapp/models/responder_models.py
+app/models/responder_management.py
+app/models/draft_reports.py
+app/models/mapping_and_tracking.py
+app/models/news_models.py
+app/models/user_family_models.py
+app/models/disaster_management.py
+app/models/questionnaires_and_logs.py
+app/models/__init__.py
+app/models/test_init.py
+     also copying tests
+     also copying test
+     also copying setup.cfg
+     also copying pyproject.toml
+     also copying test_debug.py
+     also copying test_real_api.py
+     also copying test_integration.py
+
+    done in 457ms
+⠙ Running stats     ImportError while loading conftest '/Users/parshv/Dev/ROSHNI/backend/mutants/tests/conftest.py'.
+../tests/conftest.py:23: in <module>
+    from app.env import load_environment  # noqa: E402
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ModuleNotFoundError: No module named 'app.env'
+python -m pytest  -vv -x -q tests --rootdir=.
+    exit code 4
+
+Traceback (most recent call last):
+  File "/Users/parshv/miniconda3/envs/ROSHNI/bin/mutmut", line 7, in <module>
+    sys.exit(cli())
+             ^^^^^
+  File "/Users/parshv/miniconda3/envs/ROSHNI/lib/python3.12/site-packages/click/core.py", line 1462, in __call__
+    return self.main(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/parshv/miniconda3/envs/ROSHNI/lib/python3.12/site-packages/click/core.py", line 1383, in main
+    rv = self.invoke(ctx)
+         ^^^^^^^^^^^^^^^^
+  File "/Users/parshv/miniconda3/envs/ROSHNI/lib/python3.12/site-packages/click/core.py", line 1850, in invoke
+    return _process_result(sub_ctx.command.invoke(sub_ctx))
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/parshv/miniconda3/envs/ROSHNI/lib/python3.12/site-packages/click/core.py", line 1246, in invoke
+    return ctx.invoke(self.callback, **ctx.params)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/parshv/miniconda3/envs/ROSHNI/lib/python3.12/site-packages/click/core.py", line 814, in invoke
+    return callback(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/parshv/miniconda3/envs/ROSHNI/lib/python3.12/site-packages/mutmut/__main__.py", line 949, in run
+    _run(mutant_names, max_children)
+  File "/Users/parshv/miniconda3/envs/ROSHNI/lib/python3.12/site-packages/mutmut/__main__.py", line 991, in _run
+    collect_or_load_stats(runner)
+  File "/Users/parshv/miniconda3/envs/ROSHNI/lib/python3.12/site-packages/mutmut/__main__.py", line 800, in collect_or_load_stats
+    run_stats_collection(runner)
+  File "/Users/parshv/miniconda3/envs/ROSHNI/lib/python3.12/site-packages/mutmut/__main__.py", line 778, in run_stats_collection
+    collect_stats_exit_code = runner.run_stats(tests=tests)
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/parshv/miniconda3/envs/ROSHNI/lib/python3.12/site-packages/mutmut/__main__.py", line 440, in run_stats
+    return int(self.execute_pytest(pytest_args, plugins=[stats_collector]))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/parshv/miniconda3/envs/ROSHNI/lib/python3.12/site-packages/mutmut/__main__.py", line 414, in execute_pytest
+    raise BadTestExecutionCommandsException(params)
+mutmut.__main__.BadTestExecutionCommandsException: Failed to run pytest with args: ['-vv', '-x', '-q', 'tests', '--rootdir=.']. If your config sets debug=true, the original pytest error should be above.

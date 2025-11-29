@@ -28,8 +28,8 @@ class AsyncSessionAdapter:
     async def commit(self):
         self._session.commit()
 
-    async def refresh(self, instance):
-        self._session.refresh(instance)
+    async def refresh(self, *args, **kwargs):
+        self._session.refresh(*args, **kwargs)
 
     async def get(self, model, pk):
         return self._session.get(model, pk)
@@ -406,6 +406,34 @@ async def test_assign_responder_to_team_updates_membership(db_session):
     await repo.assign_responder_to_team(user.user_id, None)
     profile = db_session.get(ResponderProfile, user.user_id)
     assert profile.team_id is None
+
+
+@pytest.mark.asyncio
+async def test_update_responder_clears_team_joined_at(db_session):
+    commander = _seed_commander(db_session, 962)
+    team = Team(name="Temp", team_type="fire", commander_user_id=commander.user_id, status="available")
+    db_session.add(team)
+    db_session.commit()
+
+    user = User(role_id=commander.role_id, email="clear-team@example.com")
+    db_session.add(user)
+    db_session.commit()
+    db_session.add(UserProfile(user_id=user.user_id, full_name="WithTeam"))
+    db_session.add(
+        ResponderProfile(
+            user_id=user.user_id,
+            responder_type="firefighter",
+            badge_number="CLR-1",
+            status="active",
+            team_id=team.team_id,
+        )
+    )
+    db_session.commit()
+
+    repo = ResponderRepository(AsyncSessionAdapter(db_session))
+    await repo.update_responder(user.user_id, {"team_id": None})
+    refreshed = db_session.get(ResponderProfile, user.user_id)
+    assert refreshed.team_id is None
 
 
 @pytest.mark.asyncio

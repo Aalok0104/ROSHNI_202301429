@@ -1,0 +1,60 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.12, pytest-8.4.2, pluggy-1.6.0
+rootdir: /Users/parshv/Dev/ROSHNI/backend
+configfile: pytest.ini
+plugins: cov-6.0.0, asyncio-1.2.0, anyio-4.10.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 1 item
+
+tests/test_debug_path.py DEBUG: app path: /Users/parshv/Dev/ROSHNI/backend/app/__init__.py
+DEBUG: cwd: /Users/parshv/Dev/ROSHNI/backend
+DEBUG: sys.path: ['/Users/parshv/Dev/ROSHNI/backend/tests', '/Users/parshv/Dev/ROSHNI/backend', '/Users/parshv/Dev/ROSHNI/backend/tests', '/Users/parshv/miniconda3/envs/ROSHNI/bin', '/Users/parshv/miniconda3/envs/ROSHNI/lib/python312.zip', '/Users/parshv/miniconda3/envs/ROSHNI/lib/python3.12', '/Users/parshv/miniconda3/envs/ROSHNI/lib/python3.12/lib-dynload', '/Users/parshv/miniconda3/envs/ROSHNI/lib/python3.12/site-packages']
+.
+
+=============================== warnings summary ===============================
+app/routers/auth.py:20
+  /Users/parshv/Dev/ROSHNI/backend/app/routers/auth.py:20: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class UserSessionResponse(BaseModel):
+
+app/schemas/users.py:47
+  /Users/parshv/Dev/ROSHNI/backend/app/schemas/users.py:47: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class UserProfileResponse(BaseModel):
+
+app/schemas/users.py:77
+  /Users/parshv/Dev/ROSHNI/backend/app/schemas/users.py:77: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class CommanderResponse(BaseModel):
+
+app/schemas/responders.py:12
+  /Users/parshv/Dev/ROSHNI/backend/app/schemas/responders.py:12: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class TeamResponse(BaseModel):
+
+app/schemas/responders.py:41
+  /Users/parshv/Dev/ROSHNI/backend/app/schemas/responders.py:41: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class ResponderResponse(BaseModel):
+
+app/schemas/incidents.py:29
+  /Users/parshv/Dev/ROSHNI/backend/app/schemas/incidents.py:29: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class IncidentResponse(BaseModel):
+
+app/schemas/disasters.py:13
+  /Users/parshv/Dev/ROSHNI/backend/app/schemas/disasters.py:13: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class DisasterPublicResponse(BaseModel):
+
+app/routers/chat.py:120
+  /Users/parshv/Dev/ROSHNI/backend/app/routers/chat.py:120: DeprecationWarning: `regex` has been deprecated, please use `pattern` instead
+    scope: str = Query("team", regex="^(team|global)$"),
+
+app/schemas/logs.py:35
+  /Users/parshv/Dev/ROSHNI/backend/app/schemas/logs.py:35: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class LogResponse(BaseModel):
+
+app/schemas/tasks.py:24
+  /Users/parshv/Dev/ROSHNI/backend/app/schemas/tasks.py:24: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class TaskAssignmentResponse(BaseModel):
+
+app/schemas/tasks.py:34
+  /Users/parshv/Dev/ROSHNI/backend/app/schemas/tasks.py:34: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class TaskResponse(BaseModel):
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+======================== 1 passed, 11 warnings in 0.16s ========================

@@ -1,6 +1,0 @@
-"""
-FastAPI application package initialization.
-"""
-
-
-

@@ -95,3 +95,42 @@ async def test_log_routes_return_404s(async_db_session, async_create_disaster, a
     )
     listed = await logs.list_logs(disaster.disaster_id, db=async_db_session)
     assert any(l.log_id == created.log_id for l in listed)
+
+
+@pytest.mark.asyncio
+async def test_log_endpoints_404_with_stub_db():
+    class StubDB:
+        async def get(self, *_args, **_kwargs):
+            return None
+    with pytest.raises(Exception):
+        await logs.get_log(uuid4(), db=StubDB())
+    with pytest.raises(Exception):
+        await logs.update_log(uuid4(), payload=LogUpdateRequest(title="t"), db=StubDB())
+    with pytest.raises(Exception):
+        await logs.delete_log(uuid4(), db=StubDB())
+
+
+@pytest.mark.asyncio
+async def test_log_endpoints_success_with_stub_db():
+    class StubLog:
+        def __init__(self):
+            self.log_id = uuid4()
+            self.title = "t"
+    class StubDB:
+        def __init__(self):
+            self.log = StubLog()
+            self.deleted = False
+        async def get(self, *_args, **_kwargs):
+            return self.log
+        async def commit(self): return None
+        async def refresh(self, _log): return None
+        async def delete(self, _log):
+            self.deleted = True
+    stub_db = StubDB()
+    log = await logs.get_log(uuid4(), db=stub_db)
+    assert log.title == "t"
+    updated = await logs.update_log(uuid4(), payload=LogUpdateRequest(text_body="new"), db=stub_db)
+    assert updated.text_body == "new"
+    resp = await logs.delete_log(uuid4(), db=stub_db)
+    assert resp["message"] == "Log deleted"
+    assert stub_db.deleted is True

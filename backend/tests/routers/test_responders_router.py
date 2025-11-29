@@ -27,6 +27,18 @@ class DummyResponderRepository:
     deleted_responder = None
     assigned = None
     team_lookup = None
+    profile_lookup = SimpleNamespace(
+        user_id=uuid4(),
+        full_name="Responder",
+        email="r@example.com",
+        responder_type="medic",
+        badge_number="A1",
+        status="active",
+        team_id=None,
+        team_name=None,
+        last_known_latitude=None,
+        last_known_longitude=None,
+    )
 
     def __init__(self, *_args, **_kwargs):
         pass
@@ -42,6 +54,18 @@ class DummyResponderRepository:
         cls.deleted_responder = None
         cls.assigned = None
         cls.team_lookup = None
+        cls.profile_lookup = SimpleNamespace(
+            user_id=uuid4(),
+            full_name="Responder",
+            email="r@example.com",
+            responder_type="medic",
+            badge_number="A1",
+            status="active",
+            team_id=None,
+            team_name=None,
+            last_known_latitude=None,
+            last_known_longitude=None,
+        )
 
     async def create_team(self, data):
         self.__class__.created_team = data
@@ -80,6 +104,9 @@ class DummyResponderRepository:
 
     async def get_responder_team(self, user_id):
         return self.__class__.team_lookup
+
+    async def get_responder_detail(self, user_id):
+        return self.__class__.profile_lookup
 
 
 class DummyUserRepository:
@@ -320,3 +347,106 @@ async def test_get_my_team_returns_404(monkeypatch, stub_repositories):
     async with AsyncClient(transport=transport, base_url="http://testserver") as ac:
         resp = await ac.get("/responders/me/team")
     assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_get_my_responder_profile_404(monkeypatch, stub_repositories):
+    stub_repositories.profile_lookup = None
+    app = FastAPI()
+    app.include_router(responders.responder_router)
+
+    async def _db():
+        yield object()
+
+    user = SimpleNamespace(user_id=uuid4(), role=SimpleNamespace(name="responder"))
+
+    async def _current_user():
+        return user
+
+    app.dependency_overrides[responders.get_db] = _db
+    app.dependency_overrides[dependencies.get_current_user] = _current_user
+    app.dependency_overrides[responders.RoleChecker] = lambda *_args, **_kwargs: user
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as ac:
+        resp = await ac.get("/responders/me")
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_get_my_team_members_404(monkeypatch, stub_repositories):
+    stub_repositories.team_lookup = None
+    app = FastAPI()
+    app.include_router(responders.responder_router)
+
+    async def _db():
+        yield object()
+
+    user = SimpleNamespace(user_id=uuid4(), role=SimpleNamespace(name="responder"))
+
+    async def _current_user():
+        return user
+
+    app.dependency_overrides[responders.get_db] = _db
+    app.dependency_overrides[dependencies.get_current_user] = _current_user
+    app.dependency_overrides[responders.RoleChecker] = lambda *_args, **_kwargs: user
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://testserver") as ac:
+        resp = await ac.get("/responders/me/team/members")
+    assert resp.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_get_my_responder_profile_success(monkeypatch, stub_repositories):
+    user = SimpleNamespace(user_id=uuid4(), role=SimpleNamespace(name="responder"))
+    profile = SimpleNamespace(
+        user_id=user.user_id,
+        full_name="Res",
+        email="r@example.com",
+        responder_type="medic",
+        badge_number="B",
+        status="active",
+        team_name=None,
+        last_known_latitude=None,
+        last_known_longitude=None,
+    )
+
+    class StubRepo:
+        def __init__(self, *_args, **_kwargs): pass
+        async def get_responder_detail(self, _user_id):
+            return profile
+
+    monkeypatch.setattr(responders, "ResponderRepository", StubRepo)
+    result = await responders.get_my_responder_profile(current_user=user, db=object())
+    assert result.full_name == "Res"
+
+
+@pytest.mark.asyncio
+async def test_get_my_team_members_success(monkeypatch, stub_repositories):
+    user = SimpleNamespace(user_id=uuid4(), role=SimpleNamespace(name="responder"))
+    team = SimpleNamespace(team_id=uuid4(), name="TeamX", responder_profiles=[])
+    members = [
+        SimpleNamespace(
+            user_id=uuid4(),
+            full_name="Member",
+            email="m@example.com",
+            responder_type="medic",
+            badge_number="B1",
+            team_name="TeamX",
+            status="active",
+            last_known_latitude=None,
+            last_known_longitude=None,
+        )
+    ]
+
+    class StubRepo:
+        def __init__(self, *_args, **_kwargs): pass
+        async def get_responder_team(self, *_args, **_kwargs):
+            return team
+        async def get_all_responders(self, *_args, **_kwargs):
+            return members
+
+    monkeypatch.setattr(responders, "ResponderRepository", StubRepo)
+    result = await responders.get_my_team_members(current_user=user, db=object())
+    assert len(result) == 1

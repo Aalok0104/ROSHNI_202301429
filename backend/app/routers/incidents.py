@@ -2,7 +2,7 @@ import os
 import aiofiles
 from uuid import uuid4, UUID
 from typing import List
-from fastapi import APIRouter, Depends, UploadFile, File, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, UploadFile, File, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from geoalchemy2.shape import to_shape
 
@@ -11,11 +11,11 @@ from app.dependencies import get_current_user, RoleChecker
 from app.models.user_family_models import User
 from app.repositories.incident_repository import IncidentRepository
 from app.schemas.incidents import (
-    IncidentCreateRequest, 
-    IncidentResponse, 
+    IncidentCreateRequest,
+    IncidentResponse,
     IncidentStatusUpdate,
     MediaResponse,
-    IncidentCreateRequest as IncidentUpdateRequest
+    IncidentUpdateRequest,
 )
 
 router = APIRouter(prefix="/incidents", tags=["Incidents & SOS"])
@@ -30,6 +30,13 @@ def format_incident_response(incident):
     except:
         lat, lon = 0.0, 0.0
 
+    reported_at = incident.reported_at
+    if reported_at is not None:
+        try:
+            reported_at = reported_at.isoformat()
+        except AttributeError:
+            reported_at = str(reported_at)
+
     return IncidentResponse(
         incident_id=incident.incident_id,
         reported_by_user_id=incident.reported_by_user_id,
@@ -37,7 +44,7 @@ def format_incident_response(incident):
         description=incident.description,
         incident_type=incident.incident_type,
         status=incident.status,
-        reported_at=incident.reported_at,
+        reported_at=reported_at,
         latitude=lat,
         longitude=lon,
         media=[
@@ -54,7 +61,6 @@ def format_incident_response(incident):
 @router.post("", response_model=IncidentResponse)
 async def create_incident(
     payload: IncidentCreateRequest,
-    background_tasks: BackgroundTasks,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -96,12 +102,9 @@ async def create_incident(
         raise HTTPException(status_code=500, detail=f"Failed to create incident: {str(e)}")
 
 
-from app.services.inference_service import run_inference_and_update_db
-
 @router.post("/{incident_id}/media")
 async def upload_media(
     incident_id: UUID,
-    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
@@ -134,9 +137,6 @@ async def upload_media(
             "storage_path": file_path
         }
     )
-
-    if file_type == "image":
-        background_tasks.add_task(run_inference_and_update_db, media_entry.media_id)
 
     return {
         "media_id": media_entry.media_id,

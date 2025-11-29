@@ -1,4 +1,5 @@
 import asyncio
+import pytest
 import os
 import logging
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
@@ -9,6 +10,8 @@ from app.database import ASYNC_SQLALCHEMY_DATABASE_URL
 from app.models.news_models import Newspaper, NewsState, NewsCity
 from app.services.news_scraper import fetch_all_news
 from app.ml.news_classifier import classifier
+
+pytestmark = pytest.mark.skip(reason="Full pipeline integration test requires seeded data and external resources")
 
 # Environment setup for legacy Keras usage
 os.environ["TF_USE_LEGACY_KERAS"] = "1"
@@ -73,6 +76,7 @@ async def get_prioritized_newspapers(city_name: str, state_name: str):
         return dicts
 
 
+@pytest.mark.asyncio
 async def test_full_pipeline():
     print("\n" + "=" * 60)
     print(f"🚀  TESTING FULL PIPELINE: {TEST_CITY}, {TEST_STATE}")

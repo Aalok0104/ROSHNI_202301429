@@ -319,6 +319,24 @@ async def test_update_status_no_action_branch(client):
     assert response.json()["message"] == "No action taken"
 
 
+def test_format_incident_response_handles_string_time():
+    incident = _make_incident("StringTime")
+    incident.reported_at = "2024-01-01T00:00:00Z"
+    resp = incidents.format_incident_response(incident)
+    assert resp.reported_at == "2024-01-01T00:00:00Z"
+
+
+@pytest.mark.asyncio
+async def test_create_incident_handles_repository_errors(client, stub_repository, monkeypatch):
+    async def boom(self, *_args, **_kwargs):
+        raise RuntimeError("fail")
+
+    monkeypatch.setattr(stub_repository, "create_incident", boom)
+    payload = {"latitude": 12.0, "longitude": 77.0}
+    response = await client.post("/incidents", json=payload)
+    assert response.status_code == 500
+
+
 @pytest.mark.asyncio
 async def test_get_my_incidents_returns_only_user_records(civilian_client, stub_repository):
     mine = _make_incident("Mine")
