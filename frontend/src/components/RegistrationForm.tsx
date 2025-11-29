@@ -4,10 +4,16 @@ import './RegistrationForm.css';
 export interface RegistrationData {
   fullName?: string;
   phoneNumber: string;
-  address?: string;
+  addressLine1?: string;
+  addressLine2?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
   dateOfBirth: string;
   emergencyContactName?: string;
   emergencyContactPhone?: string;
+  bloodGroup?: string;
+  knownAllergies?: string;
   medicalInfo?: string;
 }
 
@@ -22,10 +28,16 @@ const RegistrationForm = ({ email, googleName, onSubmit, onCancel }: Registratio
   const [formData, setFormData] = useState<RegistrationData>({
     fullName: googleName || '',
     phoneNumber: '',
-    address: '',
+    addressLine1: '',
+    addressLine2: '',
+    city: '',
+    state: '',
+    pincode: '',
     dateOfBirth: '',
     emergencyContactName: '',
     emergencyContactPhone: '',
+    bloodGroup: '',
+    knownAllergies: '',
     medicalInfo: '',
   });
 
@@ -147,16 +159,76 @@ const RegistrationForm = ({ email, googleName, onSubmit, onCancel }: Registratio
             </div>
 
             <div className="form-group">
-              <label htmlFor="address">
-                Address
+              <label htmlFor="addressLine1">
+                Address Line 1
               </label>
-              <textarea
-                id="address"
-                name="address"
-                value={formData.address}
+              <input
+                type="text"
+                id="addressLine1"
+                name="addressLine1"
+                value={formData.addressLine1}
                 onChange={handleChange}
-                placeholder="Enter your full address"
-                rows={3}
+                placeholder="House/Flat No., Building Name"
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="addressLine2">
+                Address Line 2
+              </label>
+              <input
+                type="text"
+                id="addressLine2"
+                name="addressLine2"
+                value={formData.addressLine2}
+                onChange={handleChange}
+                placeholder="Street, Area, Locality"
+              />
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="city">
+                  City
+                </label>
+                <input
+                  type="text"
+                  id="city"
+                  name="city"
+                  value={formData.city}
+                  onChange={handleChange}
+                  placeholder="City"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="state">
+                  State
+                </label>
+                <input
+                  type="text"
+                  id="state"
+                  name="state"
+                  value={formData.state}
+                  onChange={handleChange}
+                  placeholder="State"
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="pincode">
+                Pincode
+              </label>
+              <input
+                type="text"
+                id="pincode"
+                name="pincode"
+                value={formData.pincode}
+                onChange={handleChange}
+                placeholder="6-digit pincode"
+                pattern="[0-9]{6}"
+                maxLength={6}
               />
             </div>
           </div>
@@ -196,16 +268,55 @@ const RegistrationForm = ({ email, googleName, onSubmit, onCancel }: Registratio
           <div className="form-section">
             <h2>Medical Information (Optional)</h2>
             
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="bloodGroup">
+                  Blood Group
+                </label>
+                <select
+                  id="bloodGroup"
+                  name="bloodGroup"
+                  value={formData.bloodGroup}
+                  onChange={handleChange}
+                  className="form-select"
+                >
+                  <option value="">Select Blood Group</option>
+                  <option value="A+">A+</option>
+                  <option value="A-">A-</option>
+                  <option value="B+">B+</option>
+                  <option value="B-">B-</option>
+                  <option value="AB+">AB+</option>
+                  <option value="AB-">AB-</option>
+                  <option value="O+">O+</option>
+                  <option value="O-">O-</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="knownAllergies">
+                  Known Allergies
+                </label>
+                <input
+                  type="text"
+                  id="knownAllergies"
+                  name="knownAllergies"
+                  value={formData.knownAllergies}
+                  onChange={handleChange}
+                  placeholder="e.g., Penicillin, Peanuts"
+                />
+              </div>
+            </div>
+
             <div className="form-group">
               <label htmlFor="medicalInfo">
-                Medical Conditions, Allergies, Blood Type, etc.
+                Additional Medical Information
               </label>
               <textarea
                 id="medicalInfo"
                 name="medicalInfo"
                 value={formData.medicalInfo}
                 onChange={handleChange}
-                placeholder="Any medical information that might be important in an emergency"
+                placeholder="Chronic conditions, current medications, or other important medical details"
                 rows={4}
               />
               <small className="form-help">This information will be kept confidential and used only in emergencies</small>

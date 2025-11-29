@@ -61,33 +61,39 @@ async def create_incident(
     """
     Unified Endpoint: SOS (no fields) OR Report (fields).
     """
-    repo = IncidentRepository(db)
+    try:
+        repo = IncidentRepository(db)
 
-    # 1. Check Duplicates
-    check_type = payload.incident_type if payload.incident_type else "sos"
-    duplicate = await repo.find_duplicate_incident(
-        lat=payload.latitude,
-        lon=payload.longitude,
-        incident_type=check_type
-    )
+        # 1. Check Duplicates
+        check_type = payload.incident_type if payload.incident_type else "sos"
+        duplicate = await repo.find_duplicate_incident(
+            lat=payload.latitude,
+            lon=payload.longitude,
+            incident_type=check_type
+        )
 
-    if duplicate:
-        return format_incident_response(duplicate)
+        if duplicate:
+            return format_incident_response(duplicate)
 
-    # 2. Create
-    is_sos = (payload.title is None)
-    new_incident = await repo.create_incident(
-        user_id=current_user.user_id, 
-        data=payload,
-        is_sos=is_sos
-    )
+        # 2. Create
+        is_sos = (payload.title is None)
+        new_incident = await repo.create_incident(
+            user_id=current_user.user_id, 
+            data=payload,
+            is_sos=is_sos
+        )
 
-    # 3. Trigger SOS Logic
-    if is_sos or payload.incident_type == 'sos':
-        # Phase 4: WebSocket broadcast to Commanders
-        pass
+        # 3. Trigger SOS Logic
+        if is_sos or payload.incident_type == 'sos':
+            # Phase 4: WebSocket broadcast to Commanders
+            pass
 
-    return format_incident_response(new_incident)
+        return format_incident_response(new_incident)
+    except Exception as e:
+        import traceback
+        print(f"❌ Error creating incident: {str(e)}")
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Failed to create incident: {str(e)}")
 
 
 @router.post("/{incident_id}/media")
